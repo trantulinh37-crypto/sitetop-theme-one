@@ -426,7 +426,11 @@ $current_domain = $_SERVER['HTTP_HOST'] ?? parse_url(home_url(), PHP_URL_HOST);
         .code-alt .btn:hover{border-color:var(--pd);color:var(--pd);background:#F7F9FD}
 
                 .btn{padding:13px 16px;border:none;border-radius:1px;font-size:13px;font-weight:700;cursor:pointer;transition:transform .18s,box-shadow .18s,opacity .18s;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:7px}
-        .btn-primary{background:linear-gradient(135deg,#F5B800,#FFCF3D);color:var(--pd);box-shadow:0 10px 22px -12px rgba(245,184,0,.95)}
+        /* Nut chinh (TIEP TUC + hai nut gui bao cao): doi tu vang sang DEN CHU TRANG
+           theo yeu cau chu site 05/09/2026. Giu gradient nhe cho co chieu sau nhu ban
+           vang cu, khong dung phang tuyet doi. Mui ten ben trong dung stroke=currentColor
+           nen tu chuyen sang trang theo, khong phai sua rieng. */
+        .btn-primary{background:linear-gradient(135deg,#262626,#000);color:#fff;box-shadow:0 10px 22px -12px rgba(0,0,0,.55)}
         .btn-primary:hover:not(:disabled){transform:translateY(-1px)}
         .btn-secondary{background:#FFF7E0;color:var(--pt);border:1px solid #FFE3A3}
         .btn-secondary:hover{background:#DCE8FF}
