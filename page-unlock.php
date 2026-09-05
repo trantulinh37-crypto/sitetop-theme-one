@@ -468,8 +468,13 @@ $current_domain = $_SERVER['HTTP_HOST'] ?? parse_url(home_url(), PHP_URL_HOST);
         .url-copy-box{display:flex;gap:7px;margin-top:9px;align-items:stretch}
         .url-display{flex:1;padding:11px 13px;border:1px solid var(--brd);border-radius:1px;font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#fff;color:var(--txt);outline:none;min-width:0}
         .url-display:focus{border-color:var(--p);box-shadow:0 0 0 3px rgba(245,184,0,.12)}
-        .btn-copy-url{display:inline-flex;align-items:center;gap:5px;padding:11px 15px;background:var(--p);color:var(--pd);border:none;border-radius:1px;font-weight:700;font-size:12px;cursor:pointer;transition:background .18s;white-space:nowrap}
-        .btn-copy-url:hover{background:#C99400}
+        /* Nut Copy: doi tu vang sang DEN CHU TRANG cho dong bo voi nut TIEP TUC
+           (05/09/2026). Nen da la #000 nen hover phai SANG len chu khong toi di,
+           neu khong se khong con phan hoi khi ro chuot. Giu nguyen .copied mau xanh
+           — do la tin hieu "da copy xong", va chu trang tren nen xanh con de doc hon
+           mau --pd cu. */
+        .btn-copy-url{display:inline-flex;align-items:center;gap:5px;padding:11px 15px;background:#000;color:#fff;border:none;border-radius:1px;font-weight:700;font-size:12px;cursor:pointer;transition:background .18s;white-space:nowrap}
+        .btn-copy-url:hover{background:#2E2E2E}
         .btn-copy-url.copied{background:var(--ok)}
 
         .nocode-hint{display:flex;align-items:flex-start;gap:9px;background:#FFF7E0;border:1px solid #FFE3A3;border-radius:1px;padding:11px 13px;margin-top:10px;margin-left:-38px}
