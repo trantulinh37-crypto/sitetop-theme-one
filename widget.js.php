@@ -913,7 +913,15 @@ function createWidget(){
     // Ep trong suot: #tn-w khong tu ve nen, nhung nhieu theme khach co luat quet chung
     // kieu 'footer div{background:#fff}' to trung khung nay, tao ra dai trang quanh nut.
     // !important de thang luat cua theme. Ket qua: nen that cua trang dich lo ra.
-    s.textContent='#tn-w{background:transparent!important;background-image:none!important;border:none!important;box-shadow:none!important;position:relative;display:block;width:100%;margin:'+_mt+'px auto 30px;padding:0;text-align:center;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;z-index:2147483000}'+
+    s.textContent='#tn-w{background:transparent!important;background-image:none!important;border:none!important;box-shadow:none!important;position:relative;display:block;width:100%;margin:'+_mt+'px auto 30px;padding:0;text-align:center;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;z-index:2147483000;pointer-events:none}'+
+    // #tn-w rong 100% ngang nhung chi co cai nut o GIUA — hai ben la dai trong.
+    // Voi z-index 2147483000 thi dai trong do van NUOT cu bam cua moi thu nam duoi
+    // no, ke ca nut lien he noi (#lnContactFab, z-index 9990) cua chinh sitetop.one:
+    // tren dien thoai hai vung chong nhau nen bam nut lien he khong an gi.
+    // pointer-events:none cho khung bao, :auto cho cac con → nut/popup/toast/khoi
+    // huong dan buoc 2 (co the <a> that) van bam duoc, con dai trong thi cho click
+    // xuyen qua. Khong ha z-index vi no co chu dich: tranh bi overlay cua trang khach de len.
+    '#tn-w>*{pointer-events:auto}'+
     '#tn-btn{display:inline-flex!important;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:'+C.clr+';color:'+C.txtClr+';width:46px!important;height:46px!important;min-width:46px!important;max-width:46px!important;min-height:46px!important;border-radius:50%!important;box-sizing:border-box!important;padding:0!important;margin:0!important;aspect-ratio:1/1!important;flex:none!important;overflow:hidden;font-size:9.5px;font-weight:800;cursor:pointer;border:none!important;box-shadow:0 3px 10px rgba(0,0,0,.2);transition:transform .15s;letter-spacing:.4px;line-height:1.05;text-align:center}'+
     '#tn-btn:hover{transform:scale(1.03)}'+
     '#tn-btn svg,#tn-btn img{width:16px!important;height:16px!important;display:block}'+
