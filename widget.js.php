@@ -2167,20 +2167,23 @@ window._stWidgetClick=function(){
     }
 };
 
-// Không khớp được phiên nhiệm vụ nào — vào thẳng trang đích, hoặc vào SAI URL đích.
+// Không khớp được phiên nhiệm vụ nào — vào thẳng trang đích, hoặc vào SAI WEBSITE.
 // Chỉ user về xem lại ảnh hướng dẫn trên trang nhiệm vụ, thay cho "Chưa hợp lệ!" chung
 // chung. KHÔNG xoá wantStart: nếu lát nữa verify khớp được phiên thì vẫn tự chạy đếm
 // ngược, user không phải bấm lại.
 function _stNoTask(){
-    // "Sai URL" là trường hợp DUY NHẤT user đang đứng nhầm chỗ — giữ câu riêng vì việc
-    // phải làm khác hẳn (xem lại ảnh, đi đúng URL).
+    // "Sai Web" là trường hợp DUY NHẤT user đang đứng nhầm chỗ — giữ câu riêng vì việc
+    // phải làm khác hẳn (thoát ra, xem lại ảnh, vào đúng website).
+    // Nói "sai Web" chứ KHÔNG nói "sai URL": từ 05/09/2026 chốt chặn so theo DOMAIN,
+    // trong cùng một website thì vào trang nào cũng hợp lệ. Nói "sai URL" sẽ khiến user
+    // đi sửa đường dẫn trong khi vấn đề thật là họ đang ở nhầm WEBSITE.
     // Mọi lý do còn lại đều quy về một việc: chưa đi qua link nhiệm vụ. User không cần
     // biết là thiếu bàn giao hay hết hạn hay chưa có lượt nào — nói nhiều cách khác nhau
     // chỉ làm họ hoang mang. Lý do chi tiết vẫn nằm ở console.warn và Telegram để chẩn đoán.
     var msg;
     switch(state.failReason){
         case 'wrong_url':
-            msg='Truy cập sai URL, ra xem lại ảnh'; break;
+            msg='Truy cập sai Web thoát ra xem ảnh'; break;
         case 'handoff_expired':
             msg='Phiên đã hết hạn. Vui lòng truy cập link nhiệm vụ'; break;
         default:
@@ -2190,8 +2193,8 @@ function _stNoTask(){
     }
     showToast(msg,6000,'warn');
     // In ĐỦ dữ liệu để tự chẩn đoán, khỏi phải đoán qua lại: danh sách URL server đang
-    // chờ, URL trình duyệt đang đứng, và cả hai dạng đã chuẩn hoá (bỏ www, bỏ '/' cuối,
-    // bỏ query) — chính là hai chuỗi mà server đem so bằng nhau.
+    // chờ, URL trình duyệt đang đứng, và DOMAIN của cả hai (đã bỏ www) — chính là hai
+    // chuỗi mà server đem so bằng nhau.
     try{
         // Server chot chan theo DOMAIN (bo www), KHONG so duong dan — noi long
         // 05/09/2026. Ham nay phai in dung thu server dem ra so, khong thi doc log
