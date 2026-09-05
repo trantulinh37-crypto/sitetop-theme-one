@@ -3,7 +3,7 @@
  * One-time sync: Fix visits with user_id=0 that have customer_paid=1
  * These visits were created with get_current_user_id() instead of shortlink->user_id
  *
- * Run: cd /home/uubfahfn/sitetop.net && php -r "require 'wp-load.php'; include 'wp-content/themes/sitetop-theme/sync-past-rewards.php';"
+ * Run: cd /home/ykeosvwc/sitetop.one && php -r "require 'wp-load.php'; include 'wp-content/themes/sitetop-theme/sync-past-rewards.php';"
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
 

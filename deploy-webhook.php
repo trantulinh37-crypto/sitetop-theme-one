@@ -29,7 +29,7 @@ if ($event === 'push') {
     }
 }
 
-$repo_path = '/home/uubfahfn/sitetop.net/wp-content/themes/sitetop-theme';
+$repo_path = '/home/ykeosvwc/sitetop.one/wp-content/themes/sitetop-theme-one';
 
 // Ensure on main branch (not detached HEAD), then pull
 $output = [];

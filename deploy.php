@@ -2,9 +2,9 @@
 date_default_timezone_set( 'Asia/Ho_Chi_Minh' );
 require_once __DIR__ . '/deploy-config.php';
 $secret    = SITETOP_DEPLOY_KEY;
-$repo_path = '/home/uubfahfn/sitetop.net/wp-content/themes/sitetop-theme';
+$repo_path = '/home/ykeosvwc/sitetop.one/wp-content/themes/sitetop-theme-one';
 $branch    = 'main';
-$log_file  = '/home/uubfahfn/sitetop.net/deploy-log.txt';
+$log_file  = '/home/ykeosvwc/sitetop.one/deploy-log.txt';
 
 function deploy_log($msg) { global $log_file; file_put_contents($log_file, "[".date('Y-m-d H:i:s')."] $msg\n", FILE_APPEND|LOCK_EX); }
 
