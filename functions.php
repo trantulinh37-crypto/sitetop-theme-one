@@ -281,15 +281,26 @@ function sitetop_clean_url_text( $url ) {
  * chú "BƯỚC 2 ĐANG DỞ" trong shortlink-ajax.php). Trước đây phải chữa bằng cờ
  * localStorage + nhánh $onsite_continue; so theo domain thì gỡ luôn gốc rễ.
  *
- * Phạm vi CỐ Ý giữ hẹp: so host chính xác sau khi bỏ 'www.' — KHÔNG mở cho tên miền
- * con. test.com khớp www.test.com, nhưng blog.test.com thì không. Mở cho mọi tên miền
- * con nghĩa là ai trỏ được một tên miền con là lấy được mã.
+ * MỞ THÊM TÊN MIỀN CON 05/09/2026 (chủ site chốt sau khi được nhắc về rủi ro):
+ * camp đặt test.com thì blog.test.com, m.test.com... đều hợp lệ.
+ *
+ * ⚠️ PHẢI so bằng hậu tố '.' . $dest, KHÔNG được dùng "kết thúc bằng $dest".
+ * Dùng cách sau thì test.com.evil.net lọt qua — kẻ tấn công chỉ cần đăng ký một
+ * domain đính đuôi là lấy được mã. Đây đúng khuôn đã dùng ở sitetop_is_google_referer().
+ *
+ * Chiều ngược lại KHÔNG mở: camp đặt blog.test.com thì đứng ở test.com vẫn bị chặn —
+ * cha không phải là con.
  */
 function sitetop_campaign_allows_url( $campaign, $current_url ) {
     $host = sitetop_host_of( sitetop_clean_url_text( $current_url ) );
     if ( $host === '' ) return false;
     foreach ( sitetop_campaign_destinations( $campaign ) as $u ) {
-        if ( sitetop_host_of( sitetop_clean_url_text( $u ) ) === $host ) return true;
+        $dest = sitetop_host_of( sitetop_clean_url_text( $u ) );
+        if ( $dest === '' ) continue;
+        if ( $host === $dest ) return true;
+        // Hậu tố phải có dấu chấm ngăn: 'blog.test.com' khớp '.test.com',
+        // còn 'test.com.evil.net' và 'nottest.com' thì không.
+        if ( substr( $host, - ( strlen( $dest ) + 1 ) ) === '.' . $dest ) return true;
     }
     return false;
 }
