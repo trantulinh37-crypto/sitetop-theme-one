@@ -1095,6 +1095,35 @@ function sitetop_ajax_widget_verify_access() {
     // đang siết dần) → không còn cách nào nhận ra người dùng. Không phải lỗi thao tác.
     if ( ! $visit ) { $result['reason'] = 'no_visit'; wp_send_json_success( $result ); return; }
 
+    /* NHẬN DIỆN BƯỚC 2 — PHẢI TÍNH Ở ĐÂY, KHÔNG ĐƯỢC DỰA VÀO KHỐI $onsite_continue.
+
+       Khối trên chỉ chạy trong nhánh `if ( ! $visit )`, tức khi vòng dò ứng viên TRƯỢT.
+       Ngày xưa vòng dò so host+path nên user đứng ở trang bước 2 (cùng site, khác đường
+       dẫn) thì trượt → khối chạy → bật cờ. Từ 05/09/2026 vòng dò so theo DOMAIN nên nó
+       KHỚP LUÔN ở trang bước 2 → khối không bao giờ chạy → step2_return kẹt ở false và
+       user camp 2 bước bị treo mỗi khi cờ localStorage của widget trượt (chính là cái
+       cờ mà server này sinh ra để đỡ cho).
+
+       Dùng sitetop_url_key() (so CHẶT host+path) chứ KHÔNG dùng
+       sitetop_campaign_allows_url() đã nới: câu hỏi ở đây là "user đã RỜI trang đích
+       sang trang khác chưa", mà cổng domain thì trang nào cùng site cũng trả về true. */
+    if ( ! $step2_continue && ( $visit->traffic_type ?? '' ) === '2step' && ! empty( $visit->url_matched ) ) {
+        $_cur_key = sitetop_url_key( $client_url );
+        $_o_dich  = false;
+        foreach ( sitetop_campaign_destinations( $visit ) as $_d ) {
+            if ( sitetop_url_key( $_d ) === $_cur_key ) { $_o_dich = true; break; }
+        }
+        if ( ! $_o_dich && sitetop_host_of( $client_url ) === sitetop_host_of( $visit->target_url ?? '' ) ) {
+            // Bước 2 chỉ bắt đầu SAU khi bước 1 xong — giữ nguyên điều kiện đủ giờ của
+            // bản cũ, nếu không user bấm nhầm link nội bộ giữa chừng sẽ bị đẩy vào
+            // nhánh 15 giây trong khi đồng hồ chưa chạy hết.
+            $_ons2  = (int) ( $visit->onsite_time ?? 70 );
+            $_req2  = max( $_ons2 - 5, 10 );
+            $_troi2 = strtotime( sitetop_current_time() ) - strtotime( $visit->created_at );
+            $step2_continue = ( $_troi2 >= $_req2 );
+        }
+    }
+
     /* ── CHỐT BÀN GIAO ────────────────────────────────────────────────────────
        Tìm được visit mới chỉ chứng minh "IP này có mở shortlink trong 2 giờ",
        KHÔNG chứng minh lượt xem trang này đến từ nhiệm vụ. Bắt buộc phải có bàn
