@@ -102,8 +102,19 @@ function sitetop_telegram_notify_admin( $title, $rows ) {
 	$token = sitetop_get_option( 'report_telegram_bot_token', '' );
 	$chat  = sitetop_get_option( 'report_telegram_chat_id', '' );
 
+	/* ĐÓNG DẤU TÊN SITE — 05/09/2026.
+	   sitetop.one hiện dùng CHUNG bot và CHUNG nhóm chat với sitetop.net (kế thừa từ
+	   bản clone), mà tin nhắn cũ không ghi site nào gửi nên hai web lẫn vào nhau,
+	   nhìn báo động không biết phải vào đâu mà xử lý.
+	   Lấy host từ home_url() chứ KHÔNG gắn cứng: bản clone trên tên miền khác sẽ tự
+	   khai đúng tên nó, không đi nhận vơ báo động hộ site gốc.
+	   Vẫn giữ khi đã tách bot riêng — một dòng ngắn, và còn hữu ích khi chuyển tiếp
+	   tin nhắn ra ngoài nhóm. */
+	$_site = preg_replace( '/^www\./i', '', (string) wp_parse_url( home_url(), PHP_URL_HOST ) );
+
 	$lines   = array();
 	$lines[] = '<b>' . sitetop_telegram_esc( $title ) . '</b>';
+	if ( $_site ) $lines[] = '<i>' . sitetop_telegram_esc( $_site ) . '</i>';
 	if ( is_array( $rows ) ) {
 		foreach ( $rows as $label => $value ) {
 			if ( $value === '' || $value === null ) continue;
