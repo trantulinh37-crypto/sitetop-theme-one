@@ -975,9 +975,10 @@ function createWidget(){
     '#tn-ov.mini #tn-pop-timer b{font-size:17px}'+
     // Mobile: khung nhỏ lại rõ rệt (cả popup lần đầu lẫn chip mini)
     '@media(max-width:600px){'+
-    // Nut lay ma: man hep thi 46px chiem nhieu cho, thu ve 40px cho can voi noi dung
-    // trang dich. Phai lap lai !important vi luat goc cung dung !important.
-    '#tn-btn{width:40px!important;height:40px!important;min-width:40px!important;max-width:40px!important;min-height:40px!important}'+
+    // Nut lay ma: man hep thi 46px chiem nhieu cho, nen thu bot. 05/09/2026 nang tu
+    // 40px len 45px theo yeu cau chu site: nut nay mang logo tron, o 40px thi logo
+    // qua nho tren dien thoai. Phai lap lai !important vi luat goc cung dung !important.
+    '#tn-btn{width:45px!important;height:45px!important;min-width:45px!important;max-width:45px!important;min-height:45px!important}'+
     '#tn-cd{font-size:20px}'+
     '#tn-btn.tn-pill{padding:8px 13px!important;font-size:11.5px}'+
     // Mobile: thu gọn cả cụm. Mũi tên mới thêm chiếm 46px nên không thu thì thẻ cao

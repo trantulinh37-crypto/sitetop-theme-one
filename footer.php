@@ -1,4 +1,12 @@
-<?php if (!defined('ABSPATH')) exit; ?>
+<?php if (!defined('ABSPATH')) exit;
+/* ⚠️ FILE NAY KHONG HIEN O DAU — kiem chung 05/09/2026.
+   Chi index.php goi get_footer(), va chinh index.php co luat
+   footer{display:none!important} (dong 26) de lam hero mot man hinh.
+   Moi trang khac tu dung footer rieng <footer class="page-footer">.
+   Vi vay sua kich thuoc/anh trong file nay KHONG doi gi tren site.
+   Logo tron ma khach nhin thay o cuoi trang chu la NUT WIDGET (#tn-btn.tn-logo),
+   khong phai logo footer. Dong "Copyright" tren trang chu la .ln-copyright
+   trong index.php (chi co chu, khong co anh). */ ?>
 <footer style="background:#0F172A;color:rgba(255,255,255,.4);padding:48px 0 32px;margin-top:48px">
 <style>
 /* Logo footer: giu 27px tren may tinh. Tren dien thoai logo 27px qua nho so voi
