@@ -269,15 +269,27 @@ function sitetop_clean_url_text( $url ) {
 }
 
 /**
- * URL hiện tại có TRÙNG một trong các URL đích đã thêm không.
- * So cả domain LẪN đường dẫn: vào đúng URL đã thêm mới cho lấy mã, vào trang
- * khác cùng domain vẫn báo lỗi.
+ * URL hiện tại có thuộc một trong các DOMAIN đích đã thêm không.
+ *
+ * NỚI LỎNG 05/09/2026 theo yêu cầu chủ site: chỉ so DOMAIN, bỏ qua đường dẫn.
+ * Camp đặt https://test.com/ thì user đứng ở https://test.com/abc/ cũng hợp lệ;
+ * https://test.vn/ vẫn bị chặn vì khác domain.
+ *
+ * Vì sao nới: bản cũ so cả đường dẫn, mà điều đó mâu thuẫn với chính luồng 2 bước —
+ * camp 2 bước BẮT BUỘC user rời trang đích sang trang khác cùng site, trang đó không
+ * nằm trong danh sách nên bị kêu "sai URL" ngay giữa lúc user đang làm đúng (xem ghi
+ * chú "BƯỚC 2 ĐANG DỞ" trong shortlink-ajax.php). Trước đây phải chữa bằng cờ
+ * localStorage + nhánh $onsite_continue; so theo domain thì gỡ luôn gốc rễ.
+ *
+ * Phạm vi CỐ Ý giữ hẹp: so host chính xác sau khi bỏ 'www.' — KHÔNG mở cho tên miền
+ * con. test.com khớp www.test.com, nhưng blog.test.com thì không. Mở cho mọi tên miền
+ * con nghĩa là ai trỏ được một tên miền con là lấy được mã.
  */
 function sitetop_campaign_allows_url( $campaign, $current_url ) {
-    $key = sitetop_url_key( $current_url );
-    if ( $key === '' ) return false;
+    $host = sitetop_host_of( sitetop_clean_url_text( $current_url ) );
+    if ( $host === '' ) return false;
     foreach ( sitetop_campaign_destinations( $campaign ) as $u ) {
-        if ( sitetop_url_key( $u ) === $key ) return true;
+        if ( sitetop_host_of( sitetop_clean_url_text( $u ) ) === $host ) return true;
     }
     return false;
 }

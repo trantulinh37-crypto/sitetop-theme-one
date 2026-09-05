@@ -2193,8 +2193,11 @@ function _stNoTask(){
     // chờ, URL trình duyệt đang đứng, và cả hai dạng đã chuẩn hoá (bỏ www, bỏ '/' cuối,
     // bỏ query) — chính là hai chuỗi mà server đem so bằng nhau.
     try{
+        // Server chot chan theo DOMAIN (bo www), KHONG so duong dan — noi long
+        // 05/09/2026. Ham nay phai in dung thu server dem ra so, khong thi doc log
+        // se tuong bi chan vi lech duong dan.
         var _norm=function(u){ try{var a=document.createElement('a');a.href=u;
-            return a.hostname.replace(/^www\./,'').toLowerCase()+(a.pathname.replace(/\/+$/,'')||'/').toLowerCase();
+            return a.hostname.replace(/^www\./,'').toLowerCase();
         }catch(e){return '(loi)';} };
         var _list=state.wantList&&state.wantList.length?state.wantList:(state.wantUrl?[state.wantUrl]:[]);
         console.warn('[SiteTop] Không gắn được phiên — lý do:',state.failReason||'(không rõ)',

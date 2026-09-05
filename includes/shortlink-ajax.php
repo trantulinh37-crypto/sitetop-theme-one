@@ -1411,8 +1411,11 @@ function sitetop_alert_task_blocked( $reason, $visit, $client_url ) {
     );
     if ( 'wrong_url' === $reason ) {
         $rows['Danh sách URL đích'] = implode( ' | ', $dests );
-        $rows['So khớp — cần']      = implode( ' | ', array_map( 'sitetop_url_key', $dests ) );
-        $rows['So khớp — đang có']  = sitetop_url_key( $client_url );
+        // Từ 05/09/2026 chốt chặn so theo DOMAIN, không so đường dẫn nữa. Dòng chẩn
+        // đoán phải in đúng thứ đem ra so, nếu vẫn in host+path thì đọc log sẽ tưởng
+        // bị chặn vì lệch đường dẫn trong khi thật ra lệch domain.
+        $rows['So khớp — domain cần']     = implode( ' | ', array_unique( array_map( 'sitetop_host_of', $dests ) ) );
+        $rows['So khớp — domain đang có'] = sitetop_host_of( $client_url );
     }
     sitetop_telegram_notify_admin( '🚧 Nhiệm vụ bị chặn ở bước gắn phiên', $rows );
 }
