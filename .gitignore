@@ -1,0 +1,9 @@
+.DS_Store
+Thumbs.db
+node_modules/
+*.log
+.env
+wp-config.php
+deploy-log.txt
+deploy-config.php
+cache/

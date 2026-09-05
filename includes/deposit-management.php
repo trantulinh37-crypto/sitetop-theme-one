@@ -1,0 +1,124 @@
+<?php
+/**
+ * SiteTop.one V2 - Deposit Management (CLAUDE.md Flow 4)
+ * Deposit with bonus tiers
+ */
+if ( ! defined( 'ABSPATH' ) ) exit;
+
+function sitetop_submit_deposit( $user_id, $amount, $method = 'bank' ) {
+    global $wpdb;
+    $p = $wpdb->prefix . SITETOP_PREFIX;
+    $amount = absint($amount); // VND is integer currency (no decimals)
+
+    if ( $amount < 50000 ) return new WP_Error('min', 'Nạp tối thiểu 50,000đ');
+    if ( $amount > 100000000 ) return new WP_Error('max', 'Nạp tối đa 100,000,000đ');
+
+    // Rate limit
+    $rate = sitetop_rate_limit_check('deposit', $user_id);
+    if ( !$rate['allowed'] ) return new WP_Error('rate', 'Quá nhiều yêu cầu');
+
+    // Calculate bonus
+    $bonus_result = sitetop_calculate_deposit_bonus($amount);
+    $bonus_percent = $bonus_result['percent'];
+    $bonus_amount  = $bonus_result['amount'];
+    $user = get_user_by('ID', $user_id);
+
+    $wpdb->insert("{$p}customer_deposits", array(
+        'customer_id'       => $user_id,
+        'customer_username' => $user ? $user->user_login : '',
+        'amount'            => $amount,
+        'bonus_percent'     => $bonus_percent,
+        'bonus_amount'      => $bonus_amount,
+        'payment_method'    => sanitize_text_field($method),
+        'status'            => 'pending',
+        'created_at'        => sitetop_current_time(),
+    ));
+    return $wpdb->insert_id ?: new WP_Error('db', 'Lỗi tạo deposit');
+}
+
+function sitetop_calculate_deposit_bonus( $amount ) {
+    $tiers = json_decode( sitetop_get_option('deposit_presets', '[]'), true );
+    if ( empty($tiers) ) {
+        // Default tiers
+        $tiers = array(
+            array('amount' => 1000000, 'bonus' => 5),  // 5% for 1M+
+            array('amount' => 5000000, 'bonus' => 10), // 10% for 5M+
+            array('amount' => 10000000, 'bonus' => 15), // 15% for 10M+
+        );
+    }
+    usort($tiers, function($a,$b){ return $b['amount'] - $a['amount']; });
+    foreach ( $tiers as $tier ) {
+        if ( $amount >= $tier['amount'] ) {
+            return array(
+                'percent' => (float) $tier['bonus'],
+                'amount'  => floor( $amount * ($tier['bonus'] / 100) ),
+            );
+        }
+    }
+    return array( 'percent' => 0, 'amount' => 0 );
+}
+
+function sitetop_approve_deposit( $deposit_id, $admin_note = '' ) {
+    global $wpdb;
+    $p = $wpdb->prefix . SITETOP_PREFIX;
+    $now = sitetop_current_time();
+
+    $wpdb->query( 'START TRANSACTION' );
+    try {
+        // Lock deposit FOR UPDATE → check status='pending'
+        $dep = $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM {$p}customer_deposits WHERE id=%d FOR UPDATE", $deposit_id ));
+        if ( ! $dep || $dep->status !== 'pending' ) {
+            $wpdb->query( 'ROLLBACK' );
+            return new WP_Error( 'invalid', 'Deposit không hợp lệ' );
+        }
+
+        $total = $dep->amount + $dep->bonus_amount;
+
+        // Lock customer_balance FOR UPDATE → atomic balance update
+        $wpdb->get_row( $wpdb->prepare(
+            "SELECT * FROM {$p}customer_balance WHERE user_id=%d FOR UPDATE", $dep->customer_id ));
+
+        // Update deposit status
+        $wpdb->update( "{$p}customer_deposits", array(
+            'status' => 'approved', 'note' => sanitize_text_field( $admin_note ),
+            'approved_by' => get_current_user_id(), 'approved_at' => $now, 'updated_at' => $now,
+        ), array( 'id' => $deposit_id ) );
+
+        // Atomic balance update
+        $updated = $wpdb->query( $wpdb->prepare(
+            "UPDATE {$p}customer_balance SET balance = balance + %d, total_deposited = total_deposited + %d, updated_at = %s WHERE user_id = %d",
+            $total, absint($dep->amount), $now, $dep->customer_id
+        ));
+        // If customer_balance row doesn't exist, create it
+        if ( $updated === 0 ) {
+            $wpdb->insert( "{$p}customer_balance", array(
+                'user_id' => $dep->customer_id, 'balance' => $total,
+                'total_deposited' => $dep->amount, 'total_spent' => 0, 'updated_at' => $now,
+            ));
+        }
+
+        // Log customer transaction
+        $bal = sitetop_get_customer_balance_amount( $dep->customer_id );
+        $wpdb->insert( "{$p}customer_transactions", array(
+            'customer_id' => $dep->customer_id, 'amount' => $total, 'type' => 'deposit',
+            'reference_id' => $deposit_id, 'reference_type' => 'deposit',
+            'description' => 'Nạp tiền ' . sitetop_format_money( $dep->amount ) . ( $dep->bonus_amount > 0 ? ' + bonus ' . sitetop_format_money( $dep->bonus_amount ) : '' ),
+            'balance_after' => $bal, 'created_at' => $now,
+        ));
+
+        $wpdb->query( 'COMMIT' );
+    } catch ( Exception $e ) {
+        $wpdb->query( 'ROLLBACK' );
+        return new WP_Error( 'error', $e->getMessage() );
+    }
+
+    // Auto-resume paused campaigns (outside transaction)
+    sitetop_auto_resume_paused_campaigns();
+    delete_transient( 'sitetop_eligible_campaigns' );
+
+    // Email KH
+    sitetop_send_deposit_approved_email( $deposit_id );
+
+    return true;
+}
