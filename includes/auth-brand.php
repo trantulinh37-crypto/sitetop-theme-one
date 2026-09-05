@@ -2,7 +2,7 @@
 <div class="auth-brand">
     <?php $ln_icon = get_option('sitetop_widget_icon',''); ?>
     <a href="<?php echo esc_url( home_url() ); ?>" class="auth-brand-logo">
-        <img src="<?php echo esc_url( $ln_icon ?: sitetop_logo_url('sitetop-logo.png') ); ?>" width="28" height="28" alt="" style="margin-right:6px;border-radius:50%">
+        <img src="<?php echo esc_url( $ln_icon ?: sitetop_logo_url('sitetop-logo.png') ); ?>" width="31" height="31" alt="" style="margin-right:6px;border-radius:50%">
         SiteTop.one
     </a>
     <h1 id="brandTitle">Chia sẻ link.<br><span>Nhận thưởng.</span></h1>
