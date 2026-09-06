@@ -2135,15 +2135,23 @@ window._stWidgetClick=function(){
             return;
         }
 
-        if(btnEl){btnEl.innerHTML='<span id="tn-btn-text">Đang tải...</span>';btnEl.style.pointerEvents='none';}
+        // "Đang tải..." không nói gì cho user biết đang chờ CÁI GÌ — và đây đúng là
+        // trạng thái hay kẹt nhất (iframe captcha bị tracker-blocker/CSP của web khách
+        // chặn). Nói thẳng "Đang xác minh" để user hiểu và không bấm loạn.
+        if(btnEl){btnEl.innerHTML='<span id="tn-btn-text">Đang xác minh…</span>';btnEl.style.pointerEvents='none';}
         captcha.src=C.api+'/widget-captcha/?session_id='+encodeURIComponent(state.sessionId)+'&origin='+encodeURIComponent(location.origin);
         captcha.onload=function(){
             captcha.onload=null; // Only fire once
             if(_tsT1){clearTimeout(_tsT1);_tsT1=null;}
             if(btnEl)btnEl.style.display='none';
             captcha.style.display='inline-block';
-            // Đã hiện khung nhưng user/Turnstile chưa giải xong trong 40s → trả nút về.
-            _tsT2=setTimeout(function(){ window._stCaptchaAbort('Xác minh chưa hoàn tất, vui lòng bấm lại'); },40000);
+            // Đã hiện khung nhưng chưa giải xong → trả nút về.
+            // 06/09/2026 rút 40s xuống 15s theo yêu cầu chủ site: Turnstile tự giải
+            // thường xong trong 1-3 giây, nên 40 giây chỉ khiến người bị kẹt phải ngồi
+            // nhìn nút chết gần một phút mới được bấm lại.
+            // ⚠️ Nếu Turnstile bung ô tick tay hoặc câu đố ảnh, 15 giây có thể cắt ngang
+            // lúc user đang giải. Có khách báo bị cắt giữa chừng thì nâng lại ~25s.
+            _tsT2=setTimeout(function(){ window._stCaptchaAbort('Xác minh chưa hoàn tất, vui lòng bấm lại'); },15000);
         };
         // Iframe không tải nổi trong 12s (mạng chập, tracker-blocker, CSP web khách) → trả nút về.
         _tsT1=setTimeout(function(){ window._stCaptchaAbort('Không tải được xác minh, vui lòng bấm lại'); },12000);
@@ -2254,12 +2262,18 @@ $_gui = trim( (string) ( $_SERVER['HTTP_IF_NONE_MATCH'] ?? '' ) );
 if ( $_gui !== '' ) {
 	foreach ( array_map( 'trim', explode( ',', $_gui ) ) as $_m ) {
 		if ( $_m === $_etag || $_m === 'W/' . $_etag ) {
-			header( 'Content-Length: 0' );
 			http_response_code( 304 );
 			exit;
 		}
 	}
 }
 
-header( 'Content-Length: ' . strlen( $_than ) );
+/* KHÔNG tự đặt Content-Length ở đây.
+   06/09/2026 — bài học từ sự cố mất widget của sitetop.net: PHP khai độ dài thân
+   CHƯA NÉN, rồi máy chủ nén Brotli đè lên, nên con số khai KHÔNG khớp thân thật.
+   Trình duyệt ngồi chờ số byte không bao giờ tới → /top.js treo, có lượt timeout
+   30 giây. Nguy hiểm ở chỗ HTTP vẫn 200 nên log sạch trơn, và triệu chứng thất
+   thường (đa số lượt vẫn chạy) nên rất dễ tưởng máy chủ quá tải.
+   Để PHP/LiteSpeed/Cloudflare tự tính. Khi sửa đường phục vụ top.js, phải thử kèm
+   `Accept-Encoding: gzip, br` — thử trần KHÔNG lộ ra lỗi này. */
 echo $_than;
