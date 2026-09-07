@@ -281,17 +281,21 @@ function sitetop_clean_url_text( $url ) {
  * chú "BƯỚC 2 ĐANG DỞ" trong shortlink-ajax.php). Trước đây phải chữa bằng cờ
  * localStorage + nhánh $onsite_continue; so theo domain thì gỡ luôn gốc rễ.
  *
- * MỞ TÊN MIỀN CON MỘT CẤP 05/09/2026, SIẾT LẠI 08/09/2026 (chủ site chốt):
- * camp đặt test.com thì m.test.com, blog.test.com hợp lệ — nhưng NHIỀU CẤP thì CHẶN:
- * blog.tin.test.com không hợp lệ. Lý do siết: mỗi cấp lồng thêm là một tầng nữa mà
- * chủ web khách có thể trỏ đi đâu tuỳ ý, càng sâu càng xa trang mà chiến dịch trả tiền.
+ * TÊN MIỀN CON: ĐÃ ĐÓNG HẲN (chủ site chốt 08/09/2026).
+ * Lịch sử quyết định, ghi lại để đừng ai "mở lại cho tiện":
+ *   05/09  mở tên miền con mọi cấp
+ *   08/09  siết còn một cấp (blog.tin.test.com bị chặn)
+ *   08/09  ĐÓNG HẲN — chỉ đúng tên miền mới hợp lệ
+ * Camp đặt test.com thì m.test.com, blog.test.com đều CHẶN. Muốn nhận tên miền con
+ * nào thì khai THẲNG tên miền đó vào danh sách URL đích của chiến dịch — lúc ấy nó
+ * khớp bằng phép so đúng-bằng ở dưới, không cần luật riêng nào.
  *
- * ⚠️ PHẢI so bằng hậu tố '.' . $dest, KHÔNG được dùng "kết thúc bằng $dest".
- * Dùng cách sau thì test.com.evil.net lọt qua — kẻ tấn công chỉ cần đăng ký một
- * domain đính đuôi là lấy được mã. Đây đúng khuôn đã dùng ở sitetop_is_google_referer().
+ * Vì sao đóng: tên miền con do chủ web khách toàn quyền trỏ đi đâu tuỳ ý, nên mở là
+ * mở một cửa mà mình không kiểm soát được đầu bên kia.
  *
- * Chiều ngược lại KHÔNG mở: camp đặt blog.test.com thì đứng ở test.com vẫn bị chặn —
- * cha không phải là con.
+ * 'www.' KHÔNG tính là tên miền con: sitetop_host_of() gột nó ở cả hai vế trước khi
+ * so, nên www.test.com và test.com là MỘT. Đừng gỡ chỗ gột đó — gỡ là chặn oan gần
+ * như mọi khách vào bằng www.
  */
 function sitetop_campaign_allows_url( $campaign, $current_url ) {
     $host = sitetop_host_of( sitetop_clean_url_text( $current_url ) );
@@ -299,16 +303,10 @@ function sitetop_campaign_allows_url( $campaign, $current_url ) {
     foreach ( sitetop_campaign_destinations( $campaign ) as $u ) {
         $dest = sitetop_host_of( sitetop_clean_url_text( $u ) );
         if ( $dest === '' ) continue;
+        // So ĐÚNG BẰNG. Không có nhánh hậu tố nào nữa — mọi tên miền con đều rơi
+        // xuống return false. Nhờ vậy test.com.evil.net và nottest.com bị chặn mà
+        // không cần luật chống giả mạo riêng: chúng đơn giản là khác chuỗi.
         if ( $host === $dest ) return true;
-        // Hậu tố phải có dấu chấm ngăn: 'blog.test.com' khớp '.test.com',
-        // còn 'test.com.evil.net' và 'nottest.com' thì không.
-        if ( substr( $host, - ( strlen( $dest ) + 1 ) ) === '.' . $dest ) {
-            // CHỈ MỘT CẤP: phần đứng trước '.test.com' không được chứa dấu chấm nào.
-            // 'm' → cho · 'blog.tin' → chặn. sitetop_host_of() đã gột 'www.' ở đầu nên
-            // 'www.blog.test.com' về thành 'blog.test.com' và vẫn tính là một cấp.
-            $tien_to = substr( $host, 0, strlen( $host ) - strlen( $dest ) - 1 );
-            if ( $tien_to !== '' && strpos( $tien_to, '.' ) === false ) return true;
-        }
     }
     return false;
 }
