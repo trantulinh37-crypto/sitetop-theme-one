@@ -281,8 +281,10 @@ function sitetop_clean_url_text( $url ) {
  * chú "BƯỚC 2 ĐANG DỞ" trong shortlink-ajax.php). Trước đây phải chữa bằng cờ
  * localStorage + nhánh $onsite_continue; so theo domain thì gỡ luôn gốc rễ.
  *
- * MỞ THÊM TÊN MIỀN CON 05/09/2026 (chủ site chốt sau khi được nhắc về rủi ro):
- * camp đặt test.com thì blog.test.com, m.test.com... đều hợp lệ.
+ * MỞ TÊN MIỀN CON MỘT CẤP 05/09/2026, SIẾT LẠI 08/09/2026 (chủ site chốt):
+ * camp đặt test.com thì m.test.com, blog.test.com hợp lệ — nhưng NHIỀU CẤP thì CHẶN:
+ * blog.tin.test.com không hợp lệ. Lý do siết: mỗi cấp lồng thêm là một tầng nữa mà
+ * chủ web khách có thể trỏ đi đâu tuỳ ý, càng sâu càng xa trang mà chiến dịch trả tiền.
  *
  * ⚠️ PHẢI so bằng hậu tố '.' . $dest, KHÔNG được dùng "kết thúc bằng $dest".
  * Dùng cách sau thì test.com.evil.net lọt qua — kẻ tấn công chỉ cần đăng ký một
@@ -300,7 +302,13 @@ function sitetop_campaign_allows_url( $campaign, $current_url ) {
         if ( $host === $dest ) return true;
         // Hậu tố phải có dấu chấm ngăn: 'blog.test.com' khớp '.test.com',
         // còn 'test.com.evil.net' và 'nottest.com' thì không.
-        if ( substr( $host, - ( strlen( $dest ) + 1 ) ) === '.' . $dest ) return true;
+        if ( substr( $host, - ( strlen( $dest ) + 1 ) ) === '.' . $dest ) {
+            // CHỈ MỘT CẤP: phần đứng trước '.test.com' không được chứa dấu chấm nào.
+            // 'm' → cho · 'blog.tin' → chặn. sitetop_host_of() đã gột 'www.' ở đầu nên
+            // 'www.blog.test.com' về thành 'blog.test.com' và vẫn tính là một cấp.
+            $tien_to = substr( $host, 0, strlen( $host ) - strlen( $dest ) - 1 );
+            if ( $tien_to !== '' && strpos( $tien_to, '.' ) === false ) return true;
+        }
     }
     return false;
 }

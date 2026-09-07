@@ -3,7 +3,8 @@
 
    05/09/2026 chủ site NỚI LỎNG hai lần:
      (1) chỉ so DOMAIN, bỏ qua đường dẫn — test.com/abc hợp lệ với camp đặt test.com/;
-     (2) mở cả TÊN MIỀN CON — blog.test.com cũng hợp lệ.
+     (2) mở TÊN MIỀN CON MỘT CẤP — blog.test.com hợp lệ.
+   08/09/2026 SIẾT lại: tên miền con NHIỀU CẤP thì CHẶN (blog.tin.test.com).
    https://test.vn/ vẫn bị chặn. Trước đó so cả host lẫn path nên phải vào đúng y nguyên URL.
 
    Đây là luật quyết định AI ĐƯỢC TRẢ TIỀN, nên chốt lại bằng test: nới quá tay thì mất
@@ -26,7 +27,11 @@ $allows = function ( $dests, $current ) use ( $host_of ) {
         if ( $d === '' ) continue;
         if ( $h === $d ) return true;
         // Hậu tố PHẢI có dấu chấm ngăn, nếu không thì test.com.evil.net lọt qua.
-        if ( substr( $h, - ( strlen( $d ) + 1 ) ) === '.' . $d ) return true;
+        if ( substr( $h, - ( strlen( $d ) + 1 ) ) === '.' . $d ) {
+            // CHỈ MỘT CẤP (siết 08/09/2026): phần trước '.test.com' không được có dấu chấm.
+            $tien_to = substr( $h, 0, strlen( $h ) - strlen( $d ) - 1 );
+            if ( $tien_to !== '' && strpos( $tien_to, '.' ) === false ) return true;
+        }
     }
     return false;
 };
@@ -48,8 +53,13 @@ assert_true(  $allows( $camp, 'http://test.com/abc' ),      'http vs https -> kh
 // ── Tên miền con: MỞ (chủ site chốt 05/09/2026) ──────────────────────────
 assert_true(  $allows( $camp, 'https://blog.test.com/abc' ),   'Ten mien con -> CHO' );
 assert_true(  $allows( $camp, 'https://m.test.com/' ),         'Ten mien con mobile -> CHO' );
-assert_true(  $allows( $camp, 'https://a.b.test.com/x' ),      'Ten mien con nhieu cap -> CHO' );
-assert_true(  $allows( $camp, 'https://www.blog.test.com/x' ), 'www + ten mien con -> CHO' );
+assert_true(  $allows( $camp, 'https://www.blog.test.com/x' ), 'www + ten mien con 1 cap -> CHO (www da bi got)' );
+
+// ── Nhiều cấp thì CHẶN (chủ site siết 08/09/2026) ────────────────────────
+assert_false( $allows( $camp, 'https://a.b.test.com/x' ),        'Ten mien con 2 cap -> CHAN' );
+assert_false( $allows( $camp, 'https://blog.tin.test.com/x' ),   'blog.tin.test.com -> CHAN' );
+assert_false( $allows( $camp, 'https://a.b.c.test.com/' ),       'Ten mien con 3 cap -> CHAN' );
+assert_false( $allows( $camp, 'https://www.a.b.test.com/' ),     'www + 2 cap -> van CHAN (got www con lai 2 cap)' );
 
 // ── ...NHUNG khong duoc lot domain gia. Day la phan de sai nhat:
 //    - Dung "ket thuc bang test.com" thay vi hau to ".test.com" -> nottest.com va
@@ -71,7 +81,8 @@ assert_false( $allows( array( 'https://blog.test.com/' ), 'https://shop.test.com
 $nhieu = array( 'https://a.com/trang-1', 'https://b.org/muc/2' );
 assert_true(  $allows( $nhieu, 'https://a.com/bat-ky' ), 'Khop domain thu nhat' );
 assert_true(  $allows( $nhieu, 'https://b.org/khac' ),   'Khop domain thu hai' );
-assert_true(  $allows( $nhieu, 'https://cdn.a.com/anh' ), 'Ten mien con cua domain thu nhat -> CHO' );
+assert_true(  $allows( $nhieu, 'https://cdn.a.com/anh' ),    'Ten mien con 1 cap cua domain thu nhat -> CHO' );
+assert_false( $allows( $nhieu, 'https://x.cdn.a.com/anh' ),  'Ten mien con 2 cap -> CHAN' );
 assert_false( $allows( $nhieu, 'https://c.net/' ),       'Khong domain nao khop -> CHAN' );
 
 // ── Rác vô hình dán từ Word/Zalo không được làm hỏng so khớp ─────────────
@@ -83,4 +94,4 @@ assert_false( $allows( $camp, '' ),           'URL rong -> CHAN' );
 assert_false( $allows( $camp, 'khong-phai-url' ), 'Chuoi khong phai URL -> CHAN' );
 assert_false( $allows( array(), 'https://test.com/' ), 'Camp khong co URL dich nao -> CHAN' );
 
-echo "  ✓ campaign url match (domain + ten mien con)\n";
+echo "  ✓ campaign url match (domain + ten mien con MOT CAP)\n";
