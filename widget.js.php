@@ -948,7 +948,7 @@ function createWidget(){
     // huong dan buoc 2 (co the <a> that) van bam duoc, con dai trong thi cho click
     // xuyen qua. Khong ha z-index vi no co chu dich: tranh bi overlay cua trang khach de len.
     '#tn-w>*{pointer-events:auto}'+
-    '#tn-btn{display:inline-flex!important;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:'+C.clr+';color:'+C.txtClr+';width:46px!important;height:46px!important;min-width:46px!important;max-width:46px!important;min-height:46px!important;border-radius:50%!important;box-sizing:border-box!important;padding:0!important;margin:0!important;aspect-ratio:1/1!important;flex:none!important;overflow:hidden;font-size:9.5px;font-weight:800;cursor:pointer;border:none!important;box-shadow:0 3px 10px rgba(0,0,0,.2);transition:transform .15s;letter-spacing:.4px;line-height:1.05;text-align:center}'+
+    '#tn-btn{display:inline-flex!important;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:'+C.clr+';color:'+C.txtClr+';width:56px!important;height:56px!important;min-width:56px!important;max-width:56px!important;min-height:56px!important;border-radius:50%!important;box-sizing:border-box!important;padding:0!important;margin:0!important;aspect-ratio:1/1!important;flex:none!important;overflow:hidden;font-size:9.5px;font-weight:800;cursor:pointer;border:none!important;box-shadow:0 3px 10px rgba(0,0,0,.2);transition:transform .15s;letter-spacing:.4px;line-height:1.05;text-align:center}'+
     '#tn-btn:hover{transform:scale(1.03)}'+
     '#tn-btn svg,#tn-btn img{width:16px!important;height:16px!important;display:block}'+
     // Icon tùy chỉnh (tn-logo): logo phủ KÍN mặt nút tròn (thay cho icon 22px + chữ). Chỉ trạng thái
@@ -1009,10 +1009,11 @@ function createWidget(){
     '#tn-ov.mini #tn-pop-timer b{font-size:17px}'+
     // Mobile: khung nhỏ lại rõ rệt (cả popup lần đầu lẫn chip mini)
     '@media(max-width:600px){'+
-    // Nut lay ma: man hep thi 46px chiem nhieu cho, nen thu bot. 05/09/2026 nang tu
-    // 40px len 45px theo yeu cau chu site: nut nay mang logo tron, o 40px thi logo
-    // qua nho tren dien thoai. Phai lap lai !important vi luat goc cung dung !important.
-    '#tn-btn{width:45px!important;height:45px!important;min-width:45px!important;max-width:45px!important;min-height:45px!important}'+
+    // Nut lay ma tren man hep. Lich su co: 46 -> 40 (cho do chiem cho) -> 45 (05/09,
+    // logo tron o 40px qua nho) -> 54 (08/09, chu site muon to hon han o CA HAI kho man;
+    // desktop len 56 cung dot nay). Giu mobile nho hon desktop 2px nhu chu y ban dau.
+    // Phai lap lai !important vi luat goc cung dung !important — thieu la thua luat goc.
+    '#tn-btn{width:54px!important;height:54px!important;min-width:54px!important;max-width:54px!important;min-height:54px!important}'+
     '#tn-cd{font-size:20px}'+
     '#tn-btn.tn-pill{padding:8px 13px!important;font-size:11.5px}'+
     // Mobile: thu gọn cả cụm. Mũi tên mới thêm chiếm 46px nên không thu thì thẻ cao
