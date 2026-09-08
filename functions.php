@@ -157,7 +157,7 @@ add_action( 'init', function() {
    Logo thương hiệu (sitetop-logo.png, nền vàng) vẫn giữ nguyên cho các nơi khác.
    ============================================================ */
 add_action( 'init', function() {
-    $ver = 'icon-code-20260908-play';
+    $ver = 'icon-code-20260908-play-canlai';
     if ( get_option( 'sitetop_logo_version' ) !== $ver ) {
         update_option( 'sitetop_widget_icon', sitetop_logo_url( 'widget-play.png' ) );
         update_option( 'sitetop_logo_version', $ver );
