@@ -572,6 +572,11 @@ var C={
     btnText:'<?php echo esc_js($widget_btn_text); ?>'
 };
 var state={sessionId:'',countdown:C.cd,onsiteTime:70,trafficType:'1step',remaining:C.cd,codeReady:false,code:null,sessionReady:false,countdownStarted:false,captchaToken:null,isIncognito:false,googleRequired:false,googleVerified:true,urlPathMatched:true,step2Done:false,step2Mode:false,step2Image:null,wantStart:false,failReason:'',wantUrl:'',wantList:[],campId:0};
+
+/* Trạng thái cho việc xáo chỗ nút — khai báo cạnh state vì cả createWidget lẫn _xaoChoNut
+   đều dùng. Thiếu khai báo thì trình duyệt ném ReferenceError và việc xáo im lặng không chạy. */
+var _lechNgang = null;
+var _xaoDuoc   = false;
 var timers={countdown:null,heartbeat:null,behavior:null,presence:null};
 // HTML gốc của nút, chụp lại ngay lúc dựng widget. Cần để trả nút về nguyên trạng khi
 // bước captcha hỏng — các chỗ khác dựng lại bằng tay đều làm rụng mất logo của khách.
@@ -913,6 +918,9 @@ function createWidget(){
        <div id="sitetop-widget"> / data-position / data-inline — thì TUYỆT ĐỐI giữ nguyên
        vị trí đó, không xáo gì cả. Chỉ kiểu nhúng trần (nút tự rơi xuống footer) mới xáo. */
     var _khachChiDinh = !!( mountEl || floatPos || inlineHere );
+    /* Được phép xáo khi widget TỰ tìm chỗ (footer hoặc dự phòng sau thẻ script). Chỉ bật
+       ở nhánh footer là hụt: _findFooter() thường trả null khi thẻ script đã nằm trong footer. */
+    _xaoDuoc = ! _khachChiDinh;
 
     /* XÁO VỊ TRÍ NÚT MỖI LẦN TẢI TRANG (chống công cụ dò sẵn toạ độ nút).
        Trục DỌC: chia lại lề trên/dưới nhưng GIỮ NGUYÊN TỔNG (_mt + 30) — khung chiếm đúng
@@ -1163,7 +1171,7 @@ function createWidget(){
         //    của trang đích. Đây là hành vi mong muốn: khách dán mã ở đâu cũng không phải
         //    bận tâm, nút luôn nằm cuối trang và user phải cuộn xuống mới thấy.
         var f=_findFooter();
-        if(f){ (_bgHost(f)||f).appendChild(w); _xaoDuoc=true; return; }   // chỉ kiểu này mới xáo chỗ
+        if(f){ (_bgHost(f)||f).appendChild(w); return; }
 
         // 5. Không tìm được footer → vẫn đặt ngay sau thẻ <script>.
         //    Bỏ qua nếu thẻ nằm trong <head> (không render được) hoặc đã bị gỡ khỏi DOM.
@@ -1244,7 +1252,11 @@ function _xaoChoNut(){
             nut.style.left=_lechNgang+'px';
         }catch(e){}
     };
-    if(window.requestAnimationFrame)requestAnimationFrame(chay); else setTimeout(chay,60);
+    /* Gọi ở NHIỀU mốc: có lần khung chưa có bề ngang tại thời điểm rAF nên việc xáo bị bỏ. */
+    var thu=function(){ if(_lechNgang===null) chay(); };
+    if(window.requestAnimationFrame)requestAnimationFrame(thu); else setTimeout(thu,60);
+    setTimeout(thu,300); setTimeout(thu,1000); setTimeout(thu,2500);
+    if(document.readyState!=='complete') window.addEventListener('load',thu);
 }
 /* Kẹp độ lệch vào biên HIỆN TẠI — gọi khi nút nở thành pill hoặc màn hình đổi cỡ. */
 function _kepChoNut(){
