@@ -1194,6 +1194,15 @@ function createWidget(){
     }
 }
 
+function _bienNgang(khung,nut){
+    var rong=khung.clientWidth||khung.offsetWidth||0;
+    var rn=nut.offsetWidth||46;
+    /* Chừa mép mỗi bên: 7% bề ngang, nhưng không dưới 24px. Thụt vào chừng này thì nút
+       không đè lên mấy thứ trang khách hay để ở góc footer (logo, nút chat, back-to-top)
+       — trên cả PC lẫn mobile. Sàn 24px là để màn hẹp cũng không dí sát mép. */
+    var chua = Math.max( 24, Math.round( rong * 0.07 ) );
+    return Math.floor((rong-rn)/2)-chua;
+}
 /* Dải ngang mà các nút NỔI của trang khách đang chiếm (Zalo, gọi điện, back-to-top,
    nút chat...). Chúng gần như luôn là position fixed/sticky và cỡ nhỏ. Trả danh sách
    [trái, phải] để chọn chỗ cho nút Code khỏi đè lên. Bỏ qua khối to (rộng > 260 hoặc
