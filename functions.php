@@ -147,14 +147,19 @@ add_action( 'init', function() {
 }, 0 );
 
 /* ============================================================
-   LOGO - One-time migration: trỏ logo widget/brand sang ảnh
-   trong theme. Đổi $ver nếu thay ảnh lần nữa (giữ nguyên $ver thì
-   admin vẫn đổi được logo qua Cài đặt TT → Icon URL bình thường).
+   ICON NÚT LẤY CODE - One-time migration. Đổi $ver nếu thay ảnh lần
+   nữa (giữ nguyên $ver thì admin vẫn đổi được qua Cài đặt TT → Icon URL).
+
+   08/09/2026: nút lấy code đổi sang widget-play.png (nút play xanh) theo yêu
+   cầu chủ site. CỐ Ý dùng file RIÊNG chứ không đè lên sitetop-logo.png:
+   option sitetop_widget_icon chỉ điều khiển NÚT WIDGET trên web đối tác và
+   icon trong câu hướng dẫn ở trang unlock — đúng hai chỗ "nút lấy code".
+   Logo thương hiệu (sitetop-logo.png, nền vàng) vẫn giữ nguyên cho các nơi khác.
    ============================================================ */
 add_action( 'init', function() {
-    $ver = 'sitetop-logo-20260905-vang';
+    $ver = 'icon-code-20260908-play';
     if ( get_option( 'sitetop_logo_version' ) !== $ver ) {
-        update_option( 'sitetop_widget_icon', sitetop_logo_url( 'sitetop-logo.png' ) );
+        update_option( 'sitetop_widget_icon', sitetop_logo_url( 'widget-play.png' ) );
         update_option( 'sitetop_logo_version', $ver );
     }
 } );
