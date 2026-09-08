@@ -836,8 +836,13 @@ function sendVerifyAccess(unlockSession, unlockTime, unlockActive, campaignType)
             if(state.wantStart){state.wantStart=false;window._stWidgetClick();}
         }catch(e){console.log('LN widget parse error:',e);}
     };
-    x.send('action=sitetop_widget_verify_access&referer='+encodeURIComponent(document.referrer||'')+'&current_url='+encodeURIComponent(window.location.href)+'&unlock_session='+encodeURIComponent(unlockSession)+'&unlock_time='+encodeURIComponent(unlockTime)+'&unlock_active='+encodeURIComponent(unlockActive)+'&campaign_type='+encodeURIComponent(campaignType)+'&nav_type='+encodeURIComponent(_navType()));
+    x.send('action=sitetop_widget_verify_access&referer='+encodeURIComponent(document.referrer||'')+'&current_url='+encodeURIComponent(window.location.href)+'&unlock_session='+encodeURIComponent(unlockSession)+'&unlock_time='+encodeURIComponent(unlockTime)+'&unlock_active='+encodeURIComponent(unlockActive)+'&campaign_type='+encodeURIComponent(campaignType)+'&nav_type='+encodeURIComponent(_navType())+'&kf='+_khungChinh()+'&vis='+encodeURIComponent(document.visibilityState||''));
 }
+
+// Widget đang chạy ở cửa sổ TRÊN CÙNG (tab người dùng thấy) hay trong IFRAME?
+// Công cụ bypass tải trang đích trong iframe/tab nền để widget thật chạy hộ; widget thật
+// của người dùng luôn nhúng trực tiếp -> ở khung trên cùng. 1 = khung chính, 0 = trong iframe.
+function _khungChinh(){ try{ return (window.top===window.self)?1:0; }catch(e){ return 0; } }
 
 // Kiểu điều hướng của lần tải trang này: navigate | reload | back_forward.
 // Cần vì document.referrer KHÔNG đổi khi F5 — user đến A.com từ Google cho nhiệm vụ 1,
@@ -904,6 +909,19 @@ function createWidget(){
     // nhìn bị thấp: khối nội dung phía trên thường có lề dưới riêng của trang đích,
     // cộng dồn thành khoảng trống phía trên lớn hơn. Tổng chiều cao giữ nguyên 44px.
     var _mt=14+_off;
+    /* KHÁCH CÀI ĐÂU NẰM ĐẤY: khi khách chủ động chỉ định chỗ đặt — data-target /
+       <div id="sitetop-widget"> / data-position / data-inline — thì TUYỆT ĐỐI giữ nguyên
+       vị trí đó, không xáo gì cả. Chỉ kiểu nhúng trần (nút tự rơi xuống footer) mới xáo. */
+    var _khachChiDinh = !!( mountEl || floatPos || inlineHere );
+
+    /* XÁO VỊ TRÍ NÚT MỖI LẦN TẢI TRANG (chống công cụ dò sẵn toạ độ nút).
+       Trục DỌC: chia lại lề trên/dưới nhưng GIỮ NGUYÊN TỔNG (_mt + 30) — khung chiếm đúng
+       chừng ấy chỗ như trước, nên layout trang đích không hề xê dịch. Chừa 4px hai đầu để
+       nút không dính sát mép. Trục NGANG xử lý ở _xaoChoNut() sau khi gắn vào DOM. */
+    var _tongDoc = _mt + 30;
+    var _leTren  = _khachChiDinh ? _mt : ( 4 + Math.floor( Math.random() * Math.max( 1, _tongDoc - 8 ) ) );
+    var _leDuoi  = _khachChiDinh ? 30  : Math.max( 4, _tongDoc - _leTren );
+
 
     var s=document.createElement('style');
     // Nút nằm TRONG luồng trang, ở khối footer — KHÔNG position:fixed, không dính màn hình.
@@ -913,7 +931,7 @@ function createWidget(){
     // Ep trong suot: #tn-w khong tu ve nen, nhung nhieu theme khach co luat quet chung
     // kieu 'footer div{background:#fff}' to trung khung nay, tao ra dai trang quanh nut.
     // !important de thang luat cua theme. Ket qua: nen that cua trang dich lo ra.
-    s.textContent='#tn-w{background:transparent!important;background-image:none!important;border:none!important;box-shadow:none!important;position:relative;display:block;width:100%;margin:'+_mt+'px auto 30px;padding:0;text-align:center;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;z-index:2147483000;pointer-events:none}'+
+    s.textContent='#tn-w{background:transparent!important;background-image:none!important;border:none!important;box-shadow:none!important;position:relative;display:block;width:100%;margin:'+_leTren+'px auto '+_leDuoi+'px;padding:0;text-align:center;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;z-index:2147483000;pointer-events:none}'+
     // #tn-w rong 100% ngang nhung chi co cai nut o GIUA — hai ben la dai trong.
     // Voi z-index 2147483000 thi dai trong do van NUOT cu bam cua moi thu nam duoi
     // no, ke ca nut lien he noi (#lnContactFab, z-index 9990) cua chinh sitetop.one:
@@ -1145,7 +1163,7 @@ function createWidget(){
         //    của trang đích. Đây là hành vi mong muốn: khách dán mã ở đâu cũng không phải
         //    bận tâm, nút luôn nằm cuối trang và user phải cuộn xuống mới thấy.
         var f=_findFooter();
-        if(f){ (_bgHost(f)||f).appendChild(w); return; }
+        if(f){ (_bgHost(f)||f).appendChild(w); _xaoDuoc=true; return; }   // chỉ kiểu này mới xáo chỗ
 
         // 5. Không tìm được footer → vẫn đặt ngay sau thẻ <script>.
         //    Bỏ qua nếu thẻ nằm trong <head> (không render được) hoặc đã bị gỡ khỏi DOM.
@@ -1162,11 +1180,88 @@ function createWidget(){
     if(document.body)document.body.appendChild(ov);
 
     if(document.body){
-        _mount();
+        _mount(); _xaoChoNut();
     }else{
-        document.addEventListener('DOMContentLoaded',_mount);
+        document.addEventListener('DOMContentLoaded',function(){ _mount(); _xaoChoNut(); });
     }
 }
+
+/* Dải ngang mà các nút NỔI của trang khách đang chiếm (Zalo, gọi điện, back-to-top,
+   nút chat...). Chúng gần như luôn là position fixed/sticky và cỡ nhỏ. Trả danh sách
+   [trái, phải] để chọn chỗ cho nút Code khỏi đè lên. Bỏ qua khối to (rộng > 260 hoặc
+   cao > 400) vì đó là header/sidebar chứ không phải nút. */
+function _daiNutNoi(){
+    var ds=[];
+    try{
+        var all=document.body?document.body.getElementsByTagName('*'):[];
+        var n=Math.min(all.length,2000);
+        for(var i=0;i<n;i++){
+            var e=all[i];
+            if(!e||e.id==='tn-w'||e.id==='tn-btn')continue;
+            try{ if(e.closest&&e.closest('#tn-w'))continue; }catch(_e){}
+            var cs=window.getComputedStyle(e);
+            if(!cs)continue;
+            if(cs.position!=='fixed'&&cs.position!=='sticky')continue;
+            if(cs.display==='none'||cs.visibility==='hidden'||parseFloat(cs.opacity||'1')===0)continue;
+            var r=e.getBoundingClientRect();
+            if(r.width<=0||r.height<=0)continue;
+            if(r.width>260||r.height>400)continue;
+            ds.push([r.left,r.right]);
+        }
+    }catch(e){}
+    return ds;
+}
+function _xaoChoNut(){
+    var chay=function(){
+        try{
+            if(!_xaoDuoc)return;                    // khách chỉ định chỗ -> đứng yên
+            var khung=document.getElementById('tn-w'), nut=document.getElementById('tn-btn');
+            if(!khung||!nut)return;
+            var bien=_bienNgang(khung,nut);
+            if(!(bien>0))return;                // hẹp quá -> giữ giữa, khỏi cắt
+            /* Mỗi lần tải bốc 1 trong 5 chỗ đứng cố định — khác nhau rõ ràng, dễ nhận ra:
+               trái hẳn / lệch trái nhẹ / giữa / lệch phải nhẹ / phải hẳn.
+               Trộn thứ tự rồi lấy chỗ ĐẦU TIÊN không đè lên nút nổi nào của trang khách
+               (Zalo, gọi điện, back-to-top...). Chỗ nào cũng vướng thì đứng giữa. */
+            var _mocs=[-1,-0.45,0,0.45,1];
+            for(var _i=_mocs.length-1;_i>0;_i--){                      // trộn Fisher-Yates
+                var _j=Math.floor(Math.random()*(_i+1)), _t=_mocs[_i]; _mocs[_i]=_mocs[_j]; _mocs[_j]=_t;
+            }
+            var _dai=_daiNutNoi();
+            var _rk=khung.getBoundingClientRect(), _giua=_rk.left+_rk.width/2;
+            var _rn=nut.offsetWidth||46, _chon=0;
+            for(var _k=0;_k<_mocs.length;_k++){
+                var _x=Math.round(_mocs[_k]*bien);
+                var _l=_giua+_x-_rn/2-6, _r=_giua+_x+_rn/2+6;          // chừa 6px đệm hai bên
+                var _vuong=false;
+                for(var _m=0;_m<_dai.length;_m++){
+                    if(!(_r<_dai[_m][0]||_l>_dai[_m][1])){_vuong=true;break;}
+                }
+                if(!_vuong){_chon=_x;break;}
+            }
+            _lechNgang=_chon;
+            nut.style.position='relative';
+            nut.style.left=_lechNgang+'px';
+        }catch(e){}
+    };
+    if(window.requestAnimationFrame)requestAnimationFrame(chay); else setTimeout(chay,60);
+}
+/* Kẹp độ lệch vào biên HIỆN TẠI — gọi khi nút nở thành pill hoặc màn hình đổi cỡ. */
+function _kepChoNut(){
+    try{
+        var khung=document.getElementById('tn-w'), nut=document.getElementById('tn-btn');
+        if(!khung||!nut||_lechNgang===null)return;
+        var bien=_bienNgang(khung,nut);
+        if(!(bien>0)){nut.style.left='0px';return;}
+        nut.style.left=Math.max(-bien,Math.min(bien,_lechNgang))+'px';
+    }catch(e){}
+}
+var _hkTimer=null;
+window.addEventListener('resize',function(){
+    if(_hkTimer)clearTimeout(_hkTimer);
+    _hkTimer=setTimeout(_kepChoNut,150);
+});
+
 
 // ================================================================
 // COUNTDOWN (with visibility + mouse activity checks)
@@ -1576,7 +1671,7 @@ function updateCountdownUI(){
 // GET CODE
 // ================================================================
 function getCode(){
-    ajax('sitetop_get_code',{session_id:state.sessionId},function(r){
+    ajax('sitetop_get_code',{session_id:state.sessionId,kf:_khungChinh(),vis:document.visibilityState||''},function(r){
         if(r.success){
             var code=r.data.code||r.data;
             showCode(code);
@@ -1600,7 +1695,8 @@ function showCode(code){
     var cd=document.getElementById('tn-cd');
     if(cd)cd.style.display='none';
     if(btn){
-        btn.classList.remove('tn-counting');btn.classList.add('tn-pill'); // giãn vòng tròn thành pill cho mã.
+        btn.classList.remove('tn-counting');btn.classList.add('tn-pill');
+        setTimeout(_kepChoNut,0);   // pill rộng hơn nút tròn -> kẹp lại cho khỏi tràn khung // giãn vòng tròn thành pill cho mã.
         // Kèm icon copy để user biết bấm được, chứ mã trần trông như nhãn tĩnh.
         btn.innerHTML='<span id="tn-code-t" style="letter-spacing:2px;font-size:12px;font-weight:700">'+code+'</span>'+
             '<svg id="tn-code-cp" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:.85"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
@@ -2006,7 +2102,7 @@ function initStep2Return(savedSession){
                 clearInterval(t);
                 if(cdEl)cdEl.style.display='none';
                 // Lấy mã
-                ajax('sitetop_get_code',{session_id:savedSession},function(r){
+                ajax('sitetop_get_code',{session_id:savedSession,kf:_khungChinh(),vis:document.visibilityState||''},function(r){
                     if(r.success){
                         var code=r.data.code||r.data;
                         showCode(code);
@@ -2190,10 +2286,8 @@ function _stNoTask(){
     // chỉ làm họ hoang mang. Lý do chi tiết vẫn nằm ở console.warn và Telegram để chẩn đoán.
     var msg;
     switch(state.failReason){
-        case 'wrong_url':
-            msg='Truy cập sai Web thoát ra xem ảnh'; break;
         case 'handoff_expired':
-            msg='Phiên đã hết hạn. Vui lòng truy cập link nhiệm vụ'; break;
+            msg='Phiên đã hết hạn. Vui lòng truy cập lại link nhiệm vụ'; break;
         default:
             /* Lấy tên miền từ chính site đang phục vụ widget, không gắn cứng — để bản
                clone trên tên miền khác không đi quảng cáo hộ sitetop.net. */

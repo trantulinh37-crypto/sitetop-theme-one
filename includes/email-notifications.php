@@ -385,6 +385,33 @@ function sitetop_send_withdrawal_status_email( $withdrawal_id, $new_status ) {
    REPORT ERROR EMAIL
    ============================================================ */
 
+/** Tên ứng dụng đang mở trang (WebView trong app).
+ *  sitetop_ua_device() chỉ đọc hệ điều hành + trình duyệt, nên UA của app Google/Facebook
+ *  bị nó gọi thành "Chrome"/"Safari". Đây lại đúng nhóm hay báo "không thấy nút lấy mã",
+ *  nên thông báo cần tách bạch. Chỉ dùng cho thông báo — không đụng cột thiết bị của Admin.
+ *  Trả '' khi là trình duyệt thật. */
+function sitetop_ua_ung_dung( $ua ) {
+    $ua = (string) $ua;
+    if ( $ua === '' ) return '';
+    if ( stripos( $ua, 'GSA/' ) !== false )        return 'app Google';
+    if ( preg_match( '/FBAV|FBAN|FB_IAB/i', $ua ) ) return 'app Facebook';
+    if ( stripos( $ua, 'Instagram' ) !== false )   return 'app Instagram';
+    if ( stripos( $ua, 'Zalo' ) !== false )        return 'app Zalo';
+    if ( stripos( $ua, 'TikTok' ) !== false || stripos( $ua, 'musical_ly' ) !== false ) return 'app TikTok';
+    if ( stripos( $ua, 'Line/' ) !== false )       return 'app Line';
+    if ( stripos( $ua, 'MicroMessenger' ) !== false ) return 'app WeChat';
+    if ( stripos( $ua, '; wv)' ) !== false )       return 'WebView trong app'; // dấu chung, để cuối
+    return '';
+}
+
+/** Dòng "Thiết bị" cho thông báo báo lỗi: hệ điều hành · trình duyệt (+ app nếu mở trong app). */
+function sitetop_mo_ta_thiet_bi( $ua ) {
+    if ( ! function_exists( 'sitetop_ua_device' ) ) return '';
+    $d   = sitetop_ua_device( $ua );
+    $app = sitetop_ua_ung_dung( $ua );
+    return $app ? ( $d['label'] . ' (' . $app . ')' ) : $d['label'];
+}
+
 /**
  * Email admin khi user báo lỗi mã xác minh
  */
@@ -409,6 +436,7 @@ function sitetop_send_report_error_email( $session_id, $error_type, $error_messa
             $rows['Chiến dịch'] = $visit->campaign_title ?: '—';
             $rows['Step']       = $visit->step;
             $rows['IP']         = $visit->ip_address;
+            $rows['Thiết bị']   = sitetop_mo_ta_thiet_bi( $visit->user_agent ?? '' );
         }
         $rows['Loại lỗi']  = $error_type;
         $rows['Nội dung']  = $error_message;

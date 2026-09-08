@@ -33,6 +33,105 @@ if ( ! function_exists( 'sitetop_is_scripted_client' ) ) {
     }
 }
 
+/* PHÁT HIỆN CÔNG CỤ BYPASS DẠNG USERSCRIPT (Tampermonkey/Violentmonkey).
+   Bộ lọc bot theo User-Agent ở trên KHÔNG bắt được loại này: chúng gọi bằng
+   GM_xmlhttpRequest nên mang đúng UA Chrome của trình duyệt thật. Nhưng GM_xmlhttpRequest
+   phát request từ NỀN của tiện ích, không kèm nhóm header Sec-Fetch-* mà trình duyệt tự
+   gắn cho MỌI fetch/XHR thật của trang. Một UA tự nhận là Chrome/Chromium/Edge đời mới
+   (đều gửi Sec-Fetch từ v76) mà lại THIẾU HẲN Sec-Fetch-Mode = mâu thuẫn → client giả lập.
+   Chỉ xét nhóm Chromium >= 90 để chừa biên rất rộng; trình duyệt cũ/lạ (kể cả Safari,
+   webview không khai Chrome) trả false — KHÔNG kết luận, nên không thể oan người thật. */
+if ( ! function_exists( 'sitetop_dau_hieu_cong_cu' ) ) {
+    function sitetop_dau_hieu_cong_cu() {
+        $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+        if ( ! preg_match( '#(?:Chrome|Chromium|Edg)/(\d+)#', $ua, $m ) ) return false;
+        if ( (int) $m[1] < 90 ) return false;
+        // Trình duyệt thật gửi Sec-Fetch-Mode cho mọi fetch/XHR; GM_xmlhttpRequest thì không.
+        return ! isset( $_SERVER['HTTP_SEC_FETCH_MODE'] );
+    }
+}
+
+/* Ghi nhận một phiên đang bị thao túng bằng công cụ: đặt cờ để KHÂU TRẢ THƯỞNG
+   (sitetop_verify_and_pay) từ chối tiền — KHÔNG chặn nội dung, tránh oan người thật —
+   rồi bắn cảnh báo Telegram cho admin (mỗi IP tối đa 1 lần / 10 phút cho khỏi ngập). */
+if ( ! function_exists( 'sitetop_ghi_nhan_cong_cu' ) ) {
+    function sitetop_ghi_nhan_cong_cu( $sid ) {
+        $sid = (string) $sid;
+        if ( $sid === '' ) return;
+        if ( get_transient( 'sitetop_congcu_' . $sid ) ) return; // đã ghi, khỏi lặp
+        set_transient( 'sitetop_congcu_' . $sid, 1, 2 * HOUR_IN_SECONDS );
+
+        if ( ! function_exists( 'sitetop_telegram_notify_admin' ) ) return;
+        $ip = function_exists( 'sitetop_get_real_ip' ) ? sitetop_get_real_ip() : ( $_SERVER['REMOTE_ADDR'] ?? '' );
+        $khoa = 'st_congcu_bao_' . md5( (string) $ip );
+        if ( get_transient( $khoa ) ) return;                    // đã báo IP này gần đây
+        set_transient( $khoa, 1, 10 * MINUTE_IN_SECONDS );
+
+        global $wpdb; $p = $wpdb->prefix . 'sitetop_';
+        $v = $wpdb->get_row( $wpdb->prepare(
+            "SELECT v.step, kc.title AS camp, u.user_login
+               FROM {$p}shortlink_visits v
+               LEFT JOIN {$p}keyword_campaigns kc ON kc.id = v.campaign_id
+               LEFT JOIN {$wpdb->users} u ON u.ID = v.user_id
+              WHERE v.session_id = %s", $sid ) );
+        sitetop_telegram_notify_admin( '🕵️ Nghi dùng công cụ bypass', array(
+            'User'       => $v->user_login ?? '—',
+            'Chiến dịch' => $v->camp ?? '—',
+            'Session'    => $sid,
+            'Step'       => $v->step ?? '—',
+            'IP'         => $ip,
+            'Thiết bị'   => function_exists( 'sitetop_mo_ta_thiet_bi' )
+                ? sitetop_mo_ta_thiet_bi( $_SERVER['HTTP_USER_AGENT'] ?? '' ) : '',
+            'Dấu hiệu'   => 'UA Chrome nhưng thiếu Sec-Fetch (GM_xmlhttpRequest)',
+        ) );
+    }
+}
+
+/* Mức xử lý công cụ ở 2 cổng widget-only (widget_verify_access + get_code). Hai cổng này
+   CHỈ widget thật (cross-origin từ web khách, XHR chuẩn) gọi, nên request thật luôn kèm
+   Sec-Fetch; công cụ giả Origin bằng GM_xmlhttpRequest thì thiếu. Nhưng vài webview/trình
+   duyệt lạ ở VN khai UA Chrome mà cũng thiếu Sec-Fetch -> chặn cứng NGAY có thể oan.
+   Nên dùng 3 mức qua option congcu_hard_block:
+     0 = tắt hẳn (chỉ còn lớp cắt thưởng congcu_bypass_guard)
+     1 = QUAN SÁT: cảnh báo Telegram + gắn cờ cắt thưởng, KHÔNG chặn nội dung
+     2 = CHẶN CỨNG (mặc định): không cấp url_matched / không cấp mã.
+   Chạy mức 1 vài ngày, soi cảnh báo có dính người thật không, sạch thì nâng lên 2. */
+if ( ! function_exists( 'sitetop_congcu_muc' ) ) {
+    function sitetop_congcu_muc() {
+        if ( ! function_exists( 'sitetop_dau_hieu_cong_cu' ) || ! sitetop_dau_hieu_cong_cu() ) return 0;
+        return (int) sitetop_get_option( 'congcu_hard_block', 2 );
+    }
+}
+
+/* Widget báo nó đang chạy trong IFRAME (kf=0) — dấu hiệu công cụ tải trang đích ở tab/iframe
+   nền để widget thật chạy hộ. Widget người dùng thật nhúng trực tiếp -> kf=1. kf THIẾU (widget
+   bản cũ) -> coi như khung chính, KHÔNG xử lý (fail-open, tránh oan lúc web khách chưa cập nhật).
+   Mức qua option iframe_hard_block: 0 tắt / 1 quan sát (cảnh báo) / 2 chặn. Mặc định 1 để ĐO
+   trước — sợ có web khách nhúng widget trong iframe hợp lệ; sạch rồi mới nâng 2. */
+if ( ! function_exists( 'sitetop_iframe_muc' ) ) {
+    function sitetop_iframe_muc() {
+        if ( ( $_POST['kf'] ?? '' ) !== '0' ) return 0;       // khung chính hoặc thiếu -> bỏ qua
+        return (int) sitetop_get_option( 'iframe_hard_block', 1 );
+    }
+}
+/* Cảnh báo Telegram khi bắt widget chạy trong iframe ẩn (throttle 1 IP / 10 phút). */
+if ( ! function_exists( 'sitetop_canh_bao_iframe' ) ) {
+    function sitetop_canh_bao_iframe( $sid ) {
+        if ( ! function_exists( 'sitetop_telegram_notify_admin' ) ) return;
+        $ip = function_exists( 'sitetop_get_real_ip' ) ? sitetop_get_real_ip() : ( $_SERVER['REMOTE_ADDR'] ?? '' );
+        $khoa = 'st_iframe_bao_' . md5( (string) $ip );
+        if ( get_transient( $khoa ) ) return;
+        set_transient( $khoa, 1, 10 * MINUTE_IN_SECONDS );
+        sitetop_telegram_notify_admin( '🖼 Widget chạy trong iframe ẩn (nghi công cụ)', array(
+            'Session'  => (string) $sid,
+            'IP'       => $ip,
+            'Origin'   => substr( (string) ( $_SERVER['HTTP_ORIGIN'] ?? '' ), 0, 80 ),
+            'Thiết bị' => function_exists( 'sitetop_mo_ta_thiet_bi' ) ? sitetop_mo_ta_thiet_bi( $_SERVER['HTTP_USER_AGENT'] ?? '' ) : '',
+            'Dấu hiệu' => 'kf=0 — widget báo đang trong iframe/tab nền',
+        ) );
+    }
+}
+
 // Shorten URL (logged-in users only)
 add_action('wp_ajax_sitetop_shorten_url', 'sitetop_ajax_shorten_url');
 function sitetop_ajax_shorten_url() {
@@ -60,6 +159,12 @@ function sitetop_ajax_get_code() {
     if (!$sid) wp_send_json_error('Missing session');
     $rate = sitetop_rate_limit_check('get_code');
     if (!$rate['allowed']) wp_send_json_error('Rate limited');
+    $_muc_cc = sitetop_congcu_muc();
+    if ( $_muc_cc >= 1 ) sitetop_ghi_nhan_cong_cu( $sid );                 // cảnh báo + cắt thưởng
+    if ( $_muc_cc >= 2 ) wp_send_json_error( array( 'message' => 'Hãy mở trang đích để lấy mã.' ) ); // chặn cấp mã
+    $_muc_if = sitetop_iframe_muc();
+    if ( $_muc_if >= 1 ) sitetop_canh_bao_iframe( $sid );
+    if ( $_muc_if >= 2 ) wp_send_json_error( array( 'message' => 'Hãy mở trang đích trực tiếp để lấy mã.' ) );
     $result = sitetop_get_widget_code($sid);
     if (is_wp_error($result)) wp_send_json_error(array('message'=>$result->get_error_message(),'data'=>$result->get_error_data()));
     wp_send_json_success(array('code'=>$result));
@@ -74,6 +179,7 @@ function sitetop_ajax_verify() {
     if (!$sid || !$code) wp_send_json_error('Thiếu thông tin');
     $rate = sitetop_rate_limit_check('verify_code');
     if (!$rate['allowed']) wp_send_json_error('Quá nhiều lần thử');
+    if ( function_exists( 'sitetop_dau_hieu_cong_cu' ) && sitetop_dau_hieu_cong_cu() ) sitetop_ghi_nhan_cong_cu( $sid );
     $result = sitetop_verify_and_pay($sid, $code);
     if (is_wp_error($result)) wp_send_json_error(array('message'=>$result->get_error_message(),'data'=>$result->get_error_data()));
     wp_send_json_success($result);
@@ -446,6 +552,7 @@ function sitetop_ajax_verify_shortlink_code() {
         ));
     }
 
+    if ( function_exists( 'sitetop_dau_hieu_cong_cu' ) && sitetop_dau_hieu_cong_cu() ) sitetop_ghi_nhan_cong_cu( $sid );
     $result = sitetop_verify_and_pay($sid, $code);
     if ( is_wp_error($result) ) {
         wp_send_json_error(array('message' => $result->get_error_message(), 'data' => $result->get_error_data()));
@@ -606,24 +713,51 @@ function sitetop_ajax_change_keyword() {
 
     if ( ! $campaign ) wp_send_json_error(array('message' => 'Không có chiến dịch khác phù hợp'));
 
-    $wpdb->update("{$p}shortlink_visits", array(
-        'campaign_id' => $campaign->id,
-        'order_id' => $campaign->order_id ?? 0,
-        'step' => 'started',
-        'created_at' => sitetop_current_time(),
-        'verify_code' => null,
-        'code_shown_at' => null,
-        'from_google' => 0,
-        'url_matched' => 0,
-    ), array('session_id' => $sid, 'ip_address' => $ip));
+    /* ĐỔI NHIỆM VỤ = PHIÊN HOÀN TOÀN MỚI.
+       Bản cũ chỉ UPDATE campaign_id ngay trên hàng cũ và KHÔNG trả session mới, trong khi
+       client đã chờ res.data.new_session_id — không có thì nó rơi vào window.location.reload(),
+       tức nạp lại ĐÚNG phiên cũ. Hậu quả: nhiệm vụ B thừa hưởng nguyên trạng thái của A —
+       đồng hồ (transient sitetop_timer_ khiến widget nhận resume_countdown = đếm tiếp 56 giây
+       còn lại của A), cờ Cloudflare (sitetop_captcha_ok_) nên bỏ luôn bước xác minh, và cả
+       dấu bàn giao (sitetop_handoff_). Nay cấp hẳn session_id mới cho B. */
+    $new_sid  = sitetop_generate_session_id();
+    $ip_quota = sitetop_ip_view_quota( $ip, (int) $visit->shortlink_id );
+    $tao_moi  = $wpdb->insert( "{$p}shortlink_visits", array(
+        'shortlink_id'      => (int) $visit->shortlink_id,
+        'user_id'           => (int) $visit->user_id,   // chủ shortlink, không phải người xem
+        'session_id'        => $new_sid,
+        'campaign_id'       => (int) $campaign->id,
+        'order_id'          => (int) ( $campaign->order_id ?? 0 ),
+        'ip_address'        => $ip,
+        'original_ip'       => $ip,
+        'user_agent'        => sanitize_text_field( $_SERVER['HTTP_USER_AGENT'] ?? '' ),
+        'referer'           => (string) ( $visit->referer ?? '' ),
+        'step'              => 'started',
+        'ip_limit_exceeded' => $ip_quota['allowed'] ? 0 : 1,
+        'created_at'        => sitetop_current_time(),   // đồng hồ B tính từ ĐÂY
+    ) );
+    if ( ! $tao_moi ) wp_send_json_error( array( 'message' => 'Không tạo được nhiệm vụ mới, vui lòng thử lại' ) );
 
-    // Clear old transients
-    delete_transient('sitetop_widget_code_ready_' . $sid);
-    delete_transient('sitetop_code_copied_' . $sid);
-    delete_transient('sitetop_verify_code_' . $sid);
-    delete_transient('sitetop_google_clicked_' . $sid);
+    /* Đóng phiên cũ. Dùng 'expired' — giá trị step đã có sẵn trong hệ thống — thay vì xoá
+       hàng, để thống kê vẫn thấy lượt này đã mở rồi bỏ dở. KHÔNG cộng total_clicks vì đây
+       không phải một lượt bấm shortlink mới. */
+    $wpdb->update( "{$p}shortlink_visits", array( 'step' => 'expired' ), array( 'id' => (int) $visit->id ) );
+
+    /* Xoá SẠCH mọi dấu vết của phiên cũ — đủ 14 khoá, không sót cái nào. Sót một cái là
+       nhiệm vụ B lại thừa hưởng đúng thứ đó. */
+    foreach ( array(
+        'sitetop_widget_code_ready_', 'sitetop_code_copied_',  'sitetop_verify_code_',
+        'sitetop_google_clicked_',    'sitetop_captcha_ok_',   'sitetop_handoff_',
+        'sitetop_hoff_loi_',          'sitetop_timer_',        'sitetop_widget_cd_',
+        'sitetop_widget_code_',       'sitetop_seen_',         'sitetop_left_',
+        'sitetop_toofast_',           'sitetop_congcu_',
+    ) as $_khoa ) {
+        delete_transient( $_khoa . $sid );
+    }
+
 
     wp_send_json_success(array(
+        'new_session_id' => $new_sid,   // client redirect sang ?sid= này -> mọi state JS dựng lại từ đầu
         'campaign_id' => $campaign->id,
         'keyword' => $campaign->keyword,
         'target_url' => $campaign->target_url,
@@ -907,6 +1041,16 @@ function sitetop_ajax_widget_verify_access() {
     // C2 hardening: a legit widget runs in a real browser. Reject obvious scripted clients
     // (curl/python/headless) that forge the Origin header to set url_matched/from_google.
     if ( sitetop_is_scripted_client() ) { wp_send_json_error('Forbidden'); return; }
+
+    // Công cụ bypass giả Origin=trang-đích bằng GM_xmlhttpRequest (không mở web khách thật).
+    $_muc_cc = sitetop_congcu_muc();
+    if ( $_muc_cc >= 1 ) sitetop_ghi_nhan_cong_cu( sanitize_text_field( $_POST['session_id'] ?? '' ) );
+    if ( $_muc_cc >= 2 ) { wp_send_json_error('Forbidden'); return; }
+
+    // Widget báo đang trong iframe (kf=0) — công cụ tải trang đích ở nền.
+    $_muc_if = sitetop_iframe_muc();
+    if ( $_muc_if >= 1 ) sitetop_canh_bao_iframe( sanitize_text_field( $_POST['session_id'] ?? '' ) );
+    if ( $_muc_if >= 2 ) { wp_send_json_error('Forbidden'); return; }
 
     global $wpdb;
     $p = $wpdb->prefix . 'sitetop_';

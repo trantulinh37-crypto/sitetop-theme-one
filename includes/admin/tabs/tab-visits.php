@@ -71,6 +71,8 @@ elseif($status_filter === 'in_progress'){ $where .= $wpdb->prepare(" AND v.step 
 elseif($status_filter === 'expired'){ $where .= $wpdb->prepare(" AND v.step != 'verified' AND v.created_at <= %s", $expiry_cutoff); }
 if($reason_filter === 'earned'){ $where .= " AND v.reward_paid = 1"; }
 elseif($reason_filter === 'bypass'){ $where .= " AND v.is_bypass = 1"; }
+elseif($reason_filter === 'cong_cu'){ $where .= " AND v.skip_reasons LIKE %s"; $args[] = '%cong_cu_bypass%'; }
+elseif($reason_filter === 'timer_manip'){ $where .= " AND v.skip_reasons LIKE %s"; $args[] = '%timer_manipulation%'; }
 elseif($reason_filter === 'change_ip'){ $where .= " AND v.step='verified' AND v.reward_paid=0 AND v.ip_changed = 1"; }
 elseif($reason_filter === 'max_ip'){ $where .= " AND v.step='verified' AND v.reward_paid=0 AND v.ip_limit_exceeded = 1"; }
 elseif($reason_filter === 'adblock'){ $where .= " AND v.step='verified' AND v.reward_paid=0 AND v.adblock_detected = 1"; }
@@ -252,11 +254,13 @@ $total_pages = ceil(max(1,$total) / $per_page);
         <option value="earned" <?php selected($reason_filter,'earned'); ?>>Earned</option>
         <option value="self_click" <?php selected($reason_filter,'self_click'); ?>>⚠ Self-click</option>
         <option value="bypass" <?php selected($reason_filter,'bypass'); ?>>Bypass</option>
+        <option value="cong_cu" <?php selected($reason_filter,'cong_cu'); ?>>🕵 Công cụ bypass</option>
+        <option value="timer_manip" <?php selected($reason_filter,'timer_manip'); ?>>Tua giờ</option>
         <option value="change_ip" <?php selected($reason_filter,'change_ip'); ?>>Đổi IP</option>
         <option value="max_ip" <?php selected($reason_filter,'max_ip'); ?>>IP limit</option>
         <option value="adblock" <?php selected($reason_filter,'adblock'); ?>>Adblock</option>
         <option value="no_google" <?php selected($reason_filter,'no_google'); ?>>Chưa qua Google</option>
-        <option value="no_url_match" <?php selected($reason_filter,'no_url_match'); ?>>Chưa khớp URL</option>
+        <option value="no_url_match" <?php selected($reason_filter,'no_url_match'); ?>>Chưa khớp Web</option>
         <option value="no_code" <?php selected($reason_filter,'no_code'); ?>>Không lấy mã</option>
         <option value="code_expired" <?php selected($reason_filter,'code_expired'); ?>>Mã hết hạn</option>
         <option value="adblock_mode2" <?php selected($reason_filter,'adblock_mode2'); ?>>Adblock chặn widget</option>
@@ -523,8 +527,10 @@ $total_pages = ceil(max(1,$total) / $per_page);
                     'customer_balance_error'   => '<span style="color:#dc3232" title="Lỗi truy vấn số dư khách hàng">Lỗi số dư KH</span>',
                     'customer_not_paid'        => '<span style="color:#d97706" title="Khách hàng không bị trừ tiền cho lượt này">KH không trả</span>',
                     'bypass_detected'          => '<span style="color:#dc3232" title="Thời gian onsite quá ngắn (bypass)">Bypass</span>',
+                    'cong_cu_bypass'           => '<span style="color:#dc3232" title="Nghi dùng công cụ/userscript bypass — UA Chrome nhưng thiếu Sec-Fetch">Công cụ bypass</span>',
+                    'timer_manipulation'       => '<span style="color:#dc3232" title="Nhiều lần đòi mã khi chưa đủ giờ — dấu hiệu tua đồng hồ">Tua giờ</span>',
                     'google_check_failed'      => '<span style="color:#dc3232" title="Chưa qua Google hoặc click referrer không hợp lệ">Chưa qua Google</span>',
-                    'url_not_matched'          => '<span style="color:#dc3232" title="Chưa khớp URL đích">Chưa khớp URL</span>',
+                    'url_not_matched'          => '<span style="color:#dc3232" title="Chưa từng đứng ở web đích (so theo tên miền)">Chưa khớp Web</span>',
                     'ip_changed'               => '<span style="color:#dc3232" title="IP thay đổi trong quá trình làm">Đổi IP</span>',
                     'ip_changed_premarked'     => '<span style="color:#dc3232" title="Đã đánh dấu đổi IP từ các bước trước">Đổi IP</span>',
                     'ip_limit_exceeded'        => '<span style="color:#dc3232" title="Vượt quá giới hạn lượt làm của IP trong 24h">IP limit</span>',
@@ -545,7 +551,7 @@ $total_pages = ceil(max(1,$total) / $per_page);
                 if (!$row->customer_paid) $reasons[] = '<span style="color:#856404">KH chưa trả</span>';
                 if (empty($row->from_google) && !empty($row->keyword)) $reasons[] = '<span style="color:#dc3232">Chưa qua Google</span>';
                 $vtt = $row->traffic_type ?? '';
-                if ($vtt !== 'nocode' && empty($row->url_matched)) $reasons[] = '<span style="color:#dc3232">Chưa khớp URL</span>';
+                if ($vtt !== 'nocode' && empty($row->url_matched)) $reasons[] = '<span style="color:#dc3232">Chưa khớp Web</span>';
             }
             echo $reasons ? implode(', ', $reasons) : '<span style="color:#787c82">Không rõ</span>';
         }
