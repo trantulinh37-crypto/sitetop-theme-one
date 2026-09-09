@@ -150,16 +150,18 @@ add_action( 'init', function() {
    ICON NÚT LẤY CODE - One-time migration. Đổi $ver nếu thay ảnh lần
    nữa (giữ nguyên $ver thì admin vẫn đổi được qua Cài đặt TT → Icon URL).
 
-   08/09/2026: nút lấy code đổi sang widget-play.png (nút play xanh) theo yêu
-   cầu chủ site. CỐ Ý dùng file RIÊNG chứ không đè lên sitetop-logo.png:
+   09/09/2026: nút lấy code đổi sang widget-code-icon.png (chữ ST trắng trên đĩa
+   xanh). Đặt tên TRUNG TÍNH chứ không theo hình (bản trước tên widget-play.png,
+   đổi mẫu một cái là tên nói dối) — sau này thay ảnh chỉ cần ghi đè file này.
+   CỐ Ý dùng file RIÊNG chứ không đè lên sitetop-logo.png:
    option sitetop_widget_icon chỉ điều khiển NÚT WIDGET trên web đối tác và
    icon trong câu hướng dẫn ở trang unlock — đúng hai chỗ "nút lấy code".
    Logo thương hiệu (sitetop-logo.png, nền vàng) vẫn giữ nguyên cho các nơi khác.
    ============================================================ */
 add_action( 'init', function() {
-    $ver = 'icon-code-20260908-play-canlai';
+    $ver = 'icon-code-20260909-st';
     if ( get_option( 'sitetop_logo_version' ) !== $ver ) {
-        update_option( 'sitetop_widget_icon', sitetop_logo_url( 'widget-play.png' ) );
+        update_option( 'sitetop_widget_icon', sitetop_logo_url( 'widget-code-icon.png' ) );
         update_option( 'sitetop_logo_version', $ver );
     }
 } );
