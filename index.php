@@ -285,9 +285,14 @@ body.home .ln-copyright{margin-top:auto}
    ══════════════════════════════════════════════════════════════════════ */
 body.hero-sang .h2-hero{background:#F8FAFC}
 /* Ảnh nền full-bleed chuyển thành tấm bo góc nằm nửa phải, không phủ chữ nữa */
+/* Neo CẢ HAI mép trái/phải rồi để bề rộng tự tính, thay vì đặt width cố định.
+   Bản đầu dùng width:min(52%,760px) — đo ở 1440px thì mép trái tấm rơi vào 648
+   trong khi pill "An toàn & bảo mật" kéo tới 718, tức tấm ĐÈ LÊN pill 70px.
+   Neo left:53% thì mép trái luôn nằm sau cột chữ ở mọi bề rộng, không phải canh
+   tay theo từng khổ màn. */
 body.hero-sang .h2-hero::before{
-    left:auto;right:clamp(12px,3vw,48px);top:50%;transform:translateY(-50%);
-    width:min(52%,760px);height:min(74%,470px);
+    left:53%;right:clamp(12px,3vw,48px);width:auto;
+    top:50%;transform:translateY(-50%);height:min(74%,470px);
     border-radius:24px;box-shadow:0 24px 60px -28px rgba(15,30,70,.45);
     background-size:cover;background-position:center}
 body.hero-sang .h2-hero::after{display:none}
@@ -306,7 +311,7 @@ body.hero-sang .ln-copyright{background:#F8FAFC;color:#64748B;border-top:1px sol
 @media(max-width:900px){
     body.hero-sang .h2-hero::before{
         left:0;right:0;top:auto;bottom:0;transform:none;
-        width:100%;height:46%;border-radius:0;box-shadow:none;opacity:.9}
+        width:auto;height:46%;border-radius:0;box-shadow:none;opacity:.9}
 }
 </style>
 
