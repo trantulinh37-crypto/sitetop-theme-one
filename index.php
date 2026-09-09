@@ -294,7 +294,14 @@ body.hero-sang .h2-hero{background:#F8FAFC}
    Mốc 690px chặn đúng chỗ đó. */
 body.hero-sang .h2-hero::before{
     left:max(53%,690px);right:clamp(12px,3vw,48px);width:auto;
-    top:50%;transform:translateY(-50%);height:min(86%,560px);
+    top:50%;transform:translateY(-50%);
+    /* Ép khung ĐÚNG tỉ lệ ảnh (1400/1097) thay vì đặt chiều cao cố định.
+       Vì sao: background-size:contain làm ảnh không lấp đầy khung theo chiều dọc —
+       đo được khung cao 529 mà ảnh chỉ 496, thừa 16px mỗi đầu. Mặt nạ thì mờ dần
+       theo mép KHUNG, nên tại mép ẢNH nó vẫn còn đục 81% → mép ảnh hiện gần như
+       nguyên vẹn, đúng cái vệt ngang còn lộ ở đáy.
+       Khung khớp tỉ lệ thì hết phần thừa, mép mặt nạ trùng mép ảnh. */
+    height:auto;aspect-ratio:1400/1097;
     /* Ảnh minh hoạ NỀN SÁNG riêng cho bản này — góc ảnh đo được (250,251,253),
        gần như trùng nền trang #F8FAFC nên hoà thẳng vào, KHÔNG cần tấm bo góc +
        đổ bóng như bản trước nữa. Đó là cách chữa cháy hồi còn phải dùng ảnh nền tối. */
