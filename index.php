@@ -294,9 +294,15 @@ body.hero-sang .h2-hero{background:#F8FAFC}
    Mốc 690px chặn đúng chỗ đó. */
 body.hero-sang .h2-hero::before{
     left:max(53%,690px);right:clamp(12px,3vw,48px);width:auto;
-    top:50%;transform:translateY(-50%);height:min(74%,470px);
-    border-radius:24px;box-shadow:0 24px 60px -28px rgba(15,30,70,.45);
-    background-size:cover;background-position:center}
+    top:50%;transform:translateY(-50%);height:min(86%,560px);
+    /* Ảnh minh hoạ NỀN SÁNG riêng cho bản này — góc ảnh đo được (250,251,253),
+       gần như trùng nền trang #F8FAFC nên hoà thẳng vào, KHÔNG cần tấm bo góc +
+       đổ bóng như bản trước nữa. Đó là cách chữa cháy hồi còn phải dùng ảnh nền tối. */
+    background-image:url('<?php echo esc_url( SITETOP_URL . '/assets/img/hero-sang.jpg?v=' . filemtime( SITETOP_DIR . '/assets/img/hero-sang.jpg' ) ); ?>');
+    /* 'contain' chứ không 'cover': ảnh tỉ lệ 1.28 (cao) mà khung thì ngang, 'cover'
+       sẽ cắt mất chậu cây và đồng xu hai bên. Hoà nền nên viền thừa không lộ. */
+    background-size:contain;background-position:center right;background-repeat:no-repeat;
+    border-radius:0;box-shadow:none}
 body.hero-sang .h2-hero::after{display:none}
 /* Chữ đổi sang tông tối, bỏ hết đổ bóng vì nền đã sáng và không còn ảnh phía sau */
 body.hero-sang .h2-title{color:#0F172A;text-shadow:none}
@@ -315,7 +321,8 @@ body.hero-sang .ln-copyright{background:#F8FAFC;color:#64748B;border-top:1px sol
 @media(max-width:1150px){
     body.hero-sang .h2-hero::before{
         left:0;right:0;top:auto;bottom:0;transform:none;
-        width:auto;height:46%;border-radius:0;box-shadow:none;opacity:.9}
+        width:auto;height:44%;border-radius:0;box-shadow:none;opacity:1;
+        background-size:contain;background-position:bottom center}
 }
 </style>
 
