@@ -302,7 +302,22 @@ body.hero-sang .h2-hero::before{
     /* 'contain' chứ không 'cover': ảnh tỉ lệ 1.28 (cao) mà khung thì ngang, 'cover'
        sẽ cắt mất chậu cây và đồng xu hai bên. Hoà nền nên viền thừa không lộ. */
     background-size:contain;background-position:center right;background-repeat:no-repeat;
-    border-radius:0;box-shadow:none}
+    border-radius:0;box-shadow:none;
+    /* LÀM MỜ DẦN MÉP để ảnh tan vào nền. Ảnh JPEG có mép cứng, mà nền riêng của nó
+       KHÔNG trùng nền trang: đo độ lệch so với #F8FAFC — trái 11, trên 15, nhưng
+       PHẢI 44 và DƯỚI 42 (lệch quá 8 là mắt đã nhìn ra ranh giới). Nên hiện rõ một
+       hình chữ nhật.
+       Mờ dần KHÔNG đối xứng, đúng theo số đo: trái/trên nhẹ 6%, phải/dưới nặng 16%.
+       Dùng mask thay vì cắt ảnh: giữ được JPEG (nhẹ hơn PNG có alpha nhiều lần), và
+       muốn chỉnh độ mờ chỉ sửa CSS chứ không phải xuất lại ảnh.
+       Hai gradient giao nhau nên phải composite: chuẩn là mask-composite:intersect,
+       bản WebKit cũ dùng -webkit-mask-composite:source-in. */
+    -webkit-mask-image:linear-gradient(to right,transparent 0,#000 6%,#000 84%,transparent 100%),
+                       linear-gradient(to bottom,transparent 0,#000 6%,#000 84%,transparent 100%);
+    -webkit-mask-composite:source-in;
+    mask-image:linear-gradient(to right,transparent 0,#000 6%,#000 84%,transparent 100%),
+               linear-gradient(to bottom,transparent 0,#000 6%,#000 84%,transparent 100%);
+    mask-composite:intersect}
 body.hero-sang .h2-hero::after{display:none}
 /* Chữ đổi sang tông tối, bỏ hết đổ bóng vì nền đã sáng và không còn ảnh phía sau */
 body.hero-sang .h2-title{color:#0F172A;text-shadow:none}
@@ -322,7 +337,11 @@ body.hero-sang .ln-copyright{background:#F8FAFC;color:#64748B;border-top:1px sol
     body.hero-sang .h2-hero::before{
         left:0;right:0;top:auto;bottom:0;transform:none;
         width:auto;height:44%;border-radius:0;box-shadow:none;opacity:1;
-        background-size:contain;background-position:bottom center}
+        background-size:contain;background-position:bottom center;
+        -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 12%,#000 100%);
+        -webkit-mask-composite:source-over;
+        mask-image:linear-gradient(to bottom,transparent 0,#000 12%,#000 100%);
+        mask-composite:add}
 }
 </style>
 
