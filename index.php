@@ -1,9 +1,13 @@
 <?php
-/* Cờ XEM TRƯỚC bản hero nền sáng. Chỉ đổi giao diện cho ai tự thêm ?hero=sang
-   vào URL — khách vào bình thường vẫn thấy bản tối như cũ. Bỏ cờ này khi đã
-   chốt được bản chính thức. */
+/* HERO NỀN SÁNG LÀ MẶC ĐỊNH (chủ site chốt 09/09/2026).
+   Trước đó nằm sau cờ ?hero=sang để xem trước; nay bật cho mọi lượt.
+   Giữ lại một ĐƯỜNG LÙI NHANH: thêm ?hero=toi vào URL là về bản tối cũ ngay,
+   không phải deploy. Hữu ích để so sánh, hoặc chữa cháy nếu bản sáng lộ lỗi
+   trên một thiết bị nào đó mà mình chưa lường.
+   Muốn lùi hẳn: git revert, hoặc thẻ truoc-hero-sang-20260909. */
 add_filter( 'body_class', function( $c ) {
-    if ( isset( $_GET['hero'] ) && $_GET['hero'] === 'sang' ) $c[] = 'hero-sang';
+    $toi = isset( $_GET['hero'] ) && $_GET['hero'] === 'toi';
+    if ( ! $toi ) $c[] = 'hero-sang';
     return $c;
 } );
 ?>
