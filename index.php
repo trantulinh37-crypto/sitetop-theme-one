@@ -1,4 +1,13 @@
 <?php
+/* Cờ XEM TRƯỚC bản hero nền sáng. Chỉ đổi giao diện cho ai tự thêm ?hero=sang
+   vào URL — khách vào bình thường vẫn thấy bản tối như cũ. Bỏ cờ này khi đã
+   chốt được bản chính thức. */
+add_filter( 'body_class', function( $c ) {
+    if ( isset( $_GET['hero'] ) && $_GET['hero'] === 'sang' ) $c[] = 'hero-sang';
+    return $c;
+} );
+?>
+<?php
 /**
  * SiteTop.one V2 - Homepage
  * Nền tảng rút gọn link kiếm tiền & mua traffic website
@@ -263,6 +272,37 @@ body.home .ln-copyright{margin-top:auto}
 /* ── Copyright footer (trang chủ, footer chính đang ẩn cho single-screen hero) ── */
 .ln-copyright{padding:clamp(9px,1.8vh,20px) 24px;text-align:center;font-size:13px;color:#6B7E99;background:#000720;border-top:1px solid rgba(255,255,255,.07)}
 
+
+/* ══════════════════════════════════════════════════════════════════════
+   BẢN HERO NỀN SÁNG — XEM TRƯỚC, bật bằng ?hero=sang (09/09/2026).
+   Chưa phải mặc định: ảnh minh hoạ hero-bg.jpg là ảnh ĐẶC nền tối (độ sáng
+   trung bình 23/255), minh hoạ 3D nằm chết trong đó chứ không phải phần tử
+   riêng. Đo thử tách nền: vùng chuyển/quầng chiếm 8,2% ảnh trong khi hình
+   thật chỉ 6,5% — tách ra đặt lên nền trắng sẽ đầy quầng bẩn.
+   Nên bản sáng này đặt ảnh vào một TẤM TỐI bo góc bên phải: trang sáng theo
+   đúng spec, còn minh hoạ giữ nền tối vốn có của nó, nhìn như chủ ý thiết kế.
+   Muốn đúng spec 100% thì cần một ảnh minh hoạ nền sáng/trong suốt.
+   ══════════════════════════════════════════════════════════════════════ */
+body.hero-sang .h2-hero{background:#F8FAFC}
+/* Ảnh nền full-bleed chuyển thành tấm bo góc nằm nửa phải, không phủ chữ nữa */
+body.hero-sang .h2-hero::before{
+    left:auto;right:clamp(12px,3vw,48px);top:50%;transform:translateY(-50%);
+    width:min(52%,760px);height:min(74%,470px);
+    border-radius:24px;box-shadow:0 24px 60px -28px rgba(15,30,70,.45);
+    background-size:cover;background-position:center}
+body.hero-sang .h2-hero::after{display:none}
+/* Chữ đổi sang tông tối, bỏ hết đổ bóng vì nền đã sáng và không còn ảnh phía sau */
+body.hero-sang .h2-title{color:#0F172A;text-shadow:none}
+body.hero-sang .h2-title .hl{color:#2563EB}
+body.hero-sang .h2-sub{color:#475569;text-shadow:none}
+body.hero-sang .h2-note{color:#64748B;text-shadow:none}
+body.hero-sang .ln-copyright{background:#F8FAFC;color:#64748B;border-top:1px solid #E2E8F0}
+/* Màn hẹp: tấm minh hoạ về lại full-bleed cho khỏi chen chữ */
+@media(max-width:900px){
+    body.hero-sang .h2-hero::before{
+        left:0;right:0;top:auto;bottom:0;transform:none;
+        width:100%;height:46%;border-radius:0;box-shadow:none;opacity:.9}
+}
 </style>
 
 <!-- ═══ HERO: Website rút gọn link và kiếm tiền ═══ -->
