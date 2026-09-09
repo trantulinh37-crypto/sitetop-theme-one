@@ -288,10 +288,12 @@ body.hero-sang .h2-hero{background:#F8FAFC}
 /* Neo CẢ HAI mép trái/phải rồi để bề rộng tự tính, thay vì đặt width cố định.
    Bản đầu dùng width:min(52%,760px) — đo ở 1440px thì mép trái tấm rơi vào 648
    trong khi pill "An toàn & bảo mật" kéo tới 718, tức tấm ĐÈ LÊN pill 70px.
-   Neo left:53% thì mép trái luôn nằm sau cột chữ ở mọi bề rộng, không phải canh
-   tay theo từng khổ màn. */
+   Neo left theo max(53%, 690px): chỉ dùng phần trăm là KHÔNG ĐỦ — pill giữ cỡ chữ
+   cố định nên khi màn hẹp lại, mép phải pill gần như đứng yên còn tấm thì co vào.
+   Đo ở 1200px với left:53% thuần: mép tấm 636, pill kéo tới 662 → vẫn đè 26px.
+   Mốc 690px chặn đúng chỗ đó. */
 body.hero-sang .h2-hero::before{
-    left:53%;right:clamp(12px,3vw,48px);width:auto;
+    left:max(53%,690px);right:clamp(12px,3vw,48px);width:auto;
     top:50%;transform:translateY(-50%);height:min(74%,470px);
     border-radius:24px;box-shadow:0 24px 60px -28px rgba(15,30,70,.45);
     background-size:cover;background-position:center}
@@ -307,8 +309,10 @@ body.hero-sang .h2-note{color:#64748B;text-shadow:none}
    ám cả phần xanh dương lẫn dấu hiệu. */
 body.hero-sang .tt-logo img{content:url('<?php echo esc_url( SITETOP_URL . '/assets/img/sitetop-logo-full-toi.png?v=' . filemtime( SITETOP_DIR . '/assets/img/sitetop-logo-full-toi.png' ) ); ?>')}
 body.hero-sang .ln-copyright{background:#F8FAFC;color:#64748B;border-top:1px solid #E2E8F0}
-/* Màn hẹp: tấm minh hoạ về lại full-bleed cho khỏi chen chữ */
-@media(max-width:900px){
+/* Dưới 1150px: tấm về đáy trang, full-bleed. Ngưỡng đặt 1150 chứ không phải 900 —
+   với mốc chặn 690px thì trong dải 900–1150 tấm bị bóp còn hơn 200px, hẹp đến mức
+   minh hoạ không còn đọc được. Thà xuống bố cục dọc sớm. */
+@media(max-width:1150px){
     body.hero-sang .h2-hero::before{
         left:0;right:0;top:auto;bottom:0;transform:none;
         width:auto;height:46%;border-radius:0;box-shadow:none;opacity:.9}
