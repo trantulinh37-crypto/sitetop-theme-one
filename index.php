@@ -284,6 +284,14 @@ body.home .ln-copyright{margin-top:auto}
    Muốn đúng spec 100% thì cần một ảnh minh hoạ nền sáng/trong suốt.
    ══════════════════════════════════════════════════════════════════════ */
 body.hero-sang .h2-hero{background:#F8FAFC}
+/* ĐỘ NÉT CHỮ. Theme đặt -webkit-font-smoothing:antialiased cho toàn trang — đúng
+   cho bản TỐI, vì chữ sáng trên nền tối bị bè nên phải làm mảnh đi. Nhưng với chữ
+   TỐI trên nền SÁNG thì antialiased bỏ mất kết xuất theo điểm phụ, chữ mảnh và mờ.
+   Trả về subpixel-antialiased (mặc định của trình duyệt) thì chữ sắc rõ hơn hẳn.
+   Chỉ áp trong bản sáng — bản tối giữ nguyên antialiased vì ở đó nó đúng. */
+body.hero-sang, body.hero-sang .h2-hero, body.hero-sang .h2-hero *{
+    -webkit-font-smoothing:subpixel-antialiased;
+    -moz-osx-font-smoothing:auto}
 /* Ảnh nền full-bleed chuyển thành tấm bo góc nằm nửa phải, không phủ chữ nữa */
 /* Neo CẢ HAI mép trái/phải rồi để bề rộng tự tính, thay vì đặt width cố định.
    Bản đầu dùng width:min(52%,760px) — đo ở 1440px thì mép trái tấm rơi vào 648
