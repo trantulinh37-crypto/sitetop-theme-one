@@ -296,6 +296,11 @@ body.hero-sang .h2-title{color:#0F172A;text-shadow:none}
 body.hero-sang .h2-title .hl{color:#2563EB}
 body.hero-sang .h2-sub{color:#475569;text-shadow:none}
 body.hero-sang .h2-note{color:#64748B;text-shadow:none}
+/* Logo đầu trang là ẢNH PNG có chữ "SITE" màu TRẮNG — trên nền sáng nó chìm hẳn.
+   Đổi sang bản chữ tối (sitetop-logo-full-toi.png: đã map riêng phần trắng sang
+   #0F172A, giữ nguyên "TOP" xanh và dấu hiệu). Không dùng filter CSS vì filter sẽ
+   ám cả phần xanh dương lẫn dấu hiệu. */
+body.hero-sang .tt-logo img{content:url('<?php echo esc_url( SITETOP_URL . '/assets/img/sitetop-logo-full-toi.png?v=' . filemtime( SITETOP_DIR . '/assets/img/sitetop-logo-full-toi.png' ) ); ?>')}
 body.hero-sang .ln-copyright{background:#F8FAFC;color:#64748B;border-top:1px solid #E2E8F0}
 /* Màn hẹp: tấm minh hoạ về lại full-bleed cho khỏi chen chữ */
 @media(max-width:900px){
