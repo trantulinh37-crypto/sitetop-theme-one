@@ -196,8 +196,12 @@ body{margin:0;min-height:100vh;background:#F5F7F9;color:#1F2A44;
      font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
      display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px}
 h2{font-family:'Plus Jakarta Sans','Inter',sans-serif}
-.pd-top{display:flex;align-items:center;gap:9px;margin-bottom:20px}
-.pd-top b{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:17px;font-weight:800;color:#0A1633;letter-spacing:-.01em}
+/* Thương hiệu phóng to 10/09/2026 theo yêu cầu chủ site: icon 20→30px, chữ 17→26px.
+   Đặt cỡ icon bằng CSS chứ không chỉ sửa thuộc tính width/height của thẻ svg — có CSS
+   thì hai khối @media bên dưới mới thu lại được trên màn hẹp. */
+.pd-top{display:flex;align-items:center;gap:12px;margin-bottom:26px}
+.pd-top svg{width:30px;height:30px;flex:0 0 auto}
+.pd-top b{font-family:'Plus Jakarta Sans','Inter',sans-serif;font-size:26px;font-weight:800;color:#0A1633;letter-spacing:-.015em}
 .pd-out{margin-top:18px;display:flex;gap:16px;font-size:12.5px}
 .pd-out a{color:#5A6684;text-decoration:none;border-bottom:1px solid #DFE5F3;padding-bottom:1px}
 .pd-out a:hover{color:#4E80B4;border-color:#4E80B4}
@@ -208,6 +212,11 @@ h2{font-family:'Plus Jakarta Sans','Inter',sans-serif}
 	body{padding:16px 10px!important}
 	.pd-body{padding:18px 14px 20px!important}
 	.pd-msg{font-size:12.8px!important}
+	/* Thương hiệu vừa phóng to 26px — trên máy hẹp phải thu bớt kẻo chật ngang.
+	   Vẫn to hơn bản cũ (17px), chỉ là không giữ nguyên 26px. */
+	.pd-top b{font-size:22px!important}
+	.pd-top svg{width:26px!important;height:26px!important}
+	.pd-top{gap:10px!important;margin-bottom:22px!important}
 }
 /* Máy 320px (iPhone SE đời đầu và Android cũ) hẹp hơn hẳn — phải xuống nữa mới
    giữ được một dòng. Chỉ áp cho khổ này, máy thường không bị chữ nhỏ lây. */
@@ -215,12 +224,15 @@ h2{font-family:'Plus Jakarta Sans','Inter',sans-serif}
 	body{padding:14px 8px!important}
 	.pd-body{padding:16px 11px 18px!important}
 	.pd-msg{font-size:11.3px!important}
+	.pd-top b{font-size:19px!important}
+	.pd-top svg{width:22px!important;height:22px!important}
+	.pd-top{gap:9px!important;margin-bottom:18px!important}
 }
 </style>
 </head>
 <body>
 <div class="pd-top">
-	<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4E80B4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/></svg>
+	<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#4E80B4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 14 4-4 3 3 5-6"/></svg>
 	<b><?php echo esc_html( $ten ); ?></b>
 </div>
 <?php echo $notice; // đã escape bên trong hàm ?>
