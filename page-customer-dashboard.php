@@ -654,7 +654,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--p);box-s
          nên giữ nguyên không đụng. Dashboard nền xanh thép đã biết trước nên dùng
          bản nền trong suốt. */ ?>
     <a href="<?php echo home_url(); ?>" class="sidebar-logo">
-        <span class="lg-chip"><span class="lgd">SITETOP</span><span class="lgb">.NET</span></span>
+        <span class="lg-chip"><span class="lgd">SITETOP</span><span class="lgb">.ONE</span></span>
     </a>
     <div class="sidebar-user">
         <div class="sidebar-user-info">
@@ -689,7 +689,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--p);box-s
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
     <a href="<?php echo home_url(); ?>" class="mobile-topbar-logo">
-        <span><span class="lgd">SITETOP</span><span class="lgb">.NET</span></span>
+        <span><span class="lgd">SITETOP</span><span class="lgb">.ONE</span></span>
     </a>
     <div class="mobile-topbar-right">
         <span class="bal"><?php echo sitetop_format_money($cust_balance); ?></span>
