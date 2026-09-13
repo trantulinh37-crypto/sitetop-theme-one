@@ -1365,10 +1365,14 @@ function sitetop_serve_widget_js() {
        Bỏ `private` mà chưa có Cache Rule đặt Browser TTL = Respect origin là web khách ôm
        bản cũ 4 TIẾNG — đúng bẫy đóng băng đã mất cả ngày với WP Rocket.
 
-       CHẶNG 1 (đang ở đây): chỉ bật header cache-được khi có ?thu_cache_bien=1. Lý do —
-       khi phản hồi còn BYPASS thì Cloudflare KHÔNG đụng tới max-age, nên không có cách
-       nào chứng minh Browser TTL đã đặt đúng trước khi bật thật. Tham số này cho đo an
-       toàn: khách thật vẫn nhận `private` y như cũ, đặt sai cũng không ai dính.
+       Đã CHỨNG MINH 13/09/2026 bằng tham số thử, và chặng thử đó BẮT ĐÚNG SỰ CỐ: lúc
+       zone .one chưa có Cache Rule, URL thử trả về `max-age=14400` — tức Cloudflare ghi
+       đè đúng như lo ngại. Bật thẳng là mọi web khách đóng băng 4 tiếng. Sau khi tạo
+       Cache Rule "top.js - cache bien" (Browser TTL = Respect origin), đo lại thấy
+       `max-age=0` giữ nguyên. Đo được: tổng 388ms → 157ms, máy chủ nghĩ 191ms → 41ms.
+
+       TẮT KHẨN CẤP, không cần deploy: xoá Cache Rule đó trên Cloudflare. Zone chỉ cache
+       .js khi rule cho phép, nên header `public` còn lại trở thành vô hại.
 
        `max-age=0, must-revalidate` giữ NGUYÊN bảo đảm cũ: trình duyệt vẫn hỏi lại mỗi lần
        nên bản vá tới ngay, không bao giờ đóng băng. `s-maxage=120` chỉ nói với Cloudflare.
@@ -1378,11 +1382,7 @@ function sitetop_serve_widget_js() {
        nocache_headers() đặt. Nhờ vậy phản hồi rỗng không thể lọt vào cache biên rồi phát
        cho mọi khách. Thứ tự đó là điều sống còn: nocache_headers() TRƯỚC include, header
        cache-được SAU. */
-    if ( isset( $_GET['thu_cache_bien'] ) && $_GET['thu_cache_bien'] === '1' ) {
-        header( 'Cache-Control: public, max-age=0, s-maxage=120, must-revalidate' );
-    } else {
-        header( 'Cache-Control: private, no-cache, must-revalidate, max-age=0' );
-    }
+    header( 'Cache-Control: public, max-age=0, s-maxage=120, must-revalidate' );
     header( 'ETag: ' . $etag );
     header_remove( 'Expires' );
 
