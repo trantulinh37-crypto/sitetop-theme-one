@@ -1950,17 +1950,37 @@ function showStep2Guide(){
     // Ảnh bước 2 do admin cấu hình → thay danh sách link bằng 1 ảnh bấm được.
     // href BẮT BUỘC cùng domain: listenForLinkClick chỉ ghi cờ cho link nội bộ,
     // trỏ ra ngoài là user bấm xong không bao giờ nhận được mã.
+    /* QUY TẮC ẢNH BƯỚC 2 — 13/09/2026, theo yêu cầu chủ site (đồng bộ từ .net):
+         có nhập "Link khi bấm ảnh"  -> ảnh bấm được, chuyển sang đúng link đó
+         KHÔNG nhập link             -> VẪN hiện ảnh chỉ dẫn, nhưng bấm vào không đi đâu
+                                        cả; user phải tự tìm đúng mục giống ảnh trên
+                                        trang mà bấm.
+
+       Bản cũ rơi về internalLinks[0] khi thiếu link đích, nên bấm đại vào ảnh vẫn qua
+       được — mà link đầu tiên dò được thường CHÍNH LÀ trang đang đứng, nên bấm vào chỉ
+       tải lại trang, trông y như bấm F5. Bỏ hẳn cơ chế rơi về đó.
+
+       Link đích khác tên miền cũng bị bỏ qua (ảnh thành không bấm được): thẻ <a> trỏ ra
+       ngoài thì user bấm xong không bao giờ nhận được mã.
+
+       Ảnh không phải thẻ <a> vẫn chạy đúng, vì listenForLinkClick nghe click ở cấp
+       document pha capture và ghi cờ bước 2 cho MỌI link nội bộ trên trang. */
     var s2=state.step2Image,s2Href='';
-    if(s2&&s2.image_url){
-        if(s2.target_url){
-            try{if(new URL(s2.target_url,location.origin).hostname===location.hostname)s2Href=s2.target_url;}catch(e){}
-        }
-        if(!s2Href&&internalLinks.length>0)s2Href=internalLinks[0].url;
+    if(s2&&s2.image_url&&s2.target_url){
+        try{if(new URL(s2.target_url,location.origin).hostname===location.hostname)s2Href=s2.target_url;}catch(e){}
     }
 
-    if(s2&&s2.image_url&&s2Href){
+    if(s2&&s2.image_url){
         titleText='<span style="display:inline-block;background:#fff;border:2px solid #f59e0b;border-radius:10px;padding:9px 13px;font-size:13px;font-weight:700;color:#92400e;line-height:1.55;box-shadow:0 2px 7px rgba(245,158,11,.28);">Bấm chọn vào <b style="color:#dc2626;">link giống ảnh</b><br>và lướt xuống cuối trang <b style="color:#dc2626;">Lấy Mã</b></span>';
-        linksHtml='<div style="margin-top:8px;"><a href="'+s2Href.replace(/"/g,'%22')+'" id="tn-s2img" style="display:block;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.18);animation:tnBtnPulse 1.5s ease-in-out infinite;"><img src="'+s2.image_url.replace(/"/g,'%22')+'" alt="Click để tiếp tục" style="display:block;width:100%;max-width:280px;height:auto;"></a></div>';
+        var _s2img='<img src="'+s2.image_url.replace(/"/g,'%22')+'" alt="Mục cần tìm rồi bấm" style="display:block;width:100%;max-width:280px;height:auto;">';
+        if(s2Href){
+            linksHtml='<div style="margin-top:8px;"><a href="'+s2Href.replace(/"/g,'%22')+'" id="tn-s2img" style="display:block;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.18);animation:tnBtnPulse 1.5s ease-in-out infinite;">'+_s2img+'</a></div>';
+        }else{
+            /* Ảnh KHÔNG bấm được. Bỏ nhịp đập vì nhịp đập là tín hiệu "bấm vào đây", giữ
+               lại là user cứ bấm vào ảnh rồi tưởng widget hỏng. Nói thẳng ảnh để đối chiếu. */
+            linksHtml='<div style="margin-top:8px;"><div id="tn-s2img-xem" style="display:block;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.18);">'+_s2img+'</div>'
+                +'<div style="font-size:10px;color:#a16207;margin-top:5px;font-weight:600;line-height:1.45;">Ảnh chỉ để đối chiếu — tìm đúng mục này trên trang rồi bấm vào</div></div>';
+        }
         linksHtml+='<style>@keyframes tnBtnPulse{0%,100%{box-shadow:0 0 0 3px rgba(245,158,11,0.4)}50%{box-shadow:0 0 0 6px rgba(245,158,11,0.2)}}</style>';
 
         // Mẫu thu nhỏ của ĐÚNG cái nút mà user phải tìm ở cuối trang. Dùng lại C.icon và
@@ -2005,6 +2025,19 @@ function showStep2Guide(){
         if(s2im)s2im.onerror=function(){
             s2a.style.cssText='display:inline-block;padding:9px 18px;background:#1f2937;color:#fff;border-radius:16px;text-decoration:none;font-size:12px;font-weight:600;';
             s2a.textContent='👆 Click vào đây';
+        };
+    }
+
+    /* Ảnh CHỈ-ĐỂ-ĐỐI-CHIẾU mà hỏng thì user không còn manh mối nào: không có link để bấm,
+       cũng không thấy phải tìm mục nào. Thay bằng lời nhắc chữ, không thì nhiệm vụ tắc
+       hẳn. Máy chủ đã lọc ảnh chết bằng sitetop_image_url_alive(), nên chỗ này chỉ dành
+       cho ảnh bị chặn phía trình duyệt (adblock, chặn hotlink). */
+    var s2x=guide.querySelector('#tn-s2img-xem');
+    if(s2x){
+        var s2xi=s2x.querySelector('img');
+        if(s2xi)s2xi.onerror=function(){
+            s2x.style.cssText='display:inline-block;padding:9px 14px;background:#1f2937;color:#fff;border-radius:12px;font-size:12px;font-weight:600;line-height:1.5;';
+            s2x.textContent='Không tải được ảnh — hãy bấm vào một mục trong trang rồi quay lại';
         };
     }
 
