@@ -241,17 +241,17 @@ console.warn('[Widget] Challenge mode active - verification required');
 // Hiển thị Challenge UI
 var overlay = document.createElement('div');
 overlay.id = 'taskify-challenge';
-overlay.innerHTML = '<div style=\"position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:999999;font-family:-apple-system,sans-serif;\"><div style=\"background:white;padding:30px;border-radius:16px;text-align:center;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.3);\"><div style=\"font-size:3rem;margin-bottom:15px;\">🛡️</div><h2 style=\"margin:0 0 10px;color:#1e293b;font-size:1.3rem;\">Xác minh bạn là người thật</h2><p style=\"color:#64748b;margin:0 0 20px;font-size:0.9rem;\">Hệ thống đang được bảo vệ. Vui lòng xác minh để tiếp tục.</p><div id=\"cf-turnstile-challenge\" style=\"display:flex;justify-content:center;margin-bottom:15px;\"></div><p style=\"color:#94a3b8;font-size:0.75rem;margin:0;\">Powered by Cloudflare Turnstile</p></div></div>';
+overlay.innerHTML = '<div style=\"position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:999999;font-family:-apple-system,sans-serif;\"><div style=\"background:white;padding:30px;border-radius:16px;text-align:center;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.3);\"><div style=\"font-size:3rem;margin-bottom:15px;\">🛡️</div><h2 style=\"margin:0 0 10px;color:#1e293b;font-size:1.3rem;\">Xác minh bạn là người thật</h2><p style=\"color:#64748b;margin:0 0 20px;font-size:0.9rem;\">Hệ thống đang được bảo vệ. Vui lòng xác minh để tiếp tục.</p><div id=\"cf-turnstile-challenge-one\" style=\"display:flex;justify-content:center;margin-bottom:15px;\"></div><p style=\"color:#94a3b8;font-size:0.75rem;margin:0;\">Powered by Cloudflare Turnstile</p></div></div>';
 document.body.appendChild(overlay);
 
 // Load Turnstile
 var script = document.createElement('script');
-script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad';
+script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoadSitetopOne';
 script.async = true;
 document.head.appendChild(script);
 
-window.onTurnstileLoad = function() {
-    turnstile.render('#cf-turnstile-challenge', {
+window.onTurnstileLoadSitetopOne = function() {
+    turnstile.render('#cf-turnstile-challenge-one', {
         sitekey: '" . esc_js(get_option('sitetop_turnstile_site_key', '')) . "',
         callback: function(token) {
             // Xác minh thành công → Set cookie và reload
@@ -537,7 +537,7 @@ $widget_btn_text = get_option('sitetop_widget_button_text', 'LẤY MÃ');
    Mặc định TẮT: luồng lấy mã phải chạy thẳng. Muốn thêm captcha vào widget thì bật
    riêng ở Cài đặt (sitetop_widget_captcha_enabled). */
 // Mặc định BẬT: chủ site yêu cầu xác minh Cloudflare ngay tại bước bấm lấy mã, áp dụng
-// cho cả camp từ khoá lẫn camp direct (cổng này nằm chung ở _stWidgetClick nên không
+// cho cả camp từ khoá lẫn camp direct (cổng này nằm chung ở _stoWidgetClick nên không
 // phân biệt loại camp). Tắt được ở Cài đặt → Turnstile nếu cần.
 $ts_enabled  = get_option('sitetop_widget_captcha_enabled', '1');
 $ts_site_key = get_option('sitetop_turnstile_site_key', '');
@@ -581,7 +581,7 @@ var timers={countdown:null,heartbeat:null,behavior:null,presence:null};
 // HTML gốc của nút, chụp lại ngay lúc dựng widget. Cần để trả nút về nguyên trạng khi
 // bước captcha hỏng — các chỗ khác dựng lại bằng tay đều làm rụng mất logo của khách.
 var _btnHtml0='';
-// Hai đồng hồ canh chừng bước captcha (xem _stCaptchaAbort).
+// Hai đồng hồ canh chừng bước captcha (xem _stoCaptchaAbort).
 var _tsT1=null,_tsT2=null;
 var bdata={mouse:0,scroll:0,time:0,tabs:0,clicks:0};
 
@@ -669,26 +669,26 @@ function init(){
     var _step2Return=false;
     var _step2SavedSession='';
     try{
-        var _s2w=localStorage.getItem('tn_step2_waiting');
-        var _s2c=localStorage.getItem('tn_link_clicked');
-        var _s2t=parseInt(localStorage.getItem('tn_step2_time')||'0');
-        var _s2from=localStorage.getItem('tn_step2_from')||'';
-        _step2SavedSession=localStorage.getItem('tn_session_id')||'';
+        var _s2w=localStorage.getItem('tno_step2_waiting');
+        var _s2c=localStorage.getItem('tno_link_clicked');
+        var _s2t=parseInt(localStorage.getItem('tno_step2_time')||'0');
+        var _s2from=localStorage.getItem('tno_step2_from')||'';
+        _step2SavedSession=localStorage.getItem('tno_session_id')||'';
         // Cờ bước 2 nằm trong localStorage của WEB KHÁCH nên sống dai qua mọi lần tải
         // trang. Thiếu điều kiện "đã sang trang khác", một lượt nhiệm vụ MỚI dán lại
         // đúng URL đích sẽ bị nhận nhầm là "quay lại từ bước 2": init() thoát sớm,
         // KHÔNG gọi verify_access, phiên không bao giờ gắn → bấm nút không chạy đồng hồ.
         var _movedPage=(!_s2from||_s2from!==location.href);
         // Cờ bước 2 phải thuộc ĐÚNG phiên đang chạy, không thì là rác của nhiệm vụ trước.
-        var _s2sid=localStorage.getItem('tn_step2_sid')||'';
+        var _s2sid=localStorage.getItem('tno_step2_sid')||'';
         var _s2same=(_s2sid!==''&&_s2sid===_step2SavedSession);
         if(_s2w==='1'&&_s2c==='1'&&_s2same&&_movedPage&&_step2SavedSession&&(Date.now()-_s2t)<600000){
             _step2Return=true;
         }else{
-            localStorage.removeItem('tn_step2_waiting');localStorage.removeItem('tn_step2_sid');
-            localStorage.removeItem('tn_step2_time');
-            localStorage.removeItem('tn_link_clicked');
-            localStorage.removeItem('tn_step2_from');
+            localStorage.removeItem('tno_step2_waiting');localStorage.removeItem('tno_step2_sid');
+            localStorage.removeItem('tno_step2_time');
+            localStorage.removeItem('tno_link_clicked');
+            localStorage.removeItem('tno_step2_from');
         }
     }catch(e){}
 
@@ -721,7 +721,7 @@ function sendVerifyAccess(unlockSession, unlockTime, unlockActive, campaignType)
         if(x.status!==200)return;
         try{
             var d=JSON.parse(x.responseText);
-            // Giữ lý do server từ chối để _stNoTask() nói đúng việc user phải làm,
+            // Giữ lý do server từ chối để _stoNoTask() nói đúng việc user phải làm,
             // thay vì đổ chung một câu "sai URL" cho cả 4 nguyên nhân khác nhau.
             if(d&&d.data&&d.data.reason){
                 state.failReason=d.data.reason;
@@ -737,11 +737,11 @@ function sendVerifyAccess(unlockSession, unlockTime, unlockActive, campaignType)
 
             /* Server xác nhận đang ở trang thứ hai của camp 2 bước (bước 1 đã xong, URL
                cùng tên miền với URL đích). Chạy thẳng nhánh 15 giây.
-               Cần chốt này vì cờ tn_link_clicked trong localStorage phụ thuộc việc bắt
+               Cần chốt này vì cờ tno_link_clicked trong localStorage phụ thuộc việc bắt
                được cú click nên thỉnh thoảng trượt — trượt là rơi xuống đây và báo nhầm
                "sai URL" giữa lúc user đang làm đúng. */
             if(d.data.step2_return&&!state.countdownStarted){
-                try{ localStorage.setItem('tn_session_id',state.sessionId); }catch(e){}
+                try{ localStorage.setItem('tno_session_id',state.sessionId); }catch(e){}
                 initStep2Return(state.sessionId);
                 return;
             }
@@ -752,8 +752,8 @@ function sendVerifyAccess(unlockSession, unlockTime, unlockActive, campaignType)
 
             // Save session
             try{
-                localStorage.setItem('tn_session_id',state.sessionId);
-                localStorage.setItem('tn_traffic_type',state.trafficType);
+                localStorage.setItem('tno_session_id',state.sessionId);
+                localStorage.setItem('tno_traffic_type',state.trafficType);
             }catch(e){}
 
                 /* Nối tiếp đồng hồ của MÁY CHỦ, đừng đặt lại trọn 70 giây.
@@ -788,8 +788,8 @@ function sendVerifyAccess(unlockSession, unlockTime, unlockActive, campaignType)
            step2Image / googleRequired. Đặt trước là chạy với trạng thái rỗng. */
         if(d.data.resume_countdown&&!state.countdownStarted&&!state.codeReady){
             state.countdownStarted=true;
-            var _rb=document.getElementById('tn-btn');
-            if(_rb){_rb.innerHTML='<span id="tn-btn-text">Vui lòng đợi</span><span id="tn-cd"></span>';}
+            var _rb=document.getElementById('tno-btn');
+            if(_rb){_rb.innerHTML='<span id="tno-btn-text">Vui lòng đợi</span><span id="tno-cd"></span>';}
             startCountdown();
             startHeartbeat();
         }
@@ -815,30 +815,30 @@ function sendVerifyAccess(unlockSession, unlockTime, unlockActive, campaignType)
                         if(e.data.token){ajax('sitetop_widget_captcha',{session_id:state.sessionId,token:e.data.token},function(){});}
                         // Show "Thành công!" for 1.5s before transitioning to countdown
                         setTimeout(function(){
-                            var cap=document.getElementById('tn-captcha');
-                            var btn=document.getElementById('tn-btn');
+                            var cap=document.getElementById('tno-captcha');
+                            var btn=document.getElementById('tno-btn');
                             if(cap){cap.style.display='none';cap.onload=null;}
                             // pointer-events phải mở lại: lúc bấm đã đặt 'none' để chặn bấm
                             // đúp trong khi chờ captcha. Không mở lại thì nút chỉ còn bấm được
                             // sau khi showCode() chạy — mà trước đó user không thể bấm gì.
-                            if(btn){btn.style.display='inline-flex';btn.style.pointerEvents='auto';btn.innerHTML='<span id="tn-btn-text">Vui lòng đợi</span><span id="tn-cd"></span>';}
+                            if(btn){btn.style.display='inline-flex';btn.style.pointerEvents='auto';btn.innerHTML='<span id="tno-btn-text">Vui lòng đợi</span><span id="tno-cd"></span>';}
                             if(state.countdownStarted&&!state.codeReady){
                                 // Xác minh Cloudflare xong MỚI đặt mốc giờ —
                                 // đây là điểm chuẩn của cả hệ thống.
-                                _stBatDauGio();
+                                _stoBatDauGio();
                             }
                         },1500);
                     }else if(e.data.type==='captcha_error'||e.data.type==='captcha_expired'){
                         // Dùng chung lối gỡ kẹt: bản cũ ở đây quên mở lại pointer-events nên
                         // nút hiện ra mà bấm không ăn, và quên dựng lại logo trong nút.
-                        window._stCaptchaAbort('Xác minh thất bại, vui lòng bấm lại');
+                        window._stoCaptchaAbort('Xác minh thất bại, vui lòng bấm lại');
                     }
                 });
             }
             // KHÔNG tự bắt đầu khi user chưa bấm — NHƯNG nếu user ĐÃ bấm trong lúc
             // verify chạy (wantStart, cơ chế source hoclaixe/dethito) → tự chạy luôn,
-            // không cần bấm lần 2. _stWidgetClick tự re-check gate (Google/URL/ẩn danh).
-            if(state.wantStart){state.wantStart=false;window._stWidgetClick();}
+            // không cần bấm lần 2. _stoWidgetClick tự re-check gate (Google/URL/ẩn danh).
+            if(state.wantStart){state.wantStart=false;window._stoWidgetClick();}
         }catch(e){console.log('LN widget parse error:',e);}
     };
     x.send('action=sitetop_widget_verify_access&referer='+encodeURIComponent(document.referrer||'')+'&current_url='+encodeURIComponent(window.location.href)+'&unlock_session='+encodeURIComponent(unlockSession)+'&unlock_time='+encodeURIComponent(unlockTime)+'&unlock_active='+encodeURIComponent(unlockActive)+'&campaign_type='+encodeURIComponent(campaignType)+'&nav_type='+encodeURIComponent(_navType())+'&kf='+_khungChinh()+'&vis='+encodeURIComponent(document.visibilityState||''));
@@ -869,7 +869,7 @@ function _navType(){
 // CREATE WIDGET UI - Inline tại vị trí <script> tag
 // ================================================================
 function createWidget(){
-    if(document.getElementById('tn-w'))return;
+    if(document.getElementById('tno-w'))return;
 
     // Find the script tag to insert widget AFTER it. Prefer document.currentScript (_cs) — the EXACT
     // <script> being executed — so the widget appears right where the embed code is pasted. The old
@@ -934,79 +934,79 @@ function createWidget(){
     var s=document.createElement('style');
     // Nút nằm TRONG luồng trang, ở khối footer — KHÔNG position:fixed, không dính màn hình.
     // User phải cuộn xuống cuối trang mới thấy nút (đúng bước 1 của kịch bản nhiệm vụ).
-    // position:relative để #tn-toast (absolute) neo theo nút. Đếm ngược hiện SỐ trong vòng
-    // tròn (tn-counting), mã hiện dạng pill (tn-pill). KHÔNG đụng logic đếm ngược/sinh mã/verify.
-    // Ep trong suot: #tn-w khong tu ve nen, nhung nhieu theme khach co luat quet chung
+    // position:relative để #tno-toast (absolute) neo theo nút. Đếm ngược hiện SỐ trong vòng
+    // tròn (tno-counting), mã hiện dạng pill (tno-pill). KHÔNG đụng logic đếm ngược/sinh mã/verify.
+    // Ep trong suot: #tno-w khong tu ve nen, nhung nhieu theme khach co luat quet chung
     // kieu 'footer div{background:#fff}' to trung khung nay, tao ra dai trang quanh nut.
     // !important de thang luat cua theme. Ket qua: nen that cua trang dich lo ra.
-    s.textContent='#tn-w{background:transparent!important;background-image:none!important;border:none!important;box-shadow:none!important;position:relative;display:block;width:100%;margin:'+_leTren+'px auto '+_leDuoi+'px;padding:0;text-align:center;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;z-index:2147483000;pointer-events:none}'+
-    // #tn-w rong 100% ngang nhung chi co cai nut o GIUA — hai ben la dai trong.
+    s.textContent='#tno-w{background:transparent!important;background-image:none!important;border:none!important;box-shadow:none!important;position:relative;display:block;width:100%;margin:'+_leTren+'px auto '+_leDuoi+'px;padding:0;text-align:center;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;z-index:2147483000;pointer-events:none}'+
+    // #tno-w rong 100% ngang nhung chi co cai nut o GIUA — hai ben la dai trong.
     // Voi z-index 2147483000 thi dai trong do van NUOT cu bam cua moi thu nam duoi
     // no, ke ca nut lien he noi (#lnContactFab, z-index 9990) cua chinh sitetop.one:
     // tren dien thoai hai vung chong nhau nen bam nut lien he khong an gi.
     // pointer-events:none cho khung bao, :auto cho cac con → nut/popup/toast/khoi
     // huong dan buoc 2 (co the <a> that) van bam duoc, con dai trong thi cho click
     // xuyen qua. Khong ha z-index vi no co chu dich: tranh bi overlay cua trang khach de len.
-    '#tn-w>*{pointer-events:auto}'+
-    '#tn-btn{display:inline-flex!important;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:'+C.clr+';color:'+C.txtClr+';width:52px!important;height:52px!important;min-width:52px!important;max-width:52px!important;min-height:52px!important;border-radius:50%!important;box-sizing:border-box!important;padding:0!important;margin:0!important;aspect-ratio:1/1!important;flex:none!important;overflow:hidden;font-size:9.5px;font-weight:800;cursor:pointer;border:none!important;box-shadow:0 3px 10px rgba(0,0,0,.2);transition:transform .15s;letter-spacing:.4px;line-height:1.05;text-align:center}'+
-    '#tn-btn:hover{transform:scale(1.03)}'+
-    '#tn-btn svg,#tn-btn img{width:16px!important;height:16px!important;display:block}'+
-    // Icon tùy chỉnh (tn-logo): logo phủ KÍN mặt nút tròn (thay cho icon 22px + chữ). Chỉ trạng thái
-    // ban đầu có img — đếm ngược/pill/đợi giữ nguyên (ẩn theo .tn-counting hoặc innerHTML đã thay).
-    '#tn-btn.tn-logo img{width:100%!important;height:100%!important;object-fit:cover;border-radius:50%}'+
+    '#tno-w>*{pointer-events:auto}'+
+    '#tno-btn{display:inline-flex!important;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:'+C.clr+';color:'+C.txtClr+';width:52px!important;height:52px!important;min-width:52px!important;max-width:52px!important;min-height:52px!important;border-radius:50%!important;box-sizing:border-box!important;padding:0!important;margin:0!important;aspect-ratio:1/1!important;flex:none!important;overflow:hidden;font-size:9.5px;font-weight:800;cursor:pointer;border:none!important;box-shadow:0 3px 10px rgba(0,0,0,.2);transition:transform .15s;letter-spacing:.4px;line-height:1.05;text-align:center}'+
+    '#tno-btn:hover{transform:scale(1.03)}'+
+    '#tno-btn svg,#tno-btn img{width:16px!important;height:16px!important;display:block}'+
+    // Icon tùy chỉnh (tno-logo): logo phủ KÍN mặt nút tròn (thay cho icon 22px + chữ). Chỉ trạng thái
+    // ban đầu có img — đếm ngược/pill/đợi giữ nguyên (ẩn theo .tno-counting hoặc innerHTML đã thay).
+    '#tno-btn.tno-logo img{width:100%!important;height:100%!important;object-fit:cover;border-radius:50%}'+
     // Logo PNG la hinh tron trang hoi thut vao so voi khung nut, nen vien ngoai de lot
     // mau nen C.clr ra thanh mot vong xanh. Cho nen trong suot o TRANG THAI LOGO.
     // :not() de KHONG dung hai trang thai sau: dem nguoc can dia mau moi doc duoc so,
     // ma can nen pill. Giu box-shadow de logo van noi khoi trang dich.
-    '#tn-btn.tn-logo:not(.tn-counting):not(.tn-pill){background:transparent!important}'+
-    '#tn-btn-text:empty{display:none}'+
-    '#tn-cd{font-size:23px;font-weight:600;color:#fff;line-height:1;text-align:center;display:none}'+
-    '#tn-btn.tn-counting>*{display:none!important}'+
-    '#tn-btn.tn-counting>#tn-cd{display:block!important}'+
-    '#tn-btn.tn-pill{width:auto!important;height:auto!important;min-width:0!important;max-width:none!important;min-height:0!important;border-radius:20px!important;padding:9px 15px!important;aspect-ratio:auto!important;flex-direction:row;gap:7px;overflow:visible;font-size:12px}'+
-    '#tn-toast{position:absolute;bottom:calc(100% + 10px);left:50%;right:auto;top:auto;transform:translateX(-50%);background:#1a7a3a;color:#fff;padding:8px 13px;border-radius:9px;font-size:12px;font-weight:600;line-height:1.35;z-index:9999999;opacity:0;transition:opacity .25s;pointer-events:none;white-space:normal;width:190px;text-align:center;box-shadow:0 5px 16px rgba(0,0,0,.24)}'+
-    '#tn-toast.warn{background:#d9534f}'+
-    '#tn-toast.show{opacity:1}'+
+    '#tno-btn.tno-logo:not(.tno-counting):not(.tno-pill){background:transparent!important}'+
+    '#tno-btn-text:empty{display:none}'+
+    '#tno-cd{font-size:23px;font-weight:600;color:#fff;line-height:1;text-align:center;display:none}'+
+    '#tno-btn.tno-counting>*{display:none!important}'+
+    '#tno-btn.tno-counting>#tno-cd{display:block!important}'+
+    '#tno-btn.tno-pill{width:auto!important;height:auto!important;min-width:0!important;max-width:none!important;min-height:0!important;border-radius:20px!important;padding:9px 15px!important;aspect-ratio:auto!important;flex-direction:row;gap:7px;overflow:visible;font-size:12px}'+
+    '#tno-toast{position:absolute;bottom:calc(100% + 10px);left:50%;right:auto;top:auto;transform:translateX(-50%);background:#1a7a3a;color:#fff;padding:8px 13px;border-radius:9px;font-size:12px;font-weight:600;line-height:1.35;z-index:9999999;opacity:0;transition:opacity .25s;pointer-events:none;white-space:normal;width:190px;text-align:center;box-shadow:0 5px 16px rgba(0,0,0,.24)}'+
+    '#tno-toast.warn{background:#d9534f}'+
+    '#tno-toast.show{opacity:1}'+
     // Placement tuỳ chọn cũ (data-position) → vô hiệu, mọi trang đích đặt nút trong footer như nhau.
-    '#tn-w.tn-float,#tn-w.tn-float-br,#tn-w.tn-float-bl,#tn-w.tn-float-tr,#tn-w.tn-float-tl{position:relative;left:auto;right:auto;top:auto;bottom:auto;transform:none}'+
+    '#tno-w.tno-float,#tno-w.tno-float-br,#tno-w.tno-float-bl,#tno-w.tno-float-tr,#tno-w.tno-float-tl{position:relative;left:auto;right:auto;top:auto;bottom:auto;transform:none}'+
     // Popup chốt hành vi: LUÔN giữa màn hình, overlay mờ. pointer-events:none để user vẫn
     // cuộn/chạm được trang bên dưới — chính thao tác đó mới là điều kiện qua chốt.
-    '#tn-ov,#tn-ov *{box-sizing:border-box}'+   // không để CSS reset của trang đích đổi kích thước thẻ
-    '#tn-ov{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(10,22,51,.26);z-index:2147483100;display:none;align-items:center;justify-content:center;padding:20px;pointer-events:none}'+
-    '#tn-ov.show{display:flex}'+
-    '#tn-pop{background:#fff;border-radius:18px;padding:20px 18px;max-width:290px;width:100%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.42);font-family:inherit;animation:tnPopIn .22s ease}'+
-    '@keyframes tnPopIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}'+
+    '#tno-ov,#tno-ov *{box-sizing:border-box}'+   // không để CSS reset của trang đích đổi kích thước thẻ
+    '#tno-ov{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(10,22,51,.26);z-index:2147483100;display:none;align-items:center;justify-content:center;padding:20px;pointer-events:none}'+
+    '#tno-ov.show{display:flex}'+
+    '#tno-pop{background:#fff;border-radius:18px;padding:20px 18px;max-width:290px;width:100%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.42);font-family:inherit;animation:tnoPopIn .22s ease}'+
+    '@keyframes tnoPopIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}'+
     // Mũi tên chỉ hướng. Trước đây ô này bị display:none nên mũi tên có trong code mà
     // không bao giờ hiện — user chỉ thấy chữ, phải tự đoán lên hay xuống.
-    '#tn-pop-ic{display:flex;align-items:center;justify-content:center;width:46px;height:46px;margin:0 auto 9px;border-radius:50%;background:#EEF3FF;color:#1E5EFF}'+
-    '#tn-pop-ic svg{width:28px;height:28px;display:block}'+
-    '#tn-pop.warn #tn-pop-ic{background:#FDECEC;color:#D9534F}'+
+    '#tno-pop-ic{display:flex;align-items:center;justify-content:center;width:46px;height:46px;margin:0 auto 9px;border-radius:50%;background:#EEF3FF;color:#1E5EFF}'+
+    '#tno-pop-ic svg{width:28px;height:28px;display:block}'+
+    '#tno-pop.warn #tno-pop-ic{background:#FDECEC;color:#D9534F}'+
     // Nhún theo đúng hướng cần cuộn — nhìn là biết ngay lên hay xuống.
-    '#tn-pop-ic svg.tn-ar-up{animation:tnArUp 1s ease-in-out infinite}'+
-    '#tn-pop-ic svg.tn-ar-dn{animation:tnArDn 1s ease-in-out infinite}'+
-    '@keyframes tnArUp{0%,100%{transform:translateY(3px)}50%{transform:translateY(-3px)}}'+
-    '@keyframes tnArDn{0%,100%{transform:translateY(-3px)}50%{transform:translateY(3px)}}'+
+    '#tno-pop-ic svg.tno-ar-up{animation:tnoArUp 1s ease-in-out infinite}'+
+    '#tno-pop-ic svg.tno-ar-dn{animation:tnoArDn 1s ease-in-out infinite}'+
+    '@keyframes tnoArUp{0%,100%{transform:translateY(3px)}50%{transform:translateY(-3px)}}'+
+    '@keyframes tnoArDn{0%,100%{transform:translateY(-3px)}50%{transform:translateY(3px)}}'+
     // Vòng sóng của biểu tượng nhấn: lan ra rồi mờ dần, vòng ngoài chậm hơn nửa nhịp.
-    '#tn-pop-ic svg.tn-ic-tap circle.tn-rip{transform-origin:12px 12px;animation:tnRip 1.6s ease-out infinite}'+
-    '#tn-pop-ic svg.tn-ic-tap circle.tn-rip2{animation-delay:.5s}'+
-    '@keyframes tnRip{0%{transform:scale(.45);opacity:.9}70%{transform:scale(1.05);opacity:0}100%{opacity:0}}'+
-    '@media (prefers-reduced-motion:reduce){#tn-pop-ic svg{animation:none!important}#tn-pop-ic svg circle{animation:none!important;opacity:1}}'+
-    '#tn-pop-msg{font-size:14.5px;font-weight:700;color:#111827;line-height:1.45;margin:0 0 13px}'+
-    '#tn-pop-msg:empty{display:none}'+                                 // không có việc gì → chỉ còn vòng đếm
-    '#tn-pop-sub{display:none}'+                                       // mẫu mới: bỏ dòng phụ
+    '#tno-pop-ic svg.tno-ic-tap circle.tno-rip{transform-origin:12px 12px;animation:tnoRip 1.6s ease-out infinite}'+
+    '#tno-pop-ic svg.tno-ic-tap circle.tno-rip2{animation-delay:.5s}'+
+    '@keyframes tnoRip{0%{transform:scale(.45);opacity:.9}70%{transform:scale(1.05);opacity:0}100%{opacity:0}}'+
+    '@media (prefers-reduced-motion:reduce){#tno-pop-ic svg{animation:none!important}#tno-pop-ic svg circle{animation:none!important;opacity:1}}'+
+    '#tno-pop-msg{font-size:14.5px;font-weight:700;color:#111827;line-height:1.45;margin:0 0 13px}'+
+    '#tno-pop-msg:empty{display:none}'+                                 // không có việc gì → chỉ còn vòng đếm
+    '#tno-pop-sub{display:none}'+                                       // mẫu mới: bỏ dòng phụ
     // Đồng hồ = vòng tròn viền mảnh chỉ chứa SỐ (bỏ chữ "Thời gian còn lại")
-    '#tn-pop-timer{width:56px;height:56px;margin:0 auto;padding:0;border-radius:50%;border:1.5px solid #E3E8F2;background:#fff;display:flex;align-items:center;justify-content:center}'+
-    '#tn-pop-timer b{font-size:18px;font-weight:700;color:#111827;font-variant-numeric:tabular-nums}'+
-    '#tn-pop.warn #tn-pop-msg{color:#B45309}'+
-    '#tn-pop.warn #tn-pop-timer{border-color:#FBBF24}'+
+    '#tno-pop-timer{width:56px;height:56px;margin:0 auto;padding:0;border-radius:50%;border:1.5px solid #E3E8F2;background:#fff;display:flex;align-items:center;justify-content:center}'+
+    '#tno-pop-timer b{font-size:18px;font-weight:700;color:#111827;font-variant-numeric:tabular-nums}'+
+    '#tno-pop.warn #tno-pop-msg{color:#B45309}'+
+    '#tno-pop.warn #tno-pop-timer{border-color:#FBBF24}'+
     // Chế độ MINI: sau popup đầu tiên, thu thành chip mờ nổi GIỮA màn hình (không phải trên
     // đầu trang), KHÔNG overlay, không chặn thao tác, không cần tắt — ở đó suốt phiên.
     // Lúc không có việc gì thì chỉ còn đồng hồ đếm ngược.
-    '#tn-ov.mini{background:transparent;align-items:center;justify-content:center;padding:0}'+
-    '#tn-ov.mini #tn-pop{max-width:248px;padding:16px 16px;opacity:1;box-shadow:0 14px 36px -14px rgba(0,0,0,.4);animation:none}'+
-    '#tn-ov.mini #tn-pop-msg{font-size:13.5px;margin:0 0 11px}'+
-    '#tn-ov.mini #tn-pop-timer{width:50px;height:50px}'+
-    '#tn-ov.mini #tn-pop-timer b{font-size:17px}'+
+    '#tno-ov.mini{background:transparent;align-items:center;justify-content:center;padding:0}'+
+    '#tno-ov.mini #tno-pop{max-width:248px;padding:16px 16px;opacity:1;box-shadow:0 14px 36px -14px rgba(0,0,0,.4);animation:none}'+
+    '#tno-ov.mini #tno-pop-msg{font-size:13.5px;margin:0 0 11px}'+
+    '#tno-ov.mini #tno-pop-timer{width:50px;height:50px}'+
+    '#tno-ov.mini #tno-pop-timer b{font-size:17px}'+
     // Mobile: khung nhỏ lại rõ rệt (cả popup lần đầu lẫn chip mini)
     '@media(max-width:600px){'+
     // Nut lay ma tren man hep. Lich su co: 46 -> 40 (cho do chiem cho) -> 45 (05/09,
@@ -1014,45 +1014,45 @@ function createWidget(){
     // desktop cung nang dot do). 09/09 giam 4px ca hai: 56->52, 54->50.
     // Giu mobile nho hon desktop 2px nhu chu y ban dau cua luat @media.
     // Phai lap lai !important vi luat goc cung dung !important — thieu la thua luat goc.
-    '#tn-btn{width:50px!important;height:50px!important;min-width:50px!important;max-width:50px!important;min-height:50px!important}'+
-    '#tn-cd{font-size:20px}'+
-    '#tn-btn.tn-pill{padding:8px 13px!important;font-size:11.5px}'+
+    '#tno-btn{width:50px!important;height:50px!important;min-width:50px!important;max-width:50px!important;min-height:50px!important}'+
+    '#tno-cd{font-size:20px}'+
+    '#tno-btn.tno-pill{padding:8px 13px!important;font-size:11.5px}'+
     // Mobile: thu gọn cả cụm. Mũi tên mới thêm chiếm 46px nên không thu thì thẻ cao
     // hơn hẳn bản cũ, che mất nội dung trang đích.
-    '#tn-pop{max-width:206px;padding:12px 11px;border-radius:14px}'+
+    '#tno-pop{max-width:206px;padding:12px 11px;border-radius:14px}'+
     // Thẻ thu nhỏ nhưng mũi tên KHÔNG thu theo tỷ lệ — nó là thứ user cần nhìn thấy
     // đầu tiên. Giữ gần cỡ desktop, chỉ bớt một chút cho cân với thẻ hẹp hơn.
-    '#tn-pop-ic{width:42px;height:42px;margin:0 auto 7px}'+
-    '#tn-pop-ic svg{width:26px;height:26px}'+
-    '#tn-pop-msg{font-size:12.5px;margin:0 0 8px}'+
-    '#tn-pop-sub{font-size:11px;line-height:1.45}'+
-    '#tn-pop-timer{width:42px;height:42px}#tn-pop-timer b{font-size:14.5px}'+
-    '#tn-ov.mini #tn-pop{max-width:52vw;padding:9px 9px;border-radius:12px}'+
-    '#tn-ov.mini #tn-pop-ic{width:34px;height:34px;margin:0 auto 6px}'+
-    '#tn-ov.mini #tn-pop-ic svg{width:22px;height:22px}'+
-    '#tn-ov.mini #tn-pop-msg{font-size:11.5px;margin:0 0 7px}'+
-    '#tn-ov.mini #tn-pop-timer{width:36px;height:36px}#tn-ov.mini #tn-pop-timer b{font-size:13px}}';
+    '#tno-pop-ic{width:42px;height:42px;margin:0 auto 7px}'+
+    '#tno-pop-ic svg{width:26px;height:26px}'+
+    '#tno-pop-msg{font-size:12.5px;margin:0 0 8px}'+
+    '#tno-pop-sub{font-size:11px;line-height:1.45}'+
+    '#tno-pop-timer{width:42px;height:42px}#tno-pop-timer b{font-size:14.5px}'+
+    '#tno-ov.mini #tno-pop{max-width:52vw;padding:9px 9px;border-radius:12px}'+
+    '#tno-ov.mini #tno-pop-ic{width:34px;height:34px;margin:0 auto 6px}'+
+    '#tno-ov.mini #tno-pop-ic svg{width:22px;height:22px}'+
+    '#tno-ov.mini #tno-pop-msg{font-size:11.5px;margin:0 0 7px}'+
+    '#tno-ov.mini #tno-pop-timer{width:36px;height:36px}#tno-ov.mini #tno-pop-timer b{font-size:13px}}';
     document.head.appendChild(s);
 
     var w=document.createElement('div');
-    w.id='tn-w';
+    w.id='tno-w';
     var iconHtml=C.icon?'<img src="'+C.icon+'" style="width:16px;height:16px">':'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="14" rx="2"/><path d="M12 8V5a3 3 0 0 0-3-3h0a3 3 0 0 0-3 3v0"/><path d="M18 8V5a3 3 0 0 0-3-3h0a3 3 0 0 0-3 3v0"/><line x1="12" y1="8" x2="12" y2="22"/></svg>';
-    // Icon tùy chỉnh → class tn-logo (logo phủ kín nút) + chữ RỖNG (logo tự mang brand; :empty tự ẩn).
+    // Icon tùy chỉnh → class tno-logo (logo phủ kín nút) + chữ RỖNG (logo tự mang brand; :empty tự ẩn).
     // Chữ phải rỗng từ đầu chứ KHÔNG ẩn bằng CSS theo class — các trạng thái "Vui lòng đợi"/"Đang tải..."
     // thay innerHTML bằng text thuần, ẩn theo class sẽ làm nút trống trơn.
-    w.innerHTML='<div id="tn-btn"'+(C.icon?' class="tn-logo"':'')+' onclick="window._stWidgetClick()">'+iconHtml+'<span id="tn-btn-text">'+(C.icon?'':C.btnText)+'</span><span id="tn-cd"></span></div><iframe id="tn-captcha" style="display:none;border:none;width:220px;height:45px;margin-top:4px;overflow:hidden"></iframe><div id="tn-toast"></div>';
+    w.innerHTML='<div id="tno-btn"'+(C.icon?' class="tno-logo"':'')+' onclick="window._stoWidgetClick()">'+iconHtml+'<span id="tno-btn-text">'+(C.icon?'':C.btnText)+'</span><span id="tno-cd"></span></div><iframe id="tno-captcha" style="display:none;border:none;width:220px;height:45px;margin-top:4px;overflow:hidden"></iframe><div id="tno-toast"></div>';
 
     /* Chốt an toàn: dù nút nằm ở đâu trong trang khách cũng KHÔNG được phép kích hoạt link
        bao ngoài. Khách có thể dán thẻ <script> nằm trong một <a>, hoặc điểm gắn tự động rơi
        vào đó — click nút khi ấy sẽ nổi bọt lên và trình duyệt chuyển trang.
 
-       GẮN VÀO ĐÚNG CÁI NÚT, KHÔNG gắn vào cả #tn-w. Bản đầu gắn lên #tn-w với giả định
+       GẮN VÀO ĐÚNG CÁI NÚT, KHÔNG gắn vào cả #tno-w. Bản đầu gắn lên #tno-w với giả định
        "bên trong widget không có gì cần hành vi click mặc định" — giả định đó SAI ngay khi
        _showStep2() nhét khối hướng dẫn bước 2 (có thẻ <a> thật: ảnh bước 2 và danh sách link
-       nội bộ) vào trong #tn-w. Hậu quả: bấm link bước 2 bị chặn điều hướng, user kẹt lại
+       nội bộ) vào trong #tno-w. Hậu quả: bấm link bước 2 bị chặn điều hướng, user kẹt lại
        trang cũ và không bao giờ hoàn tất được bước 2.
        Phần tử nút không bao giờ bị thay, chỉ đổi innerHTML, nên listener này sống suốt. */
-    var _btn0=w.querySelector('#tn-btn');
+    var _btn0=w.querySelector('#tno-btn');
     if(_btn0){
         _btn0.addEventListener('click',function(e){ e.preventDefault(); },true);
         _btnHtml0=_btn0.innerHTML;
@@ -1185,8 +1185,8 @@ function createWidget(){
         document.body.appendChild(w);
     }
     var ov=document.createElement('div');
-    ov.id='tn-ov';
-    ov.innerHTML='<div id="tn-pop"><div id="tn-pop-ic"></div><p id="tn-pop-msg"></p><p id="tn-pop-sub"></p><span id="tn-pop-timer">Thời gian còn lại <b>--</b>s</span></div>';
+    ov.id='tno-ov';
+    ov.innerHTML='<div id="tno-pop"><div id="tno-pop-ic"></div><p id="tno-pop-msg"></p><p id="tno-pop-sub"></p><span id="tno-pop-timer">Thời gian còn lại <b>--</b>s</span></div>';
     if(document.body)document.body.appendChild(ov);
 
     if(document.body){
@@ -1216,8 +1216,8 @@ function _daiNutNoi(){
         var n=Math.min(all.length,2000);
         for(var i=0;i<n;i++){
             var e=all[i];
-            if(!e||e.id==='tn-w'||e.id==='tn-btn')continue;
-            try{ if(e.closest&&e.closest('#tn-w'))continue; }catch(_e){}
+            if(!e||e.id==='tno-w'||e.id==='tno-btn')continue;
+            try{ if(e.closest&&e.closest('#tno-w'))continue; }catch(_e){}
             var cs=window.getComputedStyle(e);
             if(!cs)continue;
             if(cs.position!=='fixed'&&cs.position!=='sticky')continue;
@@ -1234,7 +1234,7 @@ function _xaoChoNut(){
     var chay=function(){
         try{
             if(!_xaoDuoc)return;                    // khách chỉ định chỗ -> đứng yên
-            var khung=document.getElementById('tn-w'), nut=document.getElementById('tn-btn');
+            var khung=document.getElementById('tno-w'), nut=document.getElementById('tno-btn');
             if(!khung||!nut)return;
             var bien=_bienNgang(khung,nut);
             if(!(bien>0))return;                // hẹp quá -> giữ giữa, khỏi cắt
@@ -1272,7 +1272,7 @@ function _xaoChoNut(){
 /* Kẹp độ lệch vào biên HIỆN TẠI — gọi khi nút nở thành pill hoặc màn hình đổi cỡ. */
 function _kepChoNut(){
     try{
-        var khung=document.getElementById('tn-w'), nut=document.getElementById('tn-btn');
+        var khung=document.getElementById('tno-w'), nut=document.getElementById('tno-btn');
         if(!khung||!nut||_lechNgang===null)return;
         var bien=_bienNgang(khung,nut);
         if(!(bien>0)){nut.style.left='0px';return;}
@@ -1414,7 +1414,7 @@ function _bhInit(){
        trong 2 phút. Nhiệm vụ khác hoặc phiên cũ không kế thừa được gì. */
     _bhResume = 0;
     try{
-        var _bhSaved = JSON.parse(localStorage.getItem('tn_bh')||'null');
+        var _bhSaved = JSON.parse(localStorage.getItem('tno_bh')||'null');
         if(_bhSaved && _bhSaved.s === state.sessionId
            && (Date.now()-_bhSaved.t) < 120000 && _bhSaved.i > 0){
             _bhResume = Math.min(_bhSaved.i, base.length-1);
@@ -1471,11 +1471,11 @@ function _bhNext(){
     _bh.pre=null; _bh.satisfied=false;
     _bh.i++;
     if(_bh.i>=_bh.stages.length){ _bh.on=false; _bhHide();
-        try{ localStorage.removeItem('tn_bh'); }catch(e){}   // xong hết, khỏi để rác
+        try{ localStorage.removeItem('tno_bh'); }catch(e){}   // xong hết, khỏi để rác
         return; }   // _bhHide sẽ rút về chip đồng hồ
     _bh.left=_bh.stages[_bh.i].dur;
     /* Ghi chặng TUYỆT ĐỐI đang vào, để lỡ chuyển URL thì vào lại đúng đây. */
-    try{ localStorage.setItem('tn_bh', JSON.stringify({s:state.sessionId,i:_bhResume+_bh.i,t:Date.now()})); }catch(e){}
+    try{ localStorage.setItem('tno_bh', JSON.stringify({s:state.sessionId,i:_bhResume+_bh.i,t:Date.now()})); }catch(e){}
 }
 // Gọi mỗi khi countdown TIÊU THỤ 1 giây thật → chốt cũng pause/resume theo countdown.
 function _bhTick(){
@@ -1557,30 +1557,30 @@ function _bhOnScroll(){
 }
 function _bhNagPop(msg){
     var n=Date.now(); if(n<_bh.warnUntil)return; _bh.warnUntil=n+2200;
-    var p=document.getElementById('tn-pop'),m=document.getElementById('tn-pop-sub');
+    var p=document.getElementById('tno-pop'),m=document.getElementById('tno-pop-sub');
     if(!p||!m)return;
     var old=m.textContent; p.classList.add('warn'); m.textContent=msg;
     setTimeout(function(){ if(_bh.gate){ p.classList.remove('warn'); m.textContent=old; } },2000);
 }
 function _bhIcon(gate){
-    if(gate==='top'||gate==='third') return '<svg class="tn-ar-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V4"/><path d="M4 12l8-8 8 8"/></svg>';
-    if(gate==='bottom'||gate==='half') return '<svg class="tn-ar-dn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16"/><path d="M20 12l-8 8-8-8"/></svg>';
+    if(gate==='top'||gate==='third') return '<svg class="tno-ar-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V4"/><path d="M4 12l8-8 8 8"/></svg>';
+    if(gate==='bottom'||gate==='half') return '<svg class="tno-ar-dn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16"/><path d="M20 12l-8 8-8-8"/></svg>';
     // Biểu tượng NHẤN: chấm đặc ở giữa, hai vòng sóng lan ra. Thay bàn tay 5 ngón cũ —
     // ở cỡ 26px bàn tay rối, khó nhận ra. Vòng tròn thì nhìn phát hiểu ngay là chạm vào.
-    return '<svg class="tn-ic-tap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
-        + '<circle class="tn-rip tn-rip2" cx="12" cy="12" r="10"/>'
-        + '<circle class="tn-rip" cx="12" cy="12" r="6.5"/>'
+    return '<svg class="tno-ic-tap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+        + '<circle class="tno-rip tno-rip2" cx="12" cy="12" r="10"/>'
+        + '<circle class="tno-rip" cx="12" cy="12" r="6.5"/>'
         + '<circle cx="12" cy="12" r="3.2" fill="currentColor" stroke="none"/></svg>';
 }
 function _bhShowIdle(){
     if(state.codeReady||state.remaining<=1)return;
     _bh.idle=true;
     if(_bh.firstDone){ _bhMini('Đã tạm dừng — chạm để tiếp tục',true); return; }
-    var ov=document.getElementById('tn-ov'),p=document.getElementById('tn-pop'),ic=document.getElementById('tn-pop-ic');
+    var ov=document.getElementById('tno-ov'),p=document.getElementById('tno-pop'),ic=document.getElementById('tno-pop-ic');
     if(!ov||!p)return;
     if(ic){ic.style.display='';ic.innerHTML=_bhIcon('tap');}
-    var m=document.getElementById('tn-pop-msg'); if(m)m.textContent='Đã tạm dừng đếm';
-    var sb=document.getElementById('tn-pop-sub'); if(sb)sb.textContent='Chạm vào màn hình để tiếp tục.';
+    var m=document.getElementById('tno-pop-msg'); if(m)m.textContent='Đã tạm dừng đếm';
+    var sb=document.getElementById('tno-pop-sub'); if(sb)sb.textContent='Chạm vào màn hình để tiếp tục.';
     p.classList.add('warn');
     ov.classList.remove('mini');
     _bhTimerUI();
@@ -1590,9 +1590,9 @@ function _bhShow(msg,sub,warn,noIcon,gate){
     // Đếm ngược đã xong hoặc mã đã hiện → không dựng thẻ nữa. _bhEarly() có thể bắn
     // muộn (user thoả chốt hành vi sau khi hết giờ) và sẽ nổi đè lên mã / khối bước 2.
     if(state.codeReady||state.remaining<=1)return;
-    var ov=document.getElementById('tn-ov'),p=document.getElementById('tn-pop');
+    var ov=document.getElementById('tno-ov'),p=document.getElementById('tno-pop');
     if(!ov||!p)return;
-    var ic=document.getElementById('tn-pop-ic');
+    var ic=document.getElementById('tno-pop-ic');
     if(ic){
         // 'Đã ghi nhận' xác nhận việc ĐÃ xong — mũi tên chỉ hướng lúc này vô nghĩa. User
         // vừa làm xong mà vẫn thấy mũi tên nhún thì tưởng còn phải làm tiếp.
@@ -1601,8 +1601,8 @@ function _bhShow(msg,sub,warn,noIcon,gate){
         // đóng), lấy _bh.gate sẽ rơi vào nhánh mặc định và hiện nhầm icon chấm.
         if(!noIcon)ic.innerHTML=_bhIcon(gate||_bh.gate);
     }
-    var m=document.getElementById('tn-pop-msg'); if(m)m.textContent=msg||'';
-    var sb=document.getElementById('tn-pop-sub'); if(sb)sb.textContent=sub||'';
+    var m=document.getElementById('tno-pop-msg'); if(m)m.textContent=msg||'';
+    var sb=document.getElementById('tno-pop-sub'); if(sb)sb.textContent=sub||'';
     p.classList.toggle('warn',!!warn);
     // Chỉ LẦN ĐẦU mới bung popup to + overlay để giải thích; từ lần 2 dùng chip mini
     // (không overlay, không chặn thao tác, không cần tắt).
@@ -1613,19 +1613,19 @@ function _bhShow(msg,sub,warn,noIcon,gate){
 }
 // Chip mini: giữ NGUYÊN trên màn hình suốt phiên. Không truyền msg → chỉ còn đồng hồ.
 function _bhMini(msg,warn){
-    var ov=document.getElementById('tn-ov'),p=document.getElementById('tn-pop');
+    var ov=document.getElementById('tno-ov'),p=document.getElementById('tno-pop');
     // remaining<=1: chặn mọi đường hiện lại chip ở giây cuối, dù _bhHide có gọi tới.
     if(!ov||!p||state.codeReady||state.remaining<=1)return;
     // Chip đếm giây: bỏ icon đồng hồ — vòng số bên dưới đã nói rõ đang đếm.
-    var ic=document.getElementById('tn-pop-ic'); if(ic){ic.style.display='none';ic.innerHTML='';}
-    var m=document.getElementById('tn-pop-msg'); if(m)m.textContent=msg||'';
-    var sb=document.getElementById('tn-pop-sub'); if(sb)sb.textContent='';
+    var ic=document.getElementById('tno-pop-ic'); if(ic){ic.style.display='none';ic.innerHTML='';}
+    var m=document.getElementById('tno-pop-msg'); if(m)m.textContent=msg||'';
+    var sb=document.getElementById('tno-pop-sub'); if(sb)sb.textContent='';
     p.classList.toggle('warn',!!warn);
     ov.classList.add('mini','show');
     _bhTimerUI();
 }
 function _bhHide(){
-    var ov=document.getElementById('tn-ov');
+    var ov=document.getElementById('tno-ov');
     if(!ov)return;
     // Sau popup đầu tiên: KHÔNG tắt hẳn nữa, chỉ rút về chip đồng hồ luôn hiện.
     if(_bh.firstDone&&!state.codeReady){ _bhMini(''); return; }
@@ -1634,12 +1634,12 @@ function _bhHide(){
 // Tắt HẲN thẻ nổi, không thu về chip mini. Dùng ở giây cuối để nhường màn hình
 // cho khối bước 2 / nút lấy mã — chip cũ nằm đè lên trông rất rối.
 function _bhForceHide(){
-    var ov=document.getElementById('tn-ov');
+    var ov=document.getElementById('tno-ov');
     if(ov)ov.classList.remove('show','mini');
     _bh.on=false; _bh.gate=null; _bh.idle=false;
 }
 function _bhTimerUI(){
-    var t=document.getElementById('tn-pop-timer');
+    var t=document.getElementById('tno-pop-timer');
     if(t)t.innerHTML='<b>'+Math.max(0,state.remaining)+'</b>';
 }
 
@@ -1674,18 +1674,18 @@ function startCountdown(){
     }
 }
 function updateCountdownUI(){
-    var btnEl=document.getElementById('tn-btn');
-    var cd=document.getElementById('tn-cd');
+    var btnEl=document.getElementById('tno-btn');
+    var cd=document.getElementById('tno-cd');
     // Còn <=1 giây: tắt hiển thị số, trả nút về trạng thái logo. Để nguyên thì nút đứng
-    // im ở số 0 cho tới khi lấy xong mã — nhìn như bị treo. Gỡ class tn-counting là logo
+    // im ở số 0 cho tới khi lấy xong mã — nhìn như bị treo. Gỡ class tno-counting là logo
     // hiện lại ngay, vì CSS chỉ ẩn chứ không xoá nó khỏi DOM.
     if(state.remaining<=1){
-        if(btnEl)btnEl.classList.remove('tn-counting');
+        if(btnEl)btnEl.classList.remove('tno-counting');
         if(cd){cd.style.display='none';cd.textContent='';}
         _bhTimerUI();
         return;
     }
-    if(btnEl)btnEl.classList.add('tn-counting');       // vòng tròn chỉ hiện SỐ (ẩn icon + chữ qua CSS).
+    if(btnEl)btnEl.classList.add('tno-counting');       // vòng tròn chỉ hiện SỐ (ẩn icon + chữ qua CSS).
     if(cd){cd.textContent=Math.max(0,state.remaining);cd.style.display='block';}
     _bhTimerUI();
 }
@@ -1714,15 +1714,15 @@ function getCode(){
     });
 }
 function showCode(code){
-    var btn=document.getElementById('tn-btn');
-    var cd=document.getElementById('tn-cd');
+    var btn=document.getElementById('tno-btn');
+    var cd=document.getElementById('tno-cd');
     if(cd)cd.style.display='none';
     if(btn){
-        btn.classList.remove('tn-counting');btn.classList.add('tn-pill');
+        btn.classList.remove('tno-counting');btn.classList.add('tno-pill');
         setTimeout(_kepChoNut,0);   // pill rộng hơn nút tròn -> kẹp lại cho khỏi tràn khung // giãn vòng tròn thành pill cho mã.
         // Kèm icon copy để user biết bấm được, chứ mã trần trông như nhãn tĩnh.
-        btn.innerHTML='<span id="tn-code-t" style="letter-spacing:2px;font-size:12px;font-weight:700">'+code+'</span>'+
-            '<svg id="tn-code-cp" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:.85"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+        btn.innerHTML='<span id="tno-code-t" style="letter-spacing:2px;font-size:12px;font-weight:700">'+code+'</span>'+
+            '<svg id="tno-code-cp" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:.85"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
         btn.style.pointerEvents='auto';
         btn.style.cursor='pointer';
         btn.title='Bấm để sao chép mã';
@@ -1732,12 +1732,12 @@ function showCode(code){
     state.code=code;
     state.codeReady=true;
     _bhForceHide();   // mã đã hiện → dọn nốt thẻ nổi nếu nó còn dựng từ trước
-    try{localStorage.setItem('tn_btn_clicked','1');}catch(e){}
+    try{localStorage.setItem('tno_btn_clicked','1');}catch(e){}
 }
 // Copy mã + báo server đã copy → trang unlock (tab kia) tự điền mã vào ô nhập.
 function _tnCopyCode(code){
     var done=function(){
-        var t=document.getElementById('tn-code-t');
+        var t=document.getElementById('tno-code-t');
         if(t){ var old=t.textContent; t.textContent='Đã copy!'; setTimeout(function(){ t.textContent=old; },1500); }
         showToast('Đã sao chép — quay lại tab nhiệm vụ, mã sẽ tự điền');
         // Báo về server. Không chặn thao tác copy nếu request lỗi.
@@ -1755,10 +1755,10 @@ function _tnCopyFallback(code){
     }catch(e){}
 }
 function showToast(msg,duration,type){
-    var t=document.getElementById('tn-toast');
+    var t=document.getElementById('tno-toast');
     if(!t)return;
     t.textContent=msg;
-    t.className='';t.id='tn-toast';
+    t.className='';t.id='tno-toast';
     if(type)t.classList.add(type);
     t.classList.add('show');
     setTimeout(function(){t.classList.remove('show');},duration||2000);
@@ -1777,7 +1777,7 @@ function showToast(msg,duration,type){
    Chuyển URL nội bộ cũng bắn tín hiệu này, nhưng trang mới tải trong 1-2 giây
    nên không chạm ngưỡng 10 giây, đồng hồ vẫn chạy tiếp bình thường. */
 var _daBaoRoi=false;
-function _stBaoRoiTrang(){
+function _stoBaoRoiTrang(){
     if(!state.sessionId||state.codeReady) return;
     if(_daBaoRoi) return;
     _daBaoRoi=true;
@@ -1803,21 +1803,21 @@ function startPresence(){
     ping();
     timers.presence=setInterval(ping,10000);
 
-    if(!window._stRoiGan){
-        window._stRoiGan=true;
+    if(!window._stoRoiGan){
+        window._stoRoiGan=true;
         /* CHỈ nghe pagehide. KHÔNG nghe visibilitychange: ẩn tab không phải là rời
            trang. User buộc phải chuyển tab giữa chừng — quay về tab sitetop nhập mã,
            đọc một thông báo, trên điện thoại thì chỉ cần khoá màn hình. Nghe
            visibilitychange là mỗi lần như vậy đều xoá sạch tiến trình và bắt làm lại
            từ đầu. Đóng tab hay chuyển trang thật đều bắn pagehide nên yêu cầu "thoát
            trang 10 giây thì làm lại" vẫn giữ nguyên. */
-        window.addEventListener('pagehide',_stBaoRoiTrang);
+        window.addEventListener('pagehide',_stoBaoRoiTrang);
     }
 }
 
 /* Đặt mốc giờ ở MÁY CHỦ rồi mới chạy đồng hồ. Dùng chung cho cả ba nhánh dẫn tới
    đếm ngược, để thời gian nhiệm vụ chỉ tính từ khi user thật sự bắt đầu xem trang. */
-function _stBatDauGio(){
+function _stoBatDauGio(){
     /* start_timer ĐẶT LẠI mốc giờ ở máy chủ về hiện tại, nên đồng hồ hiển thị cũng
        phải quay về trọn thời lượng — hai đồng hồ bắt buộc khởi động CÙNG LÚC.
 
@@ -1936,8 +1936,8 @@ function ajax(action,data,cb){
 // STEP 2 GUIDE - Hiện hướng dẫn click link nội bộ
 // ================================================================
 function showStep2Guide(){
-    if(document.getElementById('tn-guide'))return;
-    var btn=document.getElementById('tn-btn');
+    if(document.getElementById('tno-guide'))return;
+    var btn=document.getElementById('tno-btn');
     if(btn)btn.style.display='none';
 
     var internalLinks=getInternalLinks();
@@ -1974,14 +1974,14 @@ function showStep2Guide(){
         titleText='<span style="display:inline-block;background:#fff;border:2px solid #f59e0b;border-radius:10px;padding:9px 13px;font-size:13px;font-weight:700;color:#92400e;line-height:1.55;box-shadow:0 2px 7px rgba(245,158,11,.28);">Bấm chọn vào <b style="color:#dc2626;">link giống ảnh</b><br>và lướt xuống cuối trang <b style="color:#dc2626;">Lấy Mã</b></span>';
         var _s2img='<img src="'+s2.image_url.replace(/"/g,'%22')+'" alt="Mục cần tìm rồi bấm" style="display:block;width:100%;max-width:280px;height:auto;">';
         if(s2Href){
-            linksHtml='<div style="margin-top:8px;"><a href="'+s2Href.replace(/"/g,'%22')+'" id="tn-s2img" style="display:block;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.18);animation:tnBtnPulse 1.5s ease-in-out infinite;">'+_s2img+'</a></div>';
+            linksHtml='<div style="margin-top:8px;"><a href="'+s2Href.replace(/"/g,'%22')+'" id="tno-s2img" style="display:block;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.18);animation:tnoBtnPulse 1.5s ease-in-out infinite;">'+_s2img+'</a></div>';
         }else{
             /* Ảnh KHÔNG bấm được. Bỏ nhịp đập vì nhịp đập là tín hiệu "bấm vào đây", giữ
                lại là user cứ bấm vào ảnh rồi tưởng widget hỏng. Nói thẳng ảnh để đối chiếu. */
-            linksHtml='<div style="margin-top:8px;"><div id="tn-s2img-xem" style="display:block;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.18);">'+_s2img+'</div>'
+            linksHtml='<div style="margin-top:8px;"><div id="tno-s2img-xem" style="display:block;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.18);">'+_s2img+'</div>'
                 +'<div style="font-size:10px;color:#a16207;margin-top:5px;font-weight:600;line-height:1.45;">Ảnh chỉ để đối chiếu — tìm đúng mục này trên trang rồi bấm vào</div></div>';
         }
-        linksHtml+='<style>@keyframes tnBtnPulse{0%,100%{box-shadow:0 0 0 3px rgba(245,158,11,0.4)}50%{box-shadow:0 0 0 6px rgba(245,158,11,0.2)}}</style>';
+        linksHtml+='<style>@keyframes tnoBtnPulse{0%,100%{box-shadow:0 0 0 3px rgba(245,158,11,0.4)}50%{box-shadow:0 0 0 6px rgba(245,158,11,0.2)}}</style>';
 
         // Mẫu thu nhỏ của ĐÚNG cái nút mà user phải tìm ở cuối trang. Dùng lại C.icon và
         // C.clr nên mẫu luôn khớp nút thật, kể cả khi admin đổi logo hoặc màu widget.
@@ -1994,20 +1994,20 @@ function showStep2Guide(){
             +'Tìm nút này ở cuối trang</span></div>';
     }else if(internalLinks.length>0){
         linksHtml='<div style="margin-top:8px;">';
-        linksHtml+='<div style="display:flex;justify-content:center;margin-bottom:4px;animation:tnPointerBounce 0.8s ease-in-out infinite;"><svg width="20" height="20" viewBox="0 0 24 24" fill="#dc2626"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg></div>';
+        linksHtml+='<div style="display:flex;justify-content:center;margin-bottom:4px;animation:tnoPointerBounce 0.8s ease-in-out infinite;"><svg width="20" height="20" viewBox="0 0 24 24" fill="#dc2626"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg></div>';
         linksHtml+='<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;">';
         internalLinks.forEach(function(link,i){
-            var extra=i===0?'animation:tnBtnPulse 1.5s ease-in-out infinite;box-shadow:0 0 0 3px rgba(245,158,11,0.4);':'';
-            linksHtml+='<a href="'+link.url+'" class="tn-step2-link" style="display:inline-block;padding:6px 12px;background:#f59e0b;color:#fff;border-radius:6px;text-decoration:none;font-size:11px;font-weight:600;transition:all 0.2s;'+extra+'" onmouseover="this.style.background=\'#d97706\';this.style.transform=\'scale(1.05)\'" onmouseout="this.style.background=\'#f59e0b\';this.style.transform=\'scale(1)\'">'+link.text+'</a>';
+            var extra=i===0?'animation:tnoBtnPulse 1.5s ease-in-out infinite;box-shadow:0 0 0 3px rgba(245,158,11,0.4);':'';
+            linksHtml+='<a href="'+link.url+'" class="tno-step2-link" style="display:inline-block;padding:6px 12px;background:#f59e0b;color:#fff;border-radius:6px;text-decoration:none;font-size:11px;font-weight:600;transition:all 0.2s;'+extra+'" onmouseover="this.style.background=\'#d97706\';this.style.transform=\'scale(1.05)\'" onmouseout="this.style.background=\'#f59e0b\';this.style.transform=\'scale(1)\'">'+link.text+'</a>';
         });
         linksHtml+='</div>';
-        linksHtml+='<div style="display:flex;justify-content:center;margin-top:6px;animation:tnToastBounce 1s ease-in-out infinite;"><span style="background:#1f2937;color:#fff;padding:5px 12px;border-radius:16px;font-size:10px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.2);">👆 Click vào đây</span></div>';
+        linksHtml+='<div style="display:flex;justify-content:center;margin-top:6px;animation:tnoToastBounce 1s ease-in-out infinite;"><span style="background:#1f2937;color:#fff;padding:5px 12px;border-radius:16px;font-size:10px;font-weight:600;box-shadow:0 2px 8px rgba(0,0,0,0.2);">👆 Click vào đây</span></div>';
         linksHtml+='</div>';
-        linksHtml+='<style>@keyframes tnToastBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(3px)}}@keyframes tnPointerBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(3px)}}@keyframes tnBtnPulse{0%,100%{box-shadow:0 0 0 3px rgba(245,158,11,0.4)}50%{box-shadow:0 0 0 6px rgba(245,158,11,0.2)}}</style>';
+        linksHtml+='<style>@keyframes tnoToastBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(3px)}}@keyframes tnoPointerBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(3px)}}@keyframes tnoBtnPulse{0%,100%{box-shadow:0 0 0 3px rgba(245,158,11,0.4)}50%{box-shadow:0 0 0 6px rgba(245,158,11,0.2)}}</style>';
     }
 
     var guide=document.createElement('div');
-    guide.id='tn-guide';
+    guide.id='tno-guide';
     guide.style.cssText='display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 16px;background:linear-gradient(135deg,#fef3c7,#fed7aa);border-radius:12px;border:2px solid #f59e0b;text-align:center;max-width:320px;margin:0 auto;';
     guide.innerHTML='<div style="width:44px;height:44px;background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:50%;display:flex;align-items:center;justify-content:center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M13.5 5.5C14.59 5.5 15.5 4.58 15.5 3.5S14.59 1.5 13.5 1.5 11.5 2.42 11.5 3.5s.91 2 2 2zM9.89 19.38l1-4.38L13 17v6h2v-7.5l-2.11-2 .61-3A7.35 7.35 0 0 0 19 13v-2a5.32 5.32 0 0 1-4.39-2.33l-1-1.67A2 2 0 0 0 12 6a2.15 2.15 0 0 0-.89.21L6 8.83V13h2V9.83l1.89-.94L8.2 17l-4.7 1.3.5 1.9 6.89-1.82z"/></svg></div>'+
         '<div style="font-size:14px;font-weight:700;color:#92400e;">Gần xong rồi!</div>'+
@@ -2015,11 +2015,11 @@ function showStep2Guide(){
         linksHtml+
         hintHtml;
 
-    var w=document.getElementById('tn-w');
+    var w=document.getElementById('tno-w');
     if(w)w.appendChild(guide);
 
     // Ảnh hỏng/chặn → đổi sang nút chữ cùng href, không để user kẹt không bấm được gì.
-    var s2a=guide.querySelector('#tn-s2img');
+    var s2a=guide.querySelector('#tno-s2img');
     if(s2a){
         var s2im=s2a.querySelector('img');
         if(s2im)s2im.onerror=function(){
@@ -2032,7 +2032,7 @@ function showStep2Guide(){
        cũng không thấy phải tìm mục nào. Thay bằng lời nhắc chữ, không thì nhiệm vụ tắc
        hẳn. Máy chủ đã lọc ảnh chết bằng sitetop_image_url_alive(), nên chỗ này chỉ dành
        cho ảnh bị chặn phía trình duyệt (adblock, chặn hotlink). */
-    var s2x=guide.querySelector('#tn-s2img-xem');
+    var s2x=guide.querySelector('#tno-s2img-xem');
     if(s2x){
         var s2xi=s2x.querySelector('img');
         if(s2xi)s2xi.onerror=function(){
@@ -2042,18 +2042,18 @@ function showStep2Guide(){
     }
 
     try{
-        localStorage.setItem('tn_step2_waiting','1');
-        localStorage.setItem('tn_step2_time',Date.now().toString());
-        localStorage.setItem('tn_session_id',state.sessionId);
-        /* Ghi PHIÊN gắn với cờ bước 2. Không dùng tn_session_id để đối chiếu được vì
+        localStorage.setItem('tno_step2_waiting','1');
+        localStorage.setItem('tno_step2_time',Date.now().toString());
+        localStorage.setItem('tno_session_id',state.sessionId);
+        /* Ghi PHIÊN gắn với cờ bước 2. Không dùng tno_session_id để đối chiếu được vì
            nó bị ghi đè ở MỌI lần verify: nhiệm vụ mới ghi phiên mới lên đó, trong khi
            cờ bước 2 của nhiệm vụ CŨ vẫn sống 10 phút — thành ra bấm bất kỳ link nội bộ
            nào GIỮA CHỪNG cũng nhảy nhầm sang nhánh chờ 15 giây, dù chưa hết giờ và
            chưa hề hiện ảnh yêu cầu. */
-        localStorage.setItem('tn_step2_sid',state.sessionId);
+        localStorage.setItem('tno_step2_sid',state.sessionId);
         // Nhớ ĐANG Ở TRANG NÀO khi bước 2 bắt đầu. Bước 2 chỉ coi là hoàn tất khi user
         // sang một trang KHÁC; quay lại đúng trang này nghĩa là chưa đi đâu cả.
-        localStorage.setItem('tn_step2_from',location.href);
+        localStorage.setItem('tno_step2_from',location.href);
     }catch(e){}
 
     listenForLinkClick();
@@ -2113,7 +2113,7 @@ function listenForLinkClick(){
         if(href.startsWith('/')||href.startsWith('./')){isInternal=true;}
         else{try{if(_bare(new URL(href,window.location.origin).hostname)===currentHost)isInternal=true;}catch(e){}}
         if(!isInternal)return;
-        try{localStorage.setItem('tn_link_clicked','1');}catch(e){}
+        try{localStorage.setItem('tno_link_clicked','1');}catch(e){}
         document.removeEventListener('click',_mark,true);
         document.removeEventListener('pointerdown',_mark,true);
     };
@@ -2131,25 +2131,25 @@ function listenForLinkClick(){
 function initStep2Return(savedSession){
     state.step2Mode=true;   // chan trackUrlMatch ghi de moc "toi trang dich"
     try{
-        localStorage.removeItem('tn_step2_waiting');localStorage.removeItem('tn_step2_sid');
-        localStorage.removeItem('tn_step2_time');
-        localStorage.removeItem('tn_link_clicked');
-        localStorage.removeItem('tn_step2_from');
+        localStorage.removeItem('tno_step2_waiting');localStorage.removeItem('tno_step2_sid');
+        localStorage.removeItem('tno_step2_time');
+        localStorage.removeItem('tno_link_clicked');
+        localStorage.removeItem('tno_step2_from');
     }catch(e){}
 
-    var btn=document.getElementById('tn-btn');
+    var btn=document.getElementById('tno-btn');
     if(!btn)return;
 
     btn.onclick=function(){
         btn.onclick=null;
-        btn.innerHTML='<span id="tn-btn-text"></span><span id="tn-cd" style="display:block">15</span>'; btn.classList.add('tn-counting');
+        btn.innerHTML='<span id="tno-btn-text"></span><span id="tno-cd" style="display:block">15</span>'; btn.classList.add('tno-counting');
 
         // Gọi start_timer để reset server timer
         ajax('sitetop_widget_start_timer',{session_id:savedSession,step2:'1'},function(){});
 
         // Countdown 15 giây rồi lấy mã
         var sec=15;
-        var cdEl=document.getElementById('tn-cd');
+        var cdEl=document.getElementById('tno-cd');
         var t=setInterval(function(){
             sec--;
             if(sec>0){
@@ -2182,15 +2182,15 @@ function initStep2Return(savedSession){
                     // này không bao giờ lấy được mã nữa. Dọn cờ và hỏi lại server để lượt
                     // nhiệm vụ MỚI gắn được phiên, thay vì kẹt cứng bắt user tự tìm cách.
                     try{
-                        localStorage.removeItem('tn_step2_waiting');localStorage.removeItem('tn_step2_sid');
-                        localStorage.removeItem('tn_step2_time');
-                        localStorage.removeItem('tn_link_clicked');
-                        localStorage.removeItem('tn_step2_from');
+                        localStorage.removeItem('tno_step2_waiting');localStorage.removeItem('tno_step2_sid');
+                        localStorage.removeItem('tno_step2_time');
+                        localStorage.removeItem('tno_link_clicked');
+                        localStorage.removeItem('tno_step2_from');
                     }catch(e){}
-                    var _b=document.getElementById('tn-btn');
+                    var _b=document.getElementById('tno-btn');
                     if(_b){
-                        _b.classList.remove('tn-counting');
-                        _b.onclick=function(){ window._stWidgetClick(); };
+                        _b.classList.remove('tno-counting');
+                        _b.onclick=function(){ window._stoWidgetClick(); };
                     }
                     sendVerifyAccess('','','','');
                 });
@@ -2205,12 +2205,12 @@ function initStep2Return(savedSession){
    không có lối thoát nào: nút đã bị đặt pointer-events:none và countdownStarted=true,
    nên hỏng một cái là chết cứng ở "Đang tải...", user không còn cách nào lấy mã.
    Gọi khi: quá giờ chờ iframe, quá giờ chờ giải, hoặc Turnstile báo lỗi. */
-window._stCaptchaAbort=function(msg){
+window._stoCaptchaAbort=function(msg){
     if(_tsT1){clearTimeout(_tsT1);_tsT1=null;}
     if(_tsT2){clearTimeout(_tsT2);_tsT2=null;}
     if(state.captchaToken||state.codeReady)return;   // đã qua được rồi thì thôi
-    var cap=document.getElementById('tn-captcha');
-    var btn=document.getElementById('tn-btn');
+    var cap=document.getElementById('tno-captcha');
+    var btn=document.getElementById('tno-btn');
     if(cap){cap.onload=null;cap.style.display='none';try{cap.src='about:blank';}catch(e){}}
     if(btn){
         btn.style.display='inline-flex';
@@ -2222,7 +2222,7 @@ window._stCaptchaAbort=function(msg){
 };
 
 // Global functions for onclick
-window._stWidgetClick=function(){
+window._stoWidgetClick=function(){
     // Block incognito/private browsing
     if(state.isIncognito){
         showToast('Bạn đang sử dụng trình duyệt ẩn danh, vui lòng tắt đi và thử lại!',4000,'warn');
@@ -2256,7 +2256,7 @@ window._stWidgetClick=function(){
     // First click: captcha (if needed) → then countdown
     if(state.sessionReady&&!state.countdownStarted){
         state.countdownStarted=true;
-        var btnEl=document.getElementById('tn-btn');
+        var btnEl=document.getElementById('tno-btn');
 
         /* Ghi DẤU "đã bấm bắt đầu" ngay, nhưng KHÔNG bấm đồng hồ.
            Dấu này là thứ cho phép tự chạy tiếp khi chuyển URL nội bộ. Thiếu nó là
@@ -2268,29 +2268,29 @@ window._stWidgetClick=function(){
            tải (tối đa 12 giây) và lúc user giải captcha (tối đa 40 giây). Camp 70 giây
            có thể bị đốt hơn nửa thời lượng trước khi user kịp nhìn trang.
            Giờ mốc được đặt ở ĐÚNG lúc đồng hồ bắt đầu chạy — cả ba nhánh bên dưới
-           đều đi qua _stBatDauGio(). */
+           đều đi qua _stoBatDauGio(). */
 
         // If no Turnstile OR already solved → start countdown directly
         if(!C.tsKey||state.captchaToken){
-            if(btnEl){btnEl.innerHTML='<span id="tn-btn-text">Vui lòng đợi</span><span id="tn-cd"></span>';}
-            _stBatDauGio();
+            if(btnEl){btnEl.innerHTML='<span id="tno-btn-text">Vui lòng đợi</span><span id="tno-cd"></span>';}
+            _stoBatDauGio();
             return;
         }
 
         // Load + show captcha iframe NOW (on click)
-        var captcha=document.getElementById('tn-captcha');
+        var captcha=document.getElementById('tno-captcha');
         // Không có khung captcha (theme khách cắt mất thẻ) → KHÔNG được treo nút:
         // chạy thẳng đồng hồ. Mã vẫn phải qua kiểm tra ở server trước khi trả.
         if(!captcha){
-            if(btnEl){btnEl.innerHTML='<span id="tn-btn-text">Vui lòng đợi</span><span id="tn-cd"></span>';}
-            _stBatDauGio();
+            if(btnEl){btnEl.innerHTML='<span id="tno-btn-text">Vui lòng đợi</span><span id="tno-cd"></span>';}
+            _stoBatDauGio();
             return;
         }
 
         // "Đang tải..." không nói gì cho user biết đang chờ CÁI GÌ — và đây đúng là
         // trạng thái hay kẹt nhất (iframe captcha bị tracker-blocker/CSP của web khách
         // chặn). Nói thẳng "Đang xác minh" để user hiểu và không bấm loạn.
-        if(btnEl){btnEl.innerHTML='<span id="tn-btn-text">Đang xác minh…</span>';btnEl.style.pointerEvents='none';}
+        if(btnEl){btnEl.innerHTML='<span id="tno-btn-text">Đang xác minh…</span>';btnEl.style.pointerEvents='none';}
         captcha.src=C.api+'/widget-captcha/?session_id='+encodeURIComponent(state.sessionId)+'&origin='+encodeURIComponent(location.origin);
         captcha.onload=function(){
             captcha.onload=null; // Only fire once
@@ -2303,10 +2303,10 @@ window._stWidgetClick=function(){
             // nhìn nút chết gần một phút mới được bấm lại.
             // ⚠️ Nếu Turnstile bung ô tick tay hoặc câu đố ảnh, 15 giây có thể cắt ngang
             // lúc user đang giải. Có khách báo bị cắt giữa chừng thì nâng lại ~25s.
-            _tsT2=setTimeout(function(){ window._stCaptchaAbort('Xác minh chưa hoàn tất, vui lòng bấm lại'); },15000);
+            _tsT2=setTimeout(function(){ window._stoCaptchaAbort('Xác minh chưa hoàn tất, vui lòng bấm lại'); },15000);
         };
         // Iframe không tải nổi trong 12s (mạng chập, tracker-blocker, CSP web khách) → trả nút về.
-        _tsT1=setTimeout(function(){ window._stCaptchaAbort('Không tải được xác minh, vui lòng bấm lại'); },12000);
+        _tsT1=setTimeout(function(){ window._stoCaptchaAbort('Không tải được xác minh, vui lòng bấm lại'); },12000);
         return;
     }
     // Chưa khớp phiên nào = KHÔNG đi qua link nhiệm vụ (vào thẳng trang đích, hoặc phiên
@@ -2315,15 +2315,15 @@ window._stWidgetClick=function(){
     // Thử khớp phiên thêm 1 lần trước khi kết luận: widget có thể load TRƯỚC khi trang
     // nhiệm vụ kịp tạo visit ở tab kia. Khớp được thì wantStart tự chạy, khỏi bấm lại.
     if(!state.sessionReady){
-        if(!window._stRetried){
-            window._stRetried=true;
+        if(!window._stoRetried){
+            window._stoRetried=true;
             state.wantStart=true;
             showToast('Đang xác minh nhiệm vụ...',2500);
             sendVerifyAccess('','','','');
-            setTimeout(function(){ if(!state.sessionReady)_stNoTask(); },2600);
+            setTimeout(function(){ if(!state.sessionReady)_stoNoTask(); },2600);
             return;
         }
-        _stNoTask();
+        _stoNoTask();
     }
 };
 
@@ -2331,7 +2331,7 @@ window._stWidgetClick=function(){
 // Chỉ user về xem lại ảnh hướng dẫn trên trang nhiệm vụ, thay cho "Chưa hợp lệ!" chung
 // chung. KHÔNG xoá wantStart: nếu lát nữa verify khớp được phiên thì vẫn tự chạy đếm
 // ngược, user không phải bấm lại.
-function _stNoTask(){
+function _stoNoTask(){
     // "Sai Web" là trường hợp DUY NHẤT user đang đứng nhầm chỗ — giữ câu riêng vì việc
     // phải làm khác hẳn (thoát ra, xem lại ảnh, vào đúng website).
     // Nói "sai Web" chứ KHÔNG nói "sai URL": từ 05/09/2026 chốt chặn so theo DOMAIN,

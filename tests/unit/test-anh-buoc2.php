@@ -50,10 +50,10 @@ assert_true( strpos( $__co_bam, "<a href=" ) !== false && strpos( $__co_bam, "+s
 // Nhánh KHÔNG link: tuyệt đối không được có href, không nhịp đập
 assert_true( strpos( $__khong_bam, 'href' ) === false,
     'SONG CON: khong co link dich thi anh TUYET DOI khong duoc la the <a href>' );
-assert_true( strpos( $__khong_bam, 'tnBtnPulse' ) === false,
+assert_true( strpos( $__khong_bam, 'tnoBtnPulse' ) === false,
     'Anh khong bam duoc KHONG duoc co nhip dap — nhip dap la tin hieu "bam vao day"' );
-assert_true( strpos( $__khong_bam, 'tn-s2img-xem' ) !== false,
-    'Nhanh khong bam duoc phai dung id rieng tn-s2img-xem' );
+assert_true( strpos( $__khong_bam, 'tno-s2img-xem' ) !== false,
+    'Nhanh khong bam duoc phai dung id rieng tno-s2img-xem' );
 assert_true( strpos( $__khong_bam, 's2.image_url' ) !== false || strpos( $__khong_bam, '_s2img' ) !== false,
     'Nhanh khong bam duoc VAN phai hien anh chi dan' );
 
@@ -80,14 +80,14 @@ assert_true( strpos( $__tab, 'placeholder="Để trống = dùng link nội bộ
     'Placeholder cu (dung link noi bo dau tien) PHAI go — no mo ta hanh vi khong con nua' );
 
 /* --- Ảnh hỏng ở nhánh KHÔNG bấm được ---
-   Bản vá 13/09/2026. Đoạn onerror có sẵn chỉ bắt '#tn-s2img' (nhánh CÓ link). Nhánh
+   Bản vá 13/09/2026. Đoạn onerror có sẵn chỉ bắt '#tno-s2img' (nhánh CÓ link). Nhánh
    không bấm được dùng id khác nên rơi ngoài: ảnh bị adblock chặn là user không còn manh
    mối nào — không link để bấm, cũng không thấy phải tìm mục nào. Nhiệm vụ tắc hẳn. */
-assert_true( strpos( $__w, "guide.querySelector('#tn-s2img-xem')" ) !== false,
+assert_true( strpos( $__w, "guide.querySelector('#tno-s2img-xem')" ) !== false,
     'PHAI co onerror rieng cho nhanh khong bam duoc — anh hong la user mat het manh moi' );
-$__p_x = strpos( $__w, "guide.querySelector('#tn-s2img-xem')" );
+$__p_x = strpos( $__w, "guide.querySelector('#tno-s2img-xem')" );
 $__khoi_x = substr( $__w, $__p_x, 700 );
 assert_true( strpos( $__khoi_x, 'onerror' ) !== false,
-    'Khoi #tn-s2img-xem PHAI gan onerror cho anh' );
+    'Khoi #tno-s2img-xem PHAI gan onerror cho anh' );
 assert_true( strpos( $__khoi_x, '👆 Click vào đây' ) === false,
     'Nhanh khong bam duoc KHONG duoc hien "Click vao day" — khong co link nao de bam' );
