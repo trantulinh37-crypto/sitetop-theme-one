@@ -72,6 +72,7 @@ elseif($status_filter === 'expired'){ $where .= $wpdb->prepare(" AND v.step != '
 if($reason_filter === 'earned'){ $where .= " AND v.reward_paid = 1"; }
 elseif($reason_filter === 'bypass'){ $where .= " AND v.is_bypass = 1"; }
 elseif($reason_filter === 'cong_cu'){ $where .= " AND v.skip_reasons LIKE %s"; $args[] = '%cong_cu_bypass%'; }
+elseif($reason_filter === 'nguon_gia'){ $where .= " AND (v.dau_vet LIKE %s OR v.dau_vet LIKE %s OR v.skip_reasons LIKE %s)"; $args[] = '%nguon_gia%'; $args[] = '%chan_nguon%'; $args[] = '%nguon_gia%'; }
 elseif($reason_filter === 'timer_manip'){ $where .= " AND v.skip_reasons LIKE %s"; $args[] = '%timer_manipulation%'; }
 elseif($reason_filter === 'change_ip'){ $where .= " AND v.step='verified' AND v.reward_paid=0 AND v.ip_changed = 1"; }
 elseif($reason_filter === 'max_ip'){ $where .= " AND v.step='verified' AND v.reward_paid=0 AND v.ip_limit_exceeded = 1"; }
@@ -255,6 +256,7 @@ $total_pages = ceil(max(1,$total) / $per_page);
         <option value="self_click" <?php selected($reason_filter,'self_click'); ?>>⚠ Self-click</option>
         <option value="bypass" <?php selected($reason_filter,'bypass'); ?>>Bypass</option>
         <option value="cong_cu" <?php selected($reason_filter,'cong_cu'); ?>>🕵 Công cụ bypass</option>
+        <option value="nguon_gia" <?php selected($reason_filter,'nguon_gia'); ?>>🎭 Nguồn giả (đã bị chặn)</option>
         <option value="timer_manip" <?php selected($reason_filter,'timer_manip'); ?>>Tua giờ</option>
         <option value="change_ip" <?php selected($reason_filter,'change_ip'); ?>>Đổi IP</option>
         <option value="max_ip" <?php selected($reason_filter,'max_ip'); ?>>IP limit</option>
@@ -334,10 +336,11 @@ $total_pages = ceil(max(1,$total) / $per_page);
     <th class="col-reason">Lý do</th>
     <th class="col-ip">IP</th>
     <th>TB</th>
+    <th title="Dấu vết phiên: những cổng ajax phiên này đã gọi, kèm Sec-Fetch / Origin / referer / nhịp hiện diện">Dấu vết</th>
 </tr></thead>
 <tbody>
 <?php if(empty($rows)): ?>
-<tr><td colspan="18">Không có dữ liệu.</td></tr>
+<tr><td colspan="19">Không có dữ liệu.</td></tr>
 <?php else: foreach($rows as $row):
     // Parse device
     $ua = $row->user_agent ?? '';
@@ -535,6 +538,7 @@ $total_pages = ceil(max(1,$total) / $per_page);
                     'ip_changed_premarked'     => '<span style="color:#dc3232" title="Đã đánh dấu đổi IP từ các bước trước">Đổi IP</span>',
                     'ip_limit_exceeded'        => '<span style="color:#dc3232" title="Vượt quá giới hạn lượt làm của IP trong 24h">IP limit</span>',
                     'iframe_an'                => '<span style="color:#8c6d1f" title="Widget báo đang trong iframe/tab nền (kf=0) — DẤU QUAN SÁT, không ảnh hưởng tiền">Iframe ẩn</span>',
+                    'nguon_gia'                => '<span style="color:#dc3232" title="Sec-Fetch-Site là none/same-origin ở cổng chỉ widget thật gọi — request phát từ nền tiện ích, không phải từ web khách">Nguồn giả</span>',
                     'adblock'                  => '<span style="color:#dc3232" title="Phát hiện chặn quảng cáo/adblock">Adblock</span>'
                 );
                 foreach ($db_skip_reasons as $reason) {
@@ -566,6 +570,17 @@ $total_pages = ceil(max(1,$total) / $per_page);
     <td style="font-size:11px" title="<?php echo esc_attr(
             ( function_exists( 'sitetop_mo_ta_thiet_bi' ) ? sitetop_mo_ta_thiet_bi( $ua ) . ' — ' : '' ) . $ua
         ); ?>"><?php echo esc_html($device); ?></td>
+    <?php /* DẤU VẾT PHIÊN (máy đo 20/09/2026): mỗi cổng phiên đã gọi một dòng, kèm Sec-Fetch,
+               Origin, referer, tham số widget và tình trạng nhịp hiện diện. Dùng để soi công cụ
+               bypass — xem chú thích sitetop_ghi_vet() trong includes/shortlink-ajax.php. */ ?>
+    <td style="font-size:10px;max-width:360px">
+        <?php if ( ! empty( $row->dau_vet ) ) : ?>
+        <details><summary style="cursor:pointer;color:#2271b1">xem</summary>
+            <pre style="white-space:pre-wrap;word-break:break-all;margin:4px 0 0;font-size:10px;line-height:1.35"><?php
+                echo esc_html( $row->dau_vet ); ?></pre>
+        </details>
+        <?php else : ?><span style="color:#c3c4c7">—</span><?php endif; ?>
+    </td>
 </tr>
 <?php endforeach; endif; ?>
 </tbody>
