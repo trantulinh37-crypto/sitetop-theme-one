@@ -503,10 +503,13 @@ $current_domain = $_SERVER['HTTP_HOST'] ?? parse_url(home_url(), PHP_URL_HOST);
         /* Bản "bắt gõ tay": user phải ĐỌC RỒI GÕ LẠI nên KHÔNG được cắt bớt bằng ba chấm như
            ô <input> — cho xuống dòng và phóng to. Chủ site chốt 21/09/2026: bản điện thoại
            phải to rõ hơn nữa vì gõ tay trên điện thoại là chính. */
-        span.url-display{display:block;white-space:normal;word-break:break-all;line-height:1.5;font-size:18px;font-weight:600;padding:11px 8px 11px 0}
+        span.url-display{display:block;white-space:normal;word-break:break-all}
+        /* PHẢI đủ "nặng" hơn .url-copy-box.omni .url-display (3 class) — viết span.url-display
+           không thôi là thua độ ưu tiên và cỡ chữ bị kéo về 13.5px, nhìn mắt thường tưởng đã to. */
+        .url-copy-box.omni.go-tay span.url-display{line-height:1.4;font-size:28px;font-weight:600;padding:12px 8px 12px 0}
         span.url-display.kw-nocopy{user-select:none;-webkit-user-select:none;cursor:not-allowed}
         .url-copy-box.omni.go-tay{padding:8px 14px 8px 16px}
-        .url-copy-box.omni.go-tay .omni-g{width:22px;height:22px;margin-right:12px}
+        .url-copy-box.omni.go-tay .omni-g{width:26px;height:26px;margin-right:13px}
         /* Nut Copy: doi tu vang sang DEN CHU TRANG cho dong bo voi nut TIEP TUC
            (05/09/2026). Nen da la #000 nen hover phai SANG len chu khong toi di,
            neu khong se khong con phan hoi khi ro chuot. Giu nguyen .copied mau xanh

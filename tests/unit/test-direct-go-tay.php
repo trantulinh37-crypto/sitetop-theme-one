@@ -141,8 +141,13 @@ assert_equals( 2, substr_count( $__pu, "omni<?php echo \$url_nocopy ? ' go-tay' 
     'Ca hai nhanh Direct deu gan class go-tay de CSS phong to rieng' );
 assert_true( strpos( $__pu, '.url-copy-box.omni.go-tay span.url-display{font-size:18px' ) !== false,
     'Ban dien thoai: chu URL 18px (o thuong 12.5px)' );
-assert_true( strpos( $__pu, 'word-break:break-all;line-height:1.5;font-size:18px;font-weight:600' ) !== false,
-    'Ban may tinh: chu URL cung 18px dam (o thuong 13.5px) — chu site chot 21/09' );
+/* Cỡ chữ PHẢI khai kèm .url-copy-box.omni.go-tay — quy tắc cũ .url-copy-box.omni .url-display
+   nặng 3 class, viết "span.url-display{font-size...}" là thua độ ưu tiên và cỡ chữ không đổi
+   (đã mắc thật 21/09: tưởng đã tăng lên 18px mà thực tế màn hình vẫn 13.5px). */
+assert_true( strpos( $__pu, '.url-copy-box.omni.go-tay span.url-display{line-height:1.4;font-size:28px;font-weight:600' ) !== false,
+    'Ban may tinh: chu URL 28px dam, khai du do uu tien' );
+assert_false( (bool) preg_match( '#\n\s*span\.url-display\{[^}]*font-size#', $__pu ),
+    'KHONG duoc khai co chu o quy tac span.url-display tran (thua do uu tien)' );
 assert_true( strpos( $__pu, 'span.url-display{display:block;white-space:normal;word-break:break-all' ) !== false,
     'URL xuong dong het, KHONG cat bang ba cham — cat la user khong go lai duoc' );
 assert_true( strpos( $__pu, "\$url_nocopy ? 'Gõ địa chỉ sau vào trình duyệt:' : 'Copy URL sau và dán vào trình duyệt:'" ) !== false,
