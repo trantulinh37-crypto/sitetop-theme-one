@@ -123,7 +123,7 @@ if(isset($_POST['campaign_action']) && wp_verify_nonce($_POST['_wpnonce'],'sitet
         } elseif($traffic_type === 'nocode' && empty($_POST['nocode_screenshot_url'])){
             echo '<div class="notice notice-error"><p>Vui lòng tải ảnh mô tả vị trí mã.</p></div>';
         } else {
-            if(empty($title)) $title = $keyword ?: parse_url($target_url, PHP_URL_HOST);
+            if(empty($title)) $title = $keyword ?: parse_url(sitetop_them_scheme($target_url), PHP_URL_HOST);
             $customer = get_user_by('ID', $customer_id);
 
             // Create order
@@ -469,7 +469,7 @@ $oe = array(70=>(int)sitetop_get_option('onsite_extra_70',0),80=>(int)sitetop_ge
     $traffic_labels = ['1step'=>'1 bước','2step'=>'2 bước','nocode'=>'Mã cố định'];
     $traffic_colors = ['1step'=>'#2271b1','2step'=>'#dba617','nocode'=>'#8c5e2a'];
     $traffic_bg = ['1step'=>'#e7f3ff','2step'=>'#fff8e1','nocode'=>'#fef3e2'];
-    $domain = parse_url($row->target_url ?? '', PHP_URL_HOST);
+    $domain = parse_url(sitetop_them_scheme($row->target_url ?? ''), PHP_URL_HOST);
     $completed = intval($row->completed);
     $spent = $completed * floatval($row->price_per_view);
     $tt = $row->traffic_type ?? '1step';

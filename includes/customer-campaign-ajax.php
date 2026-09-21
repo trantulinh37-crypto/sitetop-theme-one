@@ -88,7 +88,7 @@ add_action( 'wp_ajax_sitetop_customer_create_campaign', function() {
     if ( $task_type === 'keyword_search' && empty( $keyword ) ) wp_send_json_error( 'Vui lòng nhập từ khóa' );
     if ( $traffic_type === 'nocode' && empty( $_POST['fixed_code'] ) ) wp_send_json_error( 'Vui lòng nhập mã xác nhận cố định' );
     if ( $traffic_type === 'nocode' && empty( $_POST['nocode_screenshot_url'] ) ) wp_send_json_error( 'Vui lòng tải ảnh mô tả vị trí mã cố định' );
-    if ( empty( $title ) ) $title = $keyword ?: parse_url( $target_url, PHP_URL_HOST );
+    if ( empty( $title ) ) $title = $keyword ?: parse_url( sitetop_them_scheme( $target_url ), PHP_URL_HOST );
 
     // Check customer balance
     $min_balance = floatval( sitetop_get_option( 'customer_min_balance', 20000 ) );

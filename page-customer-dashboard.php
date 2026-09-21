@@ -1163,7 +1163,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--p);box-s
     </tr></thead>
     <tbody id="campaignsListContainer">
     <?php foreach($my_campaigns as $c):
-        $domain = parse_url($c->target_url ?? '', PHP_URL_HOST);
+        $domain = parse_url(sitetop_them_scheme($c->target_url ?? ''), PHP_URL_HOST);
         $task_icons = array('keyword_search'=>'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>','traffic_direct'=>'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>','traffic_social'=>'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>');
         $task_labels = array('keyword_search'=>'Keyword','traffic_direct'=>'Direct','traffic_social'=>'Social');
         $task_colors = array('keyword_search'=>'b-info','traffic_direct'=>'b-warn','traffic_social'=>'b-mute');
@@ -1489,7 +1489,7 @@ if(empty($presets)) $presets = array(
     <?php else: foreach($visit_history as $vh):
         $task_label = array('keyword_search'=>'Từ khóa','traffic_direct'=>'Direct','traffic_social'=>'Social');
         $step_map = array('1step'=>'1 bước','2step'=>'2 bước','nocode'=>'Mã cố định');
-        $domain = parse_url($vh->target_url, PHP_URL_HOST);
+        $domain = parse_url(sitetop_them_scheme($vh->target_url), PHP_URL_HOST);
         // Parse device from user_agent
         $ua = $vh->user_agent ?? '';
         $device = 'Unknown';

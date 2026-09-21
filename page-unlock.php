@@ -216,7 +216,8 @@ if ( ! $fed_ic_src && function_exists('sitetop_logo_url') ) {
 <?php
 $sitetop_step_intro = ob_get_clean();
 
-$target_domain = parse_url($campaign->target_url ?? '', PHP_URL_HOST) ?? '';
+// sitetop_them_scheme: camp Direct có thể lưu URL khai gọn "tm68.top" — parse_url thẳng sẽ ra rỗng.
+$target_domain = parse_url(sitetop_them_scheme($campaign->target_url ?? ''), PHP_URL_HOST) ?? '';
 $target_domain_short = preg_replace('/^www\./', '', $target_domain);
 
 // Hiển thị domain đầy đủ trong ảnh mô tả (không che bằng dấu *)

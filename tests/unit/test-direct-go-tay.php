@@ -38,7 +38,7 @@ if ( ! function_exists( 'esc_url_raw' ) ) {
     }
 }
 if ( ! function_exists( 'esc_html' ) ) { function esc_html( $t ) { return htmlspecialchars( (string) $t, ENT_QUOTES ); } }
-foreach ( array( 'sitetop_clean_url_text', 'sitetop_host_of', 'sitetop_sanitize_destination_urls' ) as $__f ) {
+foreach ( array( 'sitetop_clean_url_text', 'sitetop_them_scheme', 'sitetop_host_of', 'sitetop_url_key', 'sitetop_campaign_destinations', 'sitetop_campaign_allows_url', 'sitetop_sanitize_destination_urls' ) as $__f ) {
     if ( function_exists( $__f ) ) continue;
     $__code = $__trich( 'functions.php', $__f );
     if ( $__code === null ) {
@@ -53,11 +53,11 @@ foreach ( array( 'sitetop_clean_url_text', 'sitetop_host_of', 'sitetop_sanitize_
 $mot = function ( $u, $direct ) { return sitetop_sanitize_destination_urls( array( $u ), $direct ); };
 
 $r = $mot( 'weba.com', true );
-assert_equals( 'https://weba.com', implode( '', $r['urls'] ), 'Direct: "weba.com" -> https://weba.com' );
+assert_equals( 'weba.com', implode( '', $r['urls'] ), 'Direct: khai "weba.com" -> LUU DUNG "weba.com" (khong tu them https)' );
 assert_equals( '', $r['error'], 'Direct: khai gon khong bao loi' );
 
 $r = $mot( 'weba.com/abc?x=1', true );
-assert_equals( 'https://weba.com/abc?x=1', implode( '', $r['urls'] ), 'Direct: khai gon co duong dan' );
+assert_equals( 'weba.com/abc?x=1', implode( '', $r['urls'] ), 'Direct: khai gon co duong dan -> luu y nguyen' );
 
 $r = $mot( 'https://weba.com/abc', true );
 assert_equals( 'https://weba.com/abc', implode( '', $r['urls'] ), 'Direct: URL day du -> y nguyen' );
@@ -79,7 +79,19 @@ assert_true(  $mot( 'ftp://weba.com', true )['error'] !== '',      'ftp:// -> va
 $r = sitetop_sanitize_destination_urls( array( 'weba.com', 'https://weba.com' ), true );
 assert_equals( 1, count( $r['urls'] ), 'Khai gon va khai day du cung mot URL -> chi luu 1 (bo trung)' );
 $r = sitetop_sanitize_destination_urls( array( '', 'weba.com' ), true );
-assert_equals( 'https://weba.com', implode( '', $r['urls'] ), 'Dong trong van bi bo qua nhu cu' );
+assert_equals( 'weba.com', implode( '', $r['urls'] ), 'Dong trong van bi bo qua nhu cu' );
+
+/* Lưu gọn nhưng CỔNG SO KHỚP không được hỏng — đây là chỗ nguy hiểm nhất của thay đổi này:
+   URL thiếu giao thức thì parse_url trả host rỗng, host rỗng là user làm đúng vẫn bị chặn. */
+$__campGon = (object) array( 'destination_urls' => json_encode( array( 'weba.com' ) ) );
+assert_true(  sitetop_campaign_allows_url( $__campGon, 'https://weba.com/abc' ),   'Camp luu gon: user vao https://weba.com/abc -> CHO' );
+assert_true(  sitetop_campaign_allows_url( $__campGon, 'https://www.weba.com/' ),  'Camp luu gon: co www -> CHO' );
+assert_false( sitetop_campaign_allows_url( $__campGon, 'https://weba.vn/' ),       'Camp luu gon: khac ten mien -> CHAN' );
+assert_false( sitetop_campaign_allows_url( $__campGon, 'https://blog.weba.com/' ), 'Camp luu gon: ten mien con -> CHAN (nhu luat hien hanh)' );
+assert_equals( 'weba.com', sitetop_host_of( 'weba.com' ),        'host_of hieu URL khai gon' );
+assert_equals( 'weba.com', sitetop_host_of( 'weba.com/abc' ),    'host_of hieu URL khai gon co duong dan' );
+assert_equals( '',         sitetop_host_of( 'javascript:x' ),    'host_of KHONG bia host cho javascript:' );
+assert_equals( sitetop_url_key( 'https://weba.com/abc' ), sitetop_url_key( 'weba.com/abc' ), 'url_key: khai gon va khai du la MOT' );
 
 // ── 2. Chỗ gọi: chỉ camp Direct mới bật cờ ──────────────────────────────
 $goi = array(
@@ -115,6 +127,15 @@ assert_true( strpos( $__duoi, 'copyTargetUrl' ) !== false && strpos( $__duoi, 'i
 assert_true( (bool) preg_match( '/function daGoTayUrl\([^)]*\) \{\s*trackDirect\(\);\s*taskHandoff\(\);/', $__pu ),
     'Nut "Da go xong" bao server y nhu nut Copy (trackDirect + taskHandoff)' );
 assert_true( strpos( $__pu, 'span.url-display.kw-nocopy{user-select:none' ) !== false, 'Co CSS chan boi den cho URL dang chu' );
+/* Camp Direct có thể lưu URL khai gọn -> mọi chỗ ĐỌC tên miền từ target_url phải đi qua
+   sitetop_them_scheme(), không thì trang nhiệm vụ hiện "Tìm kết quả từ" bỏ trống. */
+assert_true( strpos( $__pu, "parse_url(sitetop_them_scheme(\$campaign->target_url ?? ''), PHP_URL_HOST)" ) !== false,
+    'Trang nhiem vu: doc ten mien qua sitetop_them_scheme' );
+foreach ( array( 'page-customer-dashboard.php', 'includes/customer-load-more.php', 'includes/admin/tabs/tab-campaigns.php', 'includes/customer-campaign-ajax.php' ) as $__t ) {
+    $__n = file_get_contents( dirname( __DIR__, 2 ) . '/' . $__t );
+    assert_equals( 0, preg_match_all( '#parse_url\(\s*\$(c|vh|row)->target_url#', $__n ) + preg_match_all( '#parse_url\(\s*\$target_url,#', $__n ),
+        "Khong con cho nao doc thang target_url bang parse_url: $__t" );
+}
 
 // ── 4. Giao diện admin: nút gạt hiện cho CẢ Search lẫn Direct ───────────
 $__tc = file_get_contents( dirname( __DIR__, 2 ) . '/includes/admin/tabs/tab-campaigns.php' );
