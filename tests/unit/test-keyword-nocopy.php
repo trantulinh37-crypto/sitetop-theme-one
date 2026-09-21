@@ -44,4 +44,12 @@ assert_true( strpos( $__pu2, 'white-space:normal;word-break:break-word' ) !== fa
 assert_false( strpos( $__pu2, 'font-size:12.5px;color:#202124;font-weight:600;overflow:hidden' ) !== false,
     'Khong con co chu tu khoa cu 12.5px' );
 
+/* Chủ site chốt 21/09/2026: KHÔNG còn dòng chữ nhắc "Vui lòng gõ tay" nằm sẵn trên trang —
+   bật nút gạt là chặn copy + chữ to đậm, thế là đủ. Lời nhắc chỉ hiện khi user THẬT SỰ thử
+   copy (toast trong JS), đó là phản hồi thao tác chứ không phải thông báo thường trực. */
+assert_false( strpos( $__pu2, 'g-mock-hint' ) !== false, 'Khong con dong nhac duoi o tu khoa' );
+assert_false( strpos( $__pu2, 'title="Vui lòng gõ tay"' ) !== false, 'Khong con bong bong nhac tren chu' );
+assert_true( strpos( $__pu2, "'Vui lòng gõ tay URL vào trình duyệt' : 'Vui lòng gõ tay vào Google'" ) !== false,
+    'Van giu loi nhac khi user THAT SU thu copy (toast), voi 2 ban: URL va Google' );
+
 echo "  ✓ keyword nocopy\n";
