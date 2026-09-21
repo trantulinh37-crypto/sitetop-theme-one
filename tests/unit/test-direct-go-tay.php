@@ -1,0 +1,138 @@
+<?php
+/* TRAFFIC DIRECT — hai việc chủ site chốt 21/09/2026:
+     1. Nút ON/OFF "Bắt gõ tay" cho camp Direct. Camp Direct KHÔNG có từ khoá, thứ user
+        phải nhập là URL ĐÍCH, nên ON = trang nhiệm vụ bỏ nút Copy + chặn bôi đen URL.
+        Dùng chung cột kw_bat_go_tay với camp Search, không thêm cột mới.
+     2. URL đích khai gọn được: "weba.com" cũng như "https://weba.com".
+
+   Ràng buộc chủ site đặt ra: KHÔNG đụng Search và các loại traffic khác. Nửa "không được
+   bật" của bộ test này canh đúng lời hứa đó.
+
+   Phần URL kiểm HÀM THẬT (trích từ functions.php bằng tokenizer). esc_url_raw/esc_html là
+   hàm của WordPress nên phải dựng bản giả — bản giả bắt chước đúng một hành vi đã ĐO trên
+   server: esc_url_raw("weba.com") = "http://weba.com" (xem chú thích trong hàm thật). */
+
+$__trich = function ( $tep, $ten ) {
+    $src = file_get_contents( dirname( __DIR__, 2 ) . '/' . $tep );
+    $tk = token_get_all( $src ); $n = count( $tk );
+    for ( $i = 0; $i < $n; $i++ ) {
+        if ( ! is_array( $tk[$i] ) || $tk[$i][0] !== T_FUNCTION ) continue;
+        $j = $i + 1;
+        while ( $j < $n && is_array( $tk[$j] ) && $tk[$j][0] === T_WHITESPACE ) $j++;
+        if ( $j >= $n || ! is_array( $tk[$j] ) || $tk[$j][1] !== $ten ) continue;
+        $out = ''; $d = 0; $mo = false;
+        for ( $k = $i; $k < $n; $k++ ) {
+            $t = $tk[$k]; $out .= is_array( $t ) ? $t[1] : $t;
+            $open = ( $t === '{' ) || ( is_array( $t ) && in_array( $t[0], array( T_CURLY_OPEN, T_DOLLAR_OPEN_CURLY_BRACES ), true ) );
+            if ( $open ) { $d++; $mo = true; } elseif ( $t === '}' ) { $d--; if ( $mo && $d === 0 ) break; }
+        }
+        return $out;
+    }
+    return null;
+};
+if ( ! function_exists( 'esc_url_raw' ) ) {
+    function esc_url_raw( $u ) {
+        $u = trim( str_replace( ' ', '%20', (string) $u ) );
+        if ( $u !== '' && ! preg_match( '#^[a-z0-9-]+:#i', $u ) ) $u = 'http://' . ltrim( $u, '/' );
+        return $u;
+    }
+}
+if ( ! function_exists( 'esc_html' ) ) { function esc_html( $t ) { return htmlspecialchars( (string) $t, ENT_QUOTES ); } }
+foreach ( array( 'sitetop_clean_url_text', 'sitetop_host_of', 'sitetop_sanitize_destination_urls' ) as $__f ) {
+    if ( function_exists( $__f ) ) continue;
+    $__code = $__trich( 'functions.php', $__f );
+    if ( $__code === null ) {
+        $GLOBALS['test_results']['failed']++;
+        $GLOBALS['test_results']['errors'][] = "Khong trich duoc $__f tu functions.php";
+        return;
+    }
+    eval( $__code );
+}
+
+// ── 1. URL gọn: CHỈ khi chỗ gọi cho phép (camp Direct) ──────────────────
+$mot = function ( $u, $direct ) { return sitetop_sanitize_destination_urls( array( $u ), $direct ); };
+
+$r = $mot( 'weba.com', true );
+assert_equals( 'https://weba.com', implode( '', $r['urls'] ), 'Direct: "weba.com" -> https://weba.com' );
+assert_equals( '', $r['error'], 'Direct: khai gon khong bao loi' );
+
+$r = $mot( 'weba.com/abc?x=1', true );
+assert_equals( 'https://weba.com/abc?x=1', implode( '', $r['urls'] ), 'Direct: khai gon co duong dan' );
+
+$r = $mot( 'https://weba.com/abc', true );
+assert_equals( 'https://weba.com/abc', implode( '', $r['urls'] ), 'Direct: URL day du -> y nguyen' );
+
+$r = $mot( 'http://weba.com', true );
+assert_equals( 'http://weba.com', implode( '', $r['urls'] ), 'Direct: http:// nguoi ta co y khai -> KHONG doi thanh https' );
+
+// Nửa quan trọng nhất: loại camp khác KHÔNG đổi hành vi
+$r = $mot( 'weba.com', false );
+assert_equals( 'http://weba.com', implode( '', $r['urls'] ), 'Search/Social: y nguyen hanh vi cu (esc_url_raw tu them http)' );
+$r = $mot( 'https://weba.com', false );
+assert_equals( 'https://weba.com', implode( '', $r['urls'] ), 'Search/Social: URL day du -> y nguyen' );
+
+// Chốt an toàn: khai gọn KHÔNG được mở đường cho rác
+assert_true(  $mot( 'javascript:alert(1)', true )['error'] !== '', 'javascript: -> van CHAN (khong tu them https)' );
+assert_true(  $mot( 'abcxyz', true )['error'] !== '',              'Go nham "abcxyz" (khong co dau cham) -> van CHAN' );
+assert_true(  $mot( 'mailto:a@b.com', true )['error'] !== '',      'mailto: -> van CHAN' );
+assert_true(  $mot( 'ftp://weba.com', true )['error'] !== '',      'ftp:// -> van CHAN' );
+$r = sitetop_sanitize_destination_urls( array( 'weba.com', 'https://weba.com' ), true );
+assert_equals( 1, count( $r['urls'] ), 'Khai gon va khai day du cung mot URL -> chi luu 1 (bo trung)' );
+$r = sitetop_sanitize_destination_urls( array( '', 'weba.com' ), true );
+assert_equals( 'https://weba.com', implode( '', $r['urls'] ), 'Dong trong van bi bo qua nhu cu' );
+
+// ── 2. Chỗ gọi: chỉ camp Direct mới bật cờ ──────────────────────────────
+$goi = array(
+    'includes/admin/tabs/tab-campaigns.php' => '$dest = sitetop_sanitize_destination_urls($dest_in, $task_type === \'traffic_direct\');',
+    'includes/admin-dashboard.php'          => '$dest = sitetop_sanitize_destination_urls($_POST[\'destination_urls\'], ($camp->campaign_type ?? \'\') === \'traffic_direct\');',
+);
+foreach ( $goi as $tep => $can ) {
+    assert_true( strpos( file_get_contents( dirname( __DIR__, 2 ) . '/' . $tep ), $can ) !== false, "Cho goi bat co dung dieu kien Direct: $tep" );
+}
+$__cust = file_get_contents( dirname( __DIR__, 2 ) . '/includes/customer-campaign-ajax.php' );
+assert_equals( 2, substr_count( $__cust, "sitetop_sanitize_destination_urls( \$_POST['destination_urls']" ), 'Ben khach hang co dung 2 cho goi (tao + sua)' );
+assert_equals( 2, substr_count( $__cust, "\$task_type === 'traffic_direct' )" ), '...ca hai deu truyen dieu kien Direct' );
+
+// ── 3. Trang nhiệm vụ: bắt gõ tay URL ───────────────────────────────────
+$__pu = file_get_contents( dirname( __DIR__, 2 ) . '/page-unlock.php' );
+assert_true( strpos( $__pu, "\$url_nocopy = ( \$campaign_type === 'traffic_direct' ) && ! empty( \$campaign->kw_bat_go_tay );" ) !== false,
+    'Chi bat go tay URL khi VUA la camp Direct VUA bat co' );
+// Luật của camp Search phải còn nguyên văn
+assert_true( strpos( $__pu, '$kw_nocopy = ( $sitetop_kw_len <= 11 ) || ! empty( $campaign->kw_bat_go_tay );' ) !== false,
+    'Luat chan copy TU KHOA cua camp Search giu nguyen' );
+// Hai nhánh Direct dùng CHUNG một ô URL — không còn markup chép đôi
+assert_equals( 2, substr_count( $__pu, '<?php echo $sitetop_o_url_dich; ?>' ), 'Ca hai nhanh Direct dung chung o URL dung san' );
+assert_equals( 1, substr_count( $__pu, 'onclick="copyTargetUrl()">' ), 'Nut Copy chi con dung 1 cho (trong bien dung san), khong chep doi trong HTML' );
+$__on  = substr( $__pu, strpos( $__pu, 'if ( $url_nocopy ) {' ), 1200 );
+$__tren = substr( $__on, 0, strpos( $__on, '} else {' ) );
+$__duoi = substr( $__on, strpos( $__on, '} else {' ) );
+assert_true( strpos( $__tren, 'kw-nocopy' ) !== false && strpos( $__tren, '<span class="url-display' ) !== false,
+    'Ban go tay: URL la the <span> co kw-nocopy (chan copy doc duoc vung chon)' );
+assert_true( strpos( $__tren, 'copyTargetUrl' ) === false && strpos( $__tren, 'daGoTayUrl' ) !== false,
+    'Ban go tay: KHONG co nut Copy, thay bang nut "Da go xong"' );
+assert_true( strpos( $__duoi, 'copyTargetUrl' ) !== false && strpos( $__duoi, 'id="target-url-input"' ) !== false,
+    'Ban thuong (OFF): giu nguyen o nhap + nut Copy nhu cu' );
+assert_true( (bool) preg_match( '/function daGoTayUrl\([^)]*\) \{\s*trackDirect\(\);\s*taskHandoff\(\);/', $__pu ),
+    'Nut "Da go xong" bao server y nhu nut Copy (trackDirect + taskHandoff)' );
+assert_true( strpos( $__pu, 'span.url-display.kw-nocopy{user-select:none' ) !== false, 'Co CSS chan boi den cho URL dang chu' );
+
+// ── 4. Giao diện admin: nút gạt hiện cho CẢ Search lẫn Direct ───────────
+$__tc = file_get_contents( dirname( __DIR__, 2 ) . '/includes/admin/tabs/tab-campaigns.php' );
+assert_true( strpos( $__tc, "\$kw_bat_go_tay = (in_array(\$task_type, array('keyword_search','traffic_direct'), true) && !empty(\$_POST['kw_bat_go_tay'])) ? 1 : 0;" ) !== false,
+    'Tao camp: nhan co cho CA keyword_search lan traffic_direct' );
+assert_true( strpos( $__tc, "if (_admEditTaskType === 'keyword_search' || _admEditTaskType === 'traffic_direct') fd.append('kw_bat_go_tay'" ) !== false,
+    'Sua camp: gui co cho ca hai loai (truoc day Direct bi bo qua)' );
+assert_true( strpos( $__tc, "traffic_direct:['Bắt gõ tay URL đích'" ) !== false, 'Camp Direct doi chu thanh "Bat go tay URL dich"' );
+assert_true( strpos( $__tc, "keyword_search:['Bắt gõ tay keyword'" ) !== false, 'Camp Search giu nguyen chu cu' );
+assert_true( strpos( $__tc, "id=\"admCreateGoTayWrap\"" ) !== false && strpos( $__tc, "id=\"admEditGoTayWrap\"" ) !== false,
+    'Nut gat tach khoi o Tu khoa o ca form tao lan form sua (Direct an o Tu khoa)' );
+// Loại khác (social...) không được có nút này: bảng ADM_GO_TAY_TXT chỉ khai đúng 2 loại
+assert_equals( 0, substr_count( $__tc, "traffic_social:['Bắt gõ tay" ), 'Camp social KHONG co nut gat' );
+assert_true( strpos( $__tc, "inp.name='destination_urls[]'; admSetDestInput(inp, admDestLaDirect(listId));" ) !== false,
+    'O URL dat kieu theo loai camp (Direct: text, con lai: url)' );
+
+$__cd = file_get_contents( dirname( __DIR__, 2 ) . '/page-customer-dashboard.php' );
+assert_true( strpos( $__cd, 'cfSetDestInput(inp, cfDestLaDirect(listId));' ) !== false, 'Form khach hang: o URL cung dat kieu theo loai camp' );
+assert_true( strpos( $__cd, "inp.type = laDirect ? 'text' : 'url';" ) !== false, 'Form khach hang: chi Direct moi doi sang text' );
+
+echo "  ✓ traffic direct: bat go tay URL + khai URL gon\n";

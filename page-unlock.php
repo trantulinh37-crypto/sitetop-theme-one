@@ -340,6 +340,30 @@ $social_screenshot_url = $social_screenshot_url ?? '';
 // Lấy campaign_type (keyword_search, traffic_direct, traffic_social)
 $campaign_type = $campaign->campaign_type ?? 'keyword_search';
 
+/* BẮT GÕ TAY URL ĐÍCH — camp Direct (chủ site chốt 21/09/2026).
+   Camp Direct KHÔNG có từ khoá; thứ user phải nhập là URL đích, nên nút "Bắt gõ tay" của
+   camp Direct chặn copy chính URL đó. Dùng chung cột kw_bat_go_tay với camp Search.
+   PHẢI có cả hai vế: camp Search bật cờ thì chặn từ khoá (nhánh $kw_nocopy), không được
+   đụng tới ô URL; camp Direct tắt cờ thì giữ nguyên nút Copy như trước nay. */
+$url_nocopy = ( $campaign_type === 'traffic_direct' ) && ! empty( $campaign->kw_bat_go_tay );
+
+/* Ô URL đích dựng MỘT LẦN rồi echo ở cả hai nhánh Direct (nocode và thường) — hai chỗ đó
+   xưa nay markup giống hệt nhau, tách ra đây để không bao giờ sửa lệch một bên.
+   Bản gõ tay: URL là thẻ <span> chứ không phải <input>, vì chốt chặn copy đọc vùng chọn
+   của trang (window.getSelection) mà vùng chọn BÊN TRONG <input> thì nó không thấy. */
+if ( $url_nocopy ) {
+    $sitetop_o_url_dich =
+        '<span class="url-display kw-nocopy" id="target-url-text" title="Vui lòng gõ tay">'
+        . esc_html( $campaign->target_url ) . '</span>'
+        . '<button type="button" class="btn-copy-url" onclick="daGoTayUrl(this)">Đã gõ xong</button>';
+} else {
+    $sitetop_o_url_dich =
+        '<input type="text" class="url-display" value="' . esc_attr( $campaign->target_url ) . '" readonly id="target-url-input">'
+        . '<button type="button" class="btn-copy-url" onclick="copyTargetUrl()">'
+        . '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy'
+        . '</button>';
+}
+
 // Lấy thông tin site hiện tại
 $current_domain = $_SERVER['HTTP_HOST'] ?? parse_url(home_url(), PHP_URL_HOST);
 ?>
@@ -473,6 +497,9 @@ $current_domain = $_SERVER['HTTP_HOST'] ?? parse_url(home_url(), PHP_URL_HOST);
         .url-copy-box{display:flex;gap:7px;margin-top:9px;align-items:stretch}
         .url-display{flex:1;padding:11px 13px;border:1px solid var(--brd);border-radius:1px;font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:#fff;color:var(--txt);outline:none;min-width:0}
         .url-display:focus{border-color:var(--p);box-shadow:0 0 0 3px rgba(245,184,0,.12)}
+        /* Bản "bắt gõ tay": URL là <span> nên phải tự lo cắt chữ tràn — <input> vốn tự cắt. */
+        span.url-display{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:34px}
+        span.url-display.kw-nocopy{user-select:none;-webkit-user-select:none;cursor:not-allowed}
         /* Nut Copy: doi tu vang sang DEN CHU TRANG cho dong bo voi nut TIEP TUC
            (05/09/2026). Nen da la #000 nen hover phai SANG len chu khong toi di,
            neu khong se khong con phan hoi khi ro chuot. Giu nguyen .copied mau xanh
@@ -873,10 +900,7 @@ border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
                         <p>Truy cập trang web:</p>
                         <div class="url-copy-box omni">
                             <span class="omni-g" aria-hidden="true"><svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg></span>
-                            <input type="text" class="url-display" value="<?php echo esc_attr($campaign->target_url); ?>" readonly id="target-url-input">
-                            <button type="button" class="btn-copy-url" onclick="copyTargetUrl()">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy
-                            </button>
+                            <?php echo $sitetop_o_url_dich; ?>
                         </div>
                     </div>
                 </div>
@@ -1056,10 +1080,7 @@ border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
                         <p>Copy URL sau và dán vào trình duyệt:</p>
                         <div class="url-copy-box omni">
                             <span class="omni-g" aria-hidden="true"><svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg></span>
-                            <input type="text" class="url-display" value="<?php echo esc_attr($campaign->target_url); ?>" readonly id="target-url-input">
-                            <button type="button" class="btn-copy-url" onclick="copyTargetUrl()">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy
-                            </button>
+                            <?php echo $sitetop_o_url_dich; ?>
                         </div>
                     </div>
                 </div>
@@ -1437,6 +1458,16 @@ border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
             fetch(ajaxUrl, { method: 'POST', body: fd });
         }
         
+        /* Camp Direct bật "bắt gõ tay": không có nút Copy nữa, nhưng vẫn phải báo server
+           "user đã nhận URL" — mốc này là target_visited_at, camp 2 bước lấy đó tính công
+           bước 1. Dùng lại đúng hai lời gọi của nút Copy, bỏ phần ghi clipboard. */
+        function daGoTayUrl(btn) {
+            trackDirect();
+            taskHandoff();
+            if (btn) { btn.textContent = 'Đã ghi nhận'; btn.classList.add('copied'); }
+            showToast('Hãy gõ URL trên vào trình duyệt để lấy mã.', 'success');
+        }
+
         function copyTargetUrl() {
             var input = document.getElementById('target-url-input');
             var btn = document.querySelector('.btn-copy-url');
@@ -1512,7 +1543,7 @@ border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
                 document.addEventListener(ev, function (e) {
                     if (!selectionTouchesKeyword()) return;
                     e.preventDefault();
-                    if (typeof showToast === 'function') showToast('Vui lòng gõ tay vào Google', 'error');
+                    if (typeof showToast === 'function') showToast(<?php echo wp_json_encode( $campaign_type === 'traffic_direct' ? 'Vui lòng gõ tay URL vào trình duyệt' : 'Vui lòng gõ tay vào Google' ); ?>, 'error');
                 }, true);
             });
             for (var i = 0; i < nodes.length; i++) {

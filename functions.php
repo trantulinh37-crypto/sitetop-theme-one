@@ -395,13 +395,26 @@ function sitetop_normalize_dest_path( $campaign, $domain ) {
  * Chuẩn hoá danh sách URL người dùng nhập → mảng sạch để lưu.
  * Bỏ dòng rỗng, bỏ URL sai định dạng, bỏ trùng (so theo cả URL đầy đủ).
  * Trả array('urls'=>[], 'error'=>'') — error khác rỗng thì đừng lưu.
+ *
+ * @param mixed $input
+ * @param bool  $them_https CHỈ camp Direct bật (chủ site chốt 21/09/2026): thiếu giao thức
+ *                          thì tự thêm https:// để khách khai gọn "weba.com".
+ *                          Mặc định false = y nguyên hành vi cũ cho Search/Social.
  */
-function sitetop_sanitize_destination_urls( $input ) {
+function sitetop_sanitize_destination_urls( $input, $them_https = false ) {
     if ( ! is_array( $input ) ) $input = array( $input );
     $urls = array();
     foreach ( $input as $raw ) {
         $u = trim( (string) $raw );
         if ( $u === '' ) continue;                       // dòng để trống thì bỏ qua, không báo lỗi
+        /* PHẢI tự thêm https:// chứ không để esc_url_raw() lo: hàm đó thêm HTTP://, mà với
+           camp Direct chính URL này hiện lên trang nhiệm vụ cho user GÕ TAY — đưa http://
+           là bắt user gõ một địa chỉ mà web khách sẽ chuyển hướng lại.
+           Có dấu ':' thì không đụng vào: "javascript:..." phải rơi xuống chốt giao thức bên
+           dưới để bị chặn, "weba.com:8080" cũng để nguyên cho esc_url_raw lo. */
+        if ( $them_https && strpos( $u, ':' ) === false ) {
+            $u = 'https://' . ltrim( $u, '/' );
+        }
         $u = esc_url_raw( $u );
         $scheme = $u ? strtolower( (string) parse_url( $u, PHP_URL_SCHEME ) ) : '';
         $host   = sitetop_host_of( $u );
