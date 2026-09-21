@@ -236,6 +236,10 @@ function sitetop_them_scheme( $url ) {
     if ( $u === '' ) return '';
     if ( strpos( $u, '//' ) === 0 ) return 'https:' . $u;   // //a.com (protocol-relative)
     if ( strpos( $u, ':' ) !== false ) return $u;
+    /* Phần tên miền PHẢI có dấu chấm mới thêm giao thức. Thiếu chốt này thì một chuỗi gõ
+       nhầm ("khong-phai-url") cũng thành host hợp lệ, trong khi trước nay nó cho host RỖNG
+       — nới rộng hơn mức cần, và làm camp có URL hỏng bị coi như có thêm một tên miền. */
+    if ( ! preg_match( '#^[^/?\#]*\.[^/?\#]#', $u ) ) return $u;
     return 'https://' . $u;
 }
 

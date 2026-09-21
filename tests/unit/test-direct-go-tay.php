@@ -91,6 +91,11 @@ assert_false( sitetop_campaign_allows_url( $__campGon, 'https://blog.weba.com/' 
 assert_equals( 'weba.com', sitetop_host_of( 'weba.com' ),        'host_of hieu URL khai gon' );
 assert_equals( 'weba.com', sitetop_host_of( 'weba.com/abc' ),    'host_of hieu URL khai gon co duong dan' );
 assert_equals( '',         sitetop_host_of( 'javascript:x' ),    'host_of KHONG bia host cho javascript:' );
+/* Chuỗi gõ nhầm KHÔNG được biến thành tên miền: phần host phải có dấu chấm mới thêm https://.
+   Thiếu chốt này thì camp có URL hỏng bị tính là "có thêm một tên miền" (bên .net bắt được). */
+assert_equals( '',         sitetop_host_of( 'khong-phai-url' ), 'Chuoi khong co dau cham -> host RONG nhu truoc nay' );
+assert_equals( '',         sitetop_host_of( 'abcxyz/trang' ),   'Go nham kem duong dan -> van host RONG' );
+assert_equals( 'a.com',    sitetop_host_of( 'a.com/khong-phai-url' ), 'Co dau cham o ten mien -> van hieu binh thuong' );
 assert_equals( sitetop_url_key( 'https://weba.com/abc' ), sitetop_url_key( 'weba.com/abc' ), 'url_key: khai gon va khai du la MOT' );
 
 // ── 2. Chỗ gọi: chỉ camp Direct mới bật cờ ──────────────────────────────
