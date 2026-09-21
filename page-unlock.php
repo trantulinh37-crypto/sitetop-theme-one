@@ -586,16 +586,17 @@ $current_domain = $_SERVER['HTTP_HOST'] ?? parse_url(home_url(), PHP_URL_HOST);
         .g-mock-typed.kw-nocopy{user-select:none;-webkit-user-select:none;cursor:not-allowed}
         .g-mock-hint{margin-top:7px;font-size:11.5px;font-weight:700;color:var(--pt)}
         .g-mock-logo{font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:18px;font-weight:800;letter-spacing:-.02em;line-height:1;margin-bottom:9px}
-        .g-mock-box{display:flex;align-items:center;gap:8px;max-width:270px;margin:0 auto;padding:7px 13px;border:1px solid #DFE1E5;/* Ô tìm kiếm Google: CỐ Ý giữ bo tròn 24px đúng như google.com thật, KHÔNG theo mức
+        .g-mock-box{display:flex;align-items:center;gap:11px;max-width:470px;margin:0 auto;padding:10px 16px;border:1px solid #DFE1E5;/* Ô tìm kiếm Google: CỐ Ý giữ bo tròn 24px đúng như google.com thật, KHÔNG theo mức
    1px của toàn trang. Đây là ảnh mô phỏng để user nhận ra ngay giao diện Google sắp
    gặp — làm vuông thì mất tính nhận diện, user dễ nhầm sang thanh tìm kiếm khác. */
 border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
-        .g-mock-ic{width:13px;height:13px;flex:none}
-        .g-mock-typed{flex:1;min-width:0;font-size:12.5px;color:#202124;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-        .g-mock-caret{width:1.5px;height:14px;background:#4285F4;flex:none;animation:gcaret 1.1s steps(1) infinite}
+        .g-mock-ic{width:20px;height:20px;flex:none}
+        .g-mock-typed{flex:1;min-width:0;font-size:28px;line-height:1.35;color:#202124;font-weight:600;white-space:normal;word-break:break-word;text-align:left}
+        .g-mock-caret{width:2px;height:26px;background:#4285F4;flex:none;animation:gcaret 1.1s steps(1) infinite}
         @keyframes gcaret{0%,50%{opacity:1}51%,100%{opacity:0}}
         @media(prefers-reduced-motion:reduce){.g-mock-caret{animation:none}}
-        @media(max-width:480px){.g-mock{padding:10px 9px}.g-mock-logo{font-size:16px}.g-mock-box{max-width:100%}}
+        @media(max-width:480px){.g-mock{padding:10px 9px}.g-mock-logo{font-size:16px}.g-mock-box{max-width:100%;gap:8px;padding:9px 13px}
+            .g-mock-ic{width:16px;height:16px}.g-mock-typed{font-size:18px}.g-mock-caret{height:19px}}
         /* Chip + nhãn "Nhập tay" là MỘT cụm: màn hẹp thì cả cụm cùng xuống dòng,
            không để nhãn rơi lẻ xuống lề trái tách khỏi chip. */
         /* Từ khoá đủ dài: BẮT BUỘC khai báo rõ cho iOS/Android. user-select mặc định là
