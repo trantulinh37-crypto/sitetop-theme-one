@@ -504,9 +504,12 @@ $current_domain = $_SERVER['HTTP_HOST'] ?? parse_url(home_url(), PHP_URL_HOST);
            ô <input> — cho xuống dòng và phóng to. Chủ site chốt 21/09/2026: bản điện thoại
            phải to rõ hơn nữa vì gõ tay trên điện thoại là chính. */
         span.url-display{display:block;white-space:normal;word-break:break-all}
-        /* PHẢI đủ "nặng" hơn .url-copy-box.omni .url-display (3 class) — viết span.url-display
-           không thôi là thua độ ưu tiên và cỡ chữ bị kéo về 13.5px, nhìn mắt thường tưởng đã to. */
-        .url-copy-box.omni.go-tay span.url-display{line-height:1.4;font-size:28px;font-weight:600;padding:12px 8px 12px 0}
+        /* Cỡ chữ khai Ở MỘT CHỖ DUY NHẤT: .url-copy-box.omni .url-display phía trên (và bản
+           điện thoại trong media query) — bật hay tắt nút gạt đều to bằng nhau, chủ site chốt
+           21/09/2026. Ở đây chỉ lo phần riêng của bản chữ: đậm, xuống dòng, khoảng cách.
+           ĐỪNG khai font-size ở "span.url-display" trần: quy tắc .url-copy-box.omni .url-display
+           nặng 3 class sẽ thắng, sửa xong nhìn màn hình không đổi một ly (đã mắc thật). */
+        .url-copy-box.omni.go-tay span.url-display{line-height:1.4;font-weight:600;padding:12px 8px 12px 0}
         span.url-display.kw-nocopy{user-select:none;-webkit-user-select:none;cursor:not-allowed}
         .url-copy-box.omni.go-tay{padding:8px 14px 8px 16px}
         .url-copy-box.omni.go-tay .omni-g{width:26px;height:26px;margin-right:13px}
@@ -531,19 +534,20 @@ $current_domain = $_SERVER['HTTP_HOST'] ?? parse_url(home_url(), PHP_URL_HOST);
         .url-copy-box.omni{align-items:center;gap:0;background:#F1F3F4;border:1px solid #E1E3E6;border-radius:1px;padding:5px 5px 5px 15px}
         .url-copy-box.omni .omni-g{flex-shrink:0;width:19px;height:19px;display:inline-flex;margin-right:11px}
         .url-copy-box.omni .omni-g svg{width:100%;height:100%;display:block}
-        .url-copy-box.omni .url-display{border:none;background:transparent;padding:8px 8px 8px 0;font-family:inherit;font-size:13.5px;color:#202124;border-radius:0}
+        .url-copy-box.omni .url-display{border:none;background:transparent;padding:10px 8px 10px 0;font-family:inherit;font-size:28px;color:#202124;border-radius:0}
         .url-copy-box.omni .url-display:focus{border-color:transparent;box-shadow:none}
-        .url-copy-box.omni .btn-copy-url{border-radius:1px;padding:0 16px;height:34px;flex-shrink:0}
+        .url-copy-box.omni .btn-copy-url{border-radius:1px;padding:0 18px;height:44px;flex-shrink:0;font-size:13.5px}
         /* Màn hẹp: KHÔNG cho xuống dòng như ô thường — xuống dòng là mất luôn hình dáng
            thanh tìm kiếm, tức mất tác dụng gợi ý. Thu nhỏ để vẫn nằm gọn một hàng. */
         @media(max-width:480px){
             .url-copy-box.omni{flex-direction:row;padding:4px 4px 4px 11px}
             .url-copy-box.omni .omni-g{width:17px;height:17px;margin-right:8px}
-            .url-copy-box.omni .url-display{font-size:12.5px;padding:7px 6px 7px 0}
-            /* Ô "bắt gõ tay" trên điện thoại: to hơn hẳn ô thường (12.5px -> 18px) và icon to theo. */
+            .url-copy-box.omni .url-display{font-size:18px;padding:8px 6px 8px 0}
+            /* Điện thoại: cỡ chữ 18px do quy tắc chung phía trên lo cho CẢ hai bản. */
             .url-copy-box.omni.go-tay{padding:9px 12px}
             .url-copy-box.omni.go-tay .omni-g{width:21px;height:21px;margin-right:10px}
-            .url-copy-box.omni.go-tay span.url-display{font-size:18px;line-height:1.45;padding:2px 0}
+            .url-copy-box.omni.go-tay span.url-display{line-height:1.45;padding:2px 0}
+            .url-copy-box.omni .btn-copy-url{height:36px;padding:0 13px;font-size:12.5px}
             .url-copy-box.omni .btn-copy-url{height:30px;padding:0 12px;font-size:12px}
         }
 

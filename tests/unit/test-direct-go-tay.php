@@ -139,13 +139,18 @@ assert_equals( 0, substr_count( $__pu, 'daGoTayUrl' ), 'Khong con dau vet nut "D
 // Phóng to cho bản điện thoại + KHÔNG cắt bớt URL (user phải đọc hết mới gõ được)
 assert_equals( 2, substr_count( $__pu, "omni<?php echo \$url_nocopy ? ' go-tay' : ''; ?>" ),
     'Ca hai nhanh Direct deu gan class go-tay de CSS phong to rieng' );
-assert_true( strpos( $__pu, '.url-copy-box.omni.go-tay span.url-display{font-size:18px' ) !== false,
-    'Ban dien thoai: chu URL 18px (o thuong 12.5px)' );
+/* Chủ site chốt 21/09/2026: BẬT hay TẮT nút gạt thì ô URL cũng to bằng nhau, nên cỡ chữ
+   khai ở quy tắc CHUNG .url-copy-box.omni .url-display (máy tính 28px, điện thoại 18px). */
+assert_true( strpos( $__pu, '.url-copy-box.omni .url-display{border:none;background:transparent;padding:10px 8px 10px 0;font-family:inherit;font-size:28px' ) !== false,
+    'May tinh: ca hai ban URL deu 28px' );
+assert_true( strpos( $__pu, '.url-copy-box.omni .url-display{font-size:18px;padding:8px 6px 8px 0}' ) !== false,
+    'Dien thoai: ca hai ban URL deu 18px' );
+assert_false( strpos( $__pu, 'font-size:13.5px;color:#202124' ) !== false, 'Khong con co chu cu 13.5px o o URL' );
 /* Cỡ chữ PHẢI khai kèm .url-copy-box.omni.go-tay — quy tắc cũ .url-copy-box.omni .url-display
    nặng 3 class, viết "span.url-display{font-size...}" là thua độ ưu tiên và cỡ chữ không đổi
    (đã mắc thật 21/09: tưởng đã tăng lên 18px mà thực tế màn hình vẫn 13.5px). */
-assert_true( strpos( $__pu, '.url-copy-box.omni.go-tay span.url-display{line-height:1.4;font-size:28px;font-weight:600' ) !== false,
-    'Ban may tinh: chu URL 28px dam, khai du do uu tien' );
+assert_true( strpos( $__pu, '.url-copy-box.omni.go-tay span.url-display{line-height:1.4;font-weight:600' ) !== false,
+    'Ban go tay: chu dam + xuong dong, co chu lay tu quy tac chung' );
 assert_false( (bool) preg_match( '#\n\s*span\.url-display\{[^}]*font-size#', $__pu ),
     'KHONG duoc khai co chu o quy tac span.url-display tran (thua do uu tien)' );
 assert_true( strpos( $__pu, 'span.url-display{display:block;white-space:normal;word-break:break-all' ) !== false,
