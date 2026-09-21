@@ -120,12 +120,31 @@ $__tren = substr( $__on, 0, strpos( $__on, '} else {' ) );
 $__duoi = substr( $__on, strpos( $__on, '} else {' ) );
 assert_true( strpos( $__tren, 'kw-nocopy' ) !== false && strpos( $__tren, '<span class="url-display' ) !== false,
     'Ban go tay: URL la the <span> co kw-nocopy (chan copy doc duoc vung chon)' );
-assert_true( strpos( $__tren, 'copyTargetUrl' ) === false && strpos( $__tren, 'daGoTayUrl' ) !== false,
-    'Ban go tay: KHONG co nut Copy, thay bang nut "Da go xong"' );
+assert_true( strpos( $__tren, 'copyTargetUrl' ) === false && strpos( $__tren, '<button' ) === false,
+    'Ban go tay: KHONG co nut nao ca (chu site chot 21/09: bo ca nut "Da go xong")' );
 assert_true( strpos( $__duoi, 'copyTargetUrl' ) !== false && strpos( $__duoi, 'id="target-url-input"' ) !== false,
     'Ban thuong (OFF): giu nguyen o nhap + nut Copy nhu cu' );
-assert_true( (bool) preg_match( '/function daGoTayUrl\([^)]*\) \{\s*trackDirect\(\);\s*taskHandoff\(\);/', $__pu ),
-    'Nut "Da go xong" bao server y nhu nut Copy (trackDirect + taskHandoff)' );
+/* Bỏ nút thì mất chỗ báo server "user đã nhận URL" (mốc target_visited_at — camp 2 bước
+   lấy đó tính công bước 1). Thay bằng lần ĐẦU user rời trang, và chỉ cho camp bật cờ. */
+assert_true( strpos( $__pu, 'if (document.hidden && !_daBaoGoTay) { _daBaoGoTay = true; trackDirect(); }' ) !== false,
+    'Roi trang lan dau -> bao server thay cho cu bam nut' );
+assert_true( strpos( $__pu, 'var _daBaoGoTay = false;' ) !== false,
+    'Co PHAI bat dau bang false — dat true la khong bao gio bao server' );
+$__vtBao = strpos( $__pu, '_daBaoGoTay' );
+$__vtIf  = strpos( $__pu, '<?php if ( $url_nocopy ): ?>' );
+assert_true( $__vtIf !== false && $__vtIf < $__vtBao,
+    'Tin hieu do CHI chay cho camp bat go tay (nam trong if $url_nocopy)' );
+assert_equals( 0, substr_count( $__pu, 'daGoTayUrl' ), 'Khong con dau vet nut "Da go xong"' );
+
+// Phóng to cho bản điện thoại + KHÔNG cắt bớt URL (user phải đọc hết mới gõ được)
+assert_equals( 2, substr_count( $__pu, "omni<?php echo \$url_nocopy ? ' go-tay' : ''; ?>" ),
+    'Ca hai nhanh Direct deu gan class go-tay de CSS phong to rieng' );
+assert_true( strpos( $__pu, '.url-copy-box.omni.go-tay span.url-display{font-size:18px' ) !== false,
+    'Ban dien thoai: chu URL 18px (o thuong 12.5px)' );
+assert_true( strpos( $__pu, 'span.url-display{display:block;white-space:normal;word-break:break-all' ) !== false,
+    'URL xuong dong het, KHONG cat bang ba cham — cat la user khong go lai duoc' );
+assert_true( strpos( $__pu, "\$url_nocopy ? 'Gõ địa chỉ sau vào trình duyệt:' : 'Copy URL sau và dán vào trình duyệt:'" ) !== false,
+    'Chu huong dan doi theo: bat go tay thi khong noi "Copy URL"' );
 assert_true( strpos( $__pu, 'span.url-display.kw-nocopy{user-select:none' ) !== false, 'Co CSS chan boi den cho URL dang chu' );
 /* Camp Direct có thể lưu URL khai gọn -> mọi chỗ ĐỌC tên miền từ target_url phải đi qua
    sitetop_them_scheme(), không thì trang nhiệm vụ hiện "Tìm kết quả từ" bỏ trống. */
