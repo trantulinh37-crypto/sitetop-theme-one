@@ -341,10 +341,9 @@ $social_screenshot_url = $social_screenshot_url ?? '';
 // Lấy campaign_type (keyword_search, traffic_direct, traffic_social)
 $campaign_type = $campaign->campaign_type ?? 'keyword_search';
 
-/* KHÔNG có dòng chữ nhắc "Vui lòng gõ tay" nào nữa (chủ site chốt 21/09/2026): bật nút gạt
-   là chặn copy + chữ đậm to, thế là đủ để user hiểu phải gõ tay. Chỉ còn lời nhắc khi user
-   THẬT SỰ thử copy (toast ở JS) — đó là phản hồi cho thao tác, không phải dòng thông báo
-   nằm sẵn trên trang.
+/* Dòng nhắc "Vui lòng gõ tay" hiện khi bật nút gạt: dưới ô từ khoá và dưới ô URL Direct
+   (canh giữa), GIỐNG .net. Sáng 21/09/2026 từng bỏ hẳn rồi chủ site cho khôi phục — đừng
+   gỡ lại, test-keyword-nocopy.php của cả hai site đang canh.
 
    BẮT GÕ TAY URL ĐÍCH — camp Direct (chủ site chốt 21/09/2026).
    Camp Direct KHÔNG có từ khoá; thứ user phải nhập là URL đích, nên nút "Bắt gõ tay" của
@@ -357,6 +356,10 @@ $url_nocopy = ( $campaign_type === 'traffic_direct' ) && ! empty( $campaign->kw_
    xưa nay markup giống hệt nhau, tách ra đây để không bao giờ sửa lệch một bên.
    Bản gõ tay: URL là thẻ <span> chứ không phải <input>, vì chốt chặn copy đọc vùng chọn
    của trang (window.getSelection) mà vùng chọn BÊN TRONG <input> thì nó không thấy. */
+/* Dòng nhắc "Vui lòng gõ tay" khi bật gõ tay — GIỐNG .net (chủ site chốt 21/09/2026, sau
+   khi đã thử bỏ hẳn). Canh giữa cho thẳng tâm ô URL. */
+$sitetop_nhac_go_tay = $url_nocopy ? '<div class="g-mock-hint" style="text-align:center">Vui lòng gõ tay</div>' : '';
+
 /* Camp Direct KHÔNG còn nút Copy nào (chủ site chốt 21/09/2026) — chỉ còn địa chỉ.
    Bật nút gạt: thêm .kw-nocopy để chặn bôi đen/copy. Tắt: chữ vẫn chọn được, user tự
    bôi đen copy nếu muốn. Mốc "user đã nhận URL" (target_visited_at) nay báo bằng tín
@@ -574,6 +577,7 @@ $current_domain = $_SERVER['HTTP_HOST'] ?? parse_url(home_url(), PHP_URL_HOST);
         .g-mock-logo,.g-mock-ic,.g-mock-caret{pointer-events:none}
         .g-mock-typed:not(.kw-nocopy){-webkit-user-select:text;user-select:text;cursor:text}
         .g-mock-typed.kw-nocopy{user-select:none;-webkit-user-select:none;cursor:not-allowed}
+        .g-mock-hint{margin-top:7px;font-size:11.5px;font-weight:700;color:var(--pt)}
         .g-mock-logo{font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:18px;font-weight:800;letter-spacing:-.02em;line-height:1;margin-bottom:9px}
         .g-mock-box{display:flex;align-items:center;gap:11px;max-width:470px;margin:0 auto;padding:10px 16px;border:1px solid #DFE1E5;/* Ô tìm kiếm Google: CỐ Ý giữ bo tròn 24px đúng như google.com thật, KHÔNG theo mức
    1px của toàn trang. Đây là ảnh mô phỏng để user nhận ra ngay giao diện Google sắp
@@ -849,9 +853,10 @@ border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
                             <div class="g-mock-logo"><span style="color:#4285F4">G</span><span style="color:#EA4335">o</span><span style="color:#FBBC05">o</span><span style="color:#4285F4">g</span><span style="color:#34A853">l</span><span style="color:#EA4335">e</span></div>
                             <div class="g-mock-box">
                                 <svg class="g-mock-ic" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                                <span class="g-mock-typed<?php echo $kw_nocopy ? ' kw-nocopy' : ''; ?>"><?php echo esc_html($campaign->keyword); ?></span>
+                                <span class="g-mock-typed<?php echo $kw_nocopy ? ' kw-nocopy' : ''; ?>"<?php echo $kw_nocopy ? ' title="Vui lòng gõ tay"' : ''; ?>><?php echo esc_html($campaign->keyword); ?></span>
                                 <span class="g-mock-caret"></span>
                             </div>
+                            <?php if ($kw_nocopy): ?><div class="g-mock-hint">Vui lòng gõ tay</div><?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -909,6 +914,7 @@ border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
                             <span class="omni-g" aria-hidden="true"><svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg></span>
                             <?php echo $sitetop_o_url_dich; ?>
                         </div>
+                        <?php echo $sitetop_nhac_go_tay; ?>
                     </div>
                 </div>
                 
@@ -1038,9 +1044,10 @@ border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
                             <div class="g-mock-logo"><span style="color:#4285F4">G</span><span style="color:#EA4335">o</span><span style="color:#FBBC05">o</span><span style="color:#4285F4">g</span><span style="color:#34A853">l</span><span style="color:#EA4335">e</span></div>
                             <div class="g-mock-box">
                                 <svg class="g-mock-ic" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                                <span class="g-mock-typed<?php echo $kw_nocopy ? ' kw-nocopy' : ''; ?>"><?php echo esc_html($campaign->keyword); ?></span>
+                                <span class="g-mock-typed<?php echo $kw_nocopy ? ' kw-nocopy' : ''; ?>"<?php echo $kw_nocopy ? ' title="Vui lòng gõ tay"' : ''; ?>><?php echo esc_html($campaign->keyword); ?></span>
                                 <span class="g-mock-caret"></span>
                             </div>
+                            <?php if ($kw_nocopy): ?><div class="g-mock-hint">Vui lòng gõ tay</div><?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -1088,6 +1095,7 @@ border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
                             <span class="omni-g" aria-hidden="true"><svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg></span>
                             <?php echo $sitetop_o_url_dich; ?>
                         </div>
+                        <?php echo $sitetop_nhac_go_tay; ?>
                     </div>
                 </div>
                 
