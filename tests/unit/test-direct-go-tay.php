@@ -141,6 +141,8 @@ assert_equals( 2, substr_count( $__pu, "omni<?php echo \$url_nocopy ? ' go-tay' 
     'Ca hai nhanh Direct deu gan class go-tay de CSS phong to rieng' );
 assert_true( strpos( $__pu, '.url-copy-box.omni.go-tay span.url-display{font-size:18px' ) !== false,
     'Ban dien thoai: chu URL 18px (o thuong 12.5px)' );
+assert_true( strpos( $__pu, 'word-break:break-all;line-height:1.5;font-size:18px;font-weight:600' ) !== false,
+    'Ban may tinh: chu URL cung 18px dam (o thuong 13.5px) — chu site chot 21/09' );
 assert_true( strpos( $__pu, 'span.url-display{display:block;white-space:normal;word-break:break-all' ) !== false,
     'URL xuong dong het, KHONG cat bang ba cham — cat la user khong go lai duoc' );
 assert_true( strpos( $__pu, "\$url_nocopy ? 'Gõ địa chỉ sau vào trình duyệt:' : 'Copy URL sau và dán vào trình duyệt:'" ) !== false,
