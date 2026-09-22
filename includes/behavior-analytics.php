@@ -189,8 +189,7 @@ function sitetop_save_behavior_analytics( $visit_id, $session_id, $data ) {
        - >= 70 điểm;
        - đo được ít nhất 10 giây: widget chỉ báo lúc rời/TẢI LẠI trang, báo dưới 10 giây là tải
          lại hoặc thoát ngay — quá ít dữ liệu để kết luận (lượt đó chưa tới lúc lấy mã, không mất gì).
-       Và phải có 3 lần như vậy từ cùng IP trong 60 phút gần nhất mới khoá. Thời hạn khoá của
-       .one giữ nguyên 24 giờ (.net đã rút xuống 12 giờ từ 19/09). */
+       Và phải có 3 lần như vậy từ cùng IP trong 60 phút gần nhất mới khoá. */
     if ( $fraud['fraud_score'] >= 70 && (int) ( $data['time_on_page'] ?? 0 ) >= 10 ) {
         $ip = sitetop_get_real_ip();
         $fraud_count = (int) $wpdb->get_var( $wpdb->prepare(
@@ -200,12 +199,14 @@ function sitetop_save_behavior_analytics( $visit_id, $session_id, $data ) {
             $ip, sitetop_current_time()
         ));
         if ( $fraud_count >= 3 ) {
+            // Bao lâu: SITETOP_IP_KHOA_GIO — đúng số giờ trang 'ip_blocked' báo cho user.
+            $gio_khoa = defined( 'SITETOP_IP_KHOA_GIO' ) ? (int) SITETOP_IP_KHOA_GIO : 12;
             $wpdb->query( $wpdb->prepare(
                 "INSERT INTO {$p}ip_reputation (ip_address, blocked, blocked_until, fraud_score, checked_at)
-                 VALUES (%s, 1, DATE_ADD(%s, INTERVAL 24 HOUR), %d, %s)
-                 ON DUPLICATE KEY UPDATE blocked=1, blocked_until=DATE_ADD(%s, INTERVAL 24 HOUR), fraud_score=%d",
-                $ip, sitetop_current_time(), $fraud['fraud_score'], sitetop_current_time(),
-                sitetop_current_time(), $fraud['fraud_score']
+                 VALUES (%s, 1, DATE_ADD(%s, INTERVAL %d HOUR), %d, %s)
+                 ON DUPLICATE KEY UPDATE blocked=1, blocked_until=DATE_ADD(%s, INTERVAL %d HOUR), fraud_score=%d",
+                $ip, sitetop_current_time(), $gio_khoa, $fraud['fraud_score'], sitetop_current_time(),
+                sitetop_current_time(), $gio_khoa, $fraud['fraud_score']
             ));
         }
     }

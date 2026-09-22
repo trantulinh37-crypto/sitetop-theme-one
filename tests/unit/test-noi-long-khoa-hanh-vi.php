@@ -159,7 +159,7 @@ assert_equals( 1, count( (array) ( $__nl_k['dem'] ?? array() ) ), 'Vi pham that 
 // B3. Lần thứ 3 trong 60 phút -> khoá, đúng 12 giờ.
 list( $__nl_k, $__nl_e ) = $__nl_khoa( $__nl_bot, $__nl_pc, 3 );
 assert_equals( 1, $__nl_k['khoa'] ?? null, 'Lan vi pham thu 3 trong 60 phut PHAI khoa IP. stderr: ' . $__nl_e );
-assert_true( preg_match_all( '/INTERVAL 24 HOUR/', (string) ( $__nl_k['sql_khoa'][0] ?? '' ) ) === 2, 'Khoa .one van dung 24 gio (ca INSERT lan ON DUPLICATE) — .one chua rut xuong 12 gio nhu .net' );
+assert_true( preg_match_all( '/INTERVAL 12 HOUR/', (string) ( $__nl_k['sql_khoa'][0] ?? '' ) ) === 2, 'Khoa van dung 12 gio (ca INSERT lan ON DUPLICATE)' );
 
 // B4. Câu ĐẾM phải có đủ điều kiện — $wpdb giả không đọc SQL nên canh nguyên văn (bỏ một điều kiện
 //     là test hành vi ở trên vẫn xanh mà luật đã lỏng/gắt sai).

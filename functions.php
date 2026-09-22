@@ -34,11 +34,21 @@ define( 'SITETOP_AWAY_GAP', 10 );
    không theo nhiệm vụ hay từ khoá — đổi camp hay tải lại trang không gỡ được. */
 define( 'SITETOP_REPORT_GAP', 5 * MINUTE_IN_SECONDS );
 
-/* Khoá vì dùng trình duyệt ẨN DANH — 30 phút, nhẹ hơn hẳn 24 giờ của proxy/VPN.
+/* Khoá vì dùng trình duyệt ẨN DANH — 30 phút, nhẹ hơn hẳn 12 giờ của proxy/VPN.
    Ẩn danh chỉ là lách luật, không phải gian lận có tổ chức; và bộ nhận diện ẩn danh
    là suy đoán nên có thể bắt nhầm — phạt nặng người bị nhầm là không đáng.
-   Proxy, fake IP, 1.1.1.1 vẫn giữ 24 giờ, KHÔNG dùng hằng số này. */
+   Proxy, fake IP, 1.1.1.1 dùng SITETOP_IP_KHOA_GIO bên dưới, KHÔNG dùng hằng số này. */
 define( 'SITETOP_ANDANH_BLOCK_MINUTES', 30 );
+
+/* Khoá IP tự động — 12 giờ cho MỌI khoá ghi vào ip_reputation (.net rút từ 24 xuống 12 ngày
+   19/09/2026; .one theo ngày 22/09/2026, cả hai loại):
+   - gian lận hành vi lặp lại (behavior-analytics.php) → trang "IP của bạn đang bị tạm
+     khoá". Trang đó in số giờ từ CHÍNH hằng số này — bản cũ ghi cứng "24" ở hai nơi
+     riêng rẽ, sửa sót một nơi là trang hứa một đằng, khoá chạy một nẻo.
+   - VPN / proxy / 1.1.1.1 (ip-fraud.php) → trang VPN/Proxy (trang này không hứa số giờ).
+     Ở đây hằng số còn quyết định thời gian nhớ kết quả ip-api BỊ GẮN CỜ — xem chú thích
+     trong sitetop_check_ip_api(), thiếu vế đó thì khoá 12 giờ vẫn chặn 24 giờ. */
+define( 'SITETOP_IP_KHOA_GIO', 12 );
 
 // Disable external wp-cron.php hits (prevents DDoS abuse via cron endpoint)
 // WordPress will run cron internally on page loads instead
@@ -1135,6 +1145,17 @@ add_filter( 'template_include', function( $template ) {
 });
 
 // Admin routing: wp-login redirect, wp-admin block (tách ra includes/admin-routing.php)
+
+/* ĐO THỜI GIAN DỰNG TRANG ADMIN (22/09/2026, chuyển từ .net d5f5297) — in ở chân trang admin,
+   chỉ quản trị viên thấy: PHP dựng trang mất bao nhiêu giây, chạy bao nhiêu truy vấn CSDL. Chỉ
+   ĐỌC hai bộ đếm WordPress vốn đã có (timer_stop, get_num_queries), không thêm truy vấn nào.
+   Để chỉ ra đúng mục admin nào chậm và chậm vì đâu, thay vì đoán: số giây cao mà ít truy
+   vấn là máy chủ nghẽn; số giây cao kèm hàng trăm truy vấn là chính trang đó nặng. */
+add_filter( 'admin_footer_text', function ( $text ) {
+    if ( ! current_user_can( 'manage_options' ) ) return $text;
+    return $text . ' | <span id="st-do-trang">Trang dựng trong <b>' . timer_stop( 0, 2 )
+        . ' giây</b>, <b>' . (int) get_num_queries() . '</b> truy vấn CSDL</span>';
+} );
 
 /* ============================================================
    ADMIN MENU (only for admins who can still access wp-admin)
