@@ -168,7 +168,12 @@ function sitetop_don_moc_ttplb() {
    khớp với chỗ cộng trong sitetop_verify_and_pay(), nếu không mỗi lần cron chạy
    sẽ xoá sạch những lượt đã trả tiền mà chưa verified (user thấy mã nhưng không
    gõ). Đếm lượt = (verified HOẶC khách đã trả tiền); riêng total_earnings vẫn chỉ
-   tính lượt thực sự trả thưởng — tuyệt đối không nới điều kiện của tiền. */
+   tính lượt thực sự trả thưởng — tuyệt đối không nới điều kiện của tiền.
+
+   25/09/2026 — BỎ 'step = verified' KHỎI CÔNG THỨC TIỀN, chỉ còn reward_paid = 1.
+   Không phải nới điều kiện: reward_paid = 1 CHÍNH LÀ "đã trả thưởng thật", còn
+   reward_amount luôn bị ghi 0 khi không trả (sitetop_verify_and_pay). Thêm 'step' vào
+   chỉ làm số tiền phụ thuộc một cột có thể bị ghi đè sau khi đã trả. */
 
 /** Recalculate shortlink counters (fix drift) */
 function sitetop_sync_shortlink_counters() {
@@ -178,7 +183,7 @@ function sitetop_sync_shortlink_counters() {
     $wpdb->query("UPDATE {$p}user_shortlinks sl SET
         total_clicks = (SELECT COUNT(*) FROM {$p}shortlink_visits WHERE shortlink_id = sl.id),
         total_completed = (SELECT COUNT(*) FROM {$p}shortlink_visits WHERE shortlink_id = sl.id AND (step = 'verified' OR customer_paid = 1)),
-        total_earnings = COALESCE((SELECT SUM(reward_amount) FROM {$p}shortlink_visits WHERE shortlink_id = sl.id AND step = 'verified' AND reward_paid = 1), 0)");
+        total_earnings = COALESCE((SELECT SUM(reward_amount) FROM {$p}shortlink_visits WHERE shortlink_id = sl.id AND reward_paid = 1), 0)");
 }
 
 /** Recalculate campaign counters */
@@ -188,5 +193,83 @@ function sitetop_sync_campaign_counters() {
 
     $wpdb->query("UPDATE {$p}keyword_campaigns kc SET
         completed = (SELECT COUNT(*) FROM {$p}shortlink_visits WHERE campaign_id = kc.id AND (step = 'verified' OR customer_paid = 1)),
-        total_earnings = COALESCE((SELECT SUM(reward_amount) FROM {$p}shortlink_visits WHERE campaign_id = kc.id AND step = 'verified' AND reward_paid = 1), 0)");
+        total_earnings = COALESCE((SELECT SUM(reward_amount) FROM {$p}shortlink_visits WHERE campaign_id = kc.id AND reward_paid = 1), 0)");
 }
+
+
+/* ============================================================
+   NẮN LẠI step CỦA CÁC LƯỢT ĐÃ CHỐT BỊ GHI ĐÈ — chạy một lần, 25/09/2026
+
+   VÌ SAO: widget trên web đích gọi track_direct_click sau MỖI lần tải trang, và nút
+   "Đổi nhiệm vụ" đóng phiên cũ bằng step='expired'. Cả hai trước đây không chừa lượt đã
+   chốt xong, nên step 'verified' bị ghi đè ngược. Tiền hai đầu vẫn đúng và view của camp
+   cũng đếm đủ (mọi câu đếm dùng (step='verified' OR customer_paid=1)) — chỉ cái NHÃN và
+   cột Tổng thu nhập sai. Đo trên .net 25/09: 3.755 dòng, ~570 lượt/ngày.
+
+   CHỈ NẮN PHẦN KHÔNG LÀM LỆCH BẤT KỲ CON SỐ NÀO:
+   - customer_paid = 1  → lượt này ĐÃ được đếm là view rồi (nhờ vế OR), nên đổi step về
+     'verified' không thêm cũng không bớt view của camp, không đụng ngân sách khách.
+   - verified_at IS NOT NULL → chỉ lượt đã qua lần chốt ĐẦY ĐỦ, bỏ qua phiên chốt sớm.
+   - loại thẳng lượt có dấu nguon_gia / ref_lech → tuyệt đối không nâng một lượt ĐÃ BỊ
+     CHẶN thành lượt hợp lệ.
+   KHÔNG đụng các lượt customer_paid = 0: nắn chúng là CỘNG THÊM view cho camp mà khách
+   chưa hề trả tiền — đúng thứ không được phép lệch.
+   ============================================================ */
+add_action( 'init', function () {
+    if ( get_option( 'sitetop_migration_nan_step_v1' ) ) return;
+    // Hai request vào cùng lúc thì chỉ một cái được chạy.
+    if ( get_transient( 'sitetop_nan_step_dang_chay' ) ) return;
+    set_transient( 'sitetop_nan_step_dang_chay', 1, 5 * MINUTE_IN_SECONDS );
+
+    global $wpdb;
+    $bang = $wpdb->prefix . SITETOP_PREFIX . 'shortlink_visits';
+
+    $wpdb->hide_errors();
+    $cot = $wpdb->get_col( "SHOW COLUMNS FROM {$bang}" );
+    $wpdb->show_errors();
+    if ( empty( $cot ) || ! in_array( 'skip_reasons', $cot, true ) || ! in_array( 'verified_at', $cot, true ) ) {
+        update_option( 'sitetop_migration_nan_step_v1', time(), false );
+        delete_transient( 'sitetop_nan_step_dang_chay' );
+        return;
+    }
+
+    $da_nan = (int) get_option( 'sitetop_migration_nan_step_so_dong', 0 );
+    $xong   = false;
+    for ( $lo = 0; $lo < 20; $lo++ ) {
+        $n = $wpdb->query(
+            "UPDATE {$bang}
+                SET step = 'verified'
+              WHERE verified_at IS NOT NULL
+                AND customer_paid = 1
+                AND step IN ('started','google_clicked','target_visited','code_shown','expired')
+                AND ( skip_reasons IS NULL
+                      OR ( skip_reasons NOT LIKE '%nguon_gia%' AND skip_reasons NOT LIKE '%ref_lech%' ) )
+              LIMIT 500"
+        );
+        if ( false === $n ) break;            // lỗi SQL — KHÔNG đặt cờ, lần sau chạy lại
+        $da_nan += (int) $n;
+        if ( (int) $n < 500 ) { $xong = true; break; }
+    }
+    update_option( 'sitetop_migration_nan_step_so_dong', $da_nan, false );
+    if ( $xong ) update_option( 'sitetop_migration_nan_step_v1', time(), false );
+    delete_transient( 'sitetop_nan_step_dang_chay' );
+}, 22 );
+
+/* ============================================================
+   ĐỒNG BỘ LẠI CỘT ĐẾM MỘT LẦN SAU KHI ĐỔI CÔNG THỨC TIỀN — 25/09/2026
+
+   total_earnings vừa bỏ phụ thuộc step (chỉ còn reward_paid = 1), nhưng đó là cột ĐÃ LƯU:
+   chỉ đúng lại khi sync_*_counters() chạy, mà lịch gần nhất là cron ngày. Chạy trong cron
+   5 phút chứ KHÔNG chạy ở init của request người dùng: hai câu UPDATE này quét toàn bảng
+   shortlink_visits, treo vào một lượt tải trang là khách chờ.
+   Chờ cờ nắn dữ liệu xong mới chạy, để số chốt lại trên dữ liệu đã đúng.
+   ============================================================ */
+add_action( 'sitetop_5min_cron', function () {
+    if ( get_option( 'sitetop_dongbo_tien_sau_nan_v1' ) ) return;
+    if ( ! get_option( 'sitetop_migration_nan_step_v1' ) ) return;   // nắn xong đã rồi tính
+    if ( ! function_exists( 'sitetop_sync_shortlink_counters' ) ) return;
+
+    sitetop_sync_shortlink_counters();
+    sitetop_sync_campaign_counters();
+    update_option( 'sitetop_dongbo_tien_sau_nan_v1', time(), false );
+}, 5 );
