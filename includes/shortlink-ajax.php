@@ -498,6 +498,7 @@ add_action('wp_ajax_nopriv_sitetop_get_code', 'sitetop_ajax_get_code');
 function sitetop_ajax_get_code() {
     $sid = sanitize_text_field($_POST['session_id'] ?? '');
     if (!$sid) wp_send_json_error('Missing session');
+    sitetop_tuagio_chan( $sid, 'xinma' );   // chặn ngay ở cổng, trước mọi việc khác
     sitetop_ghi_vet( $sid, 'xinma', sitetop_vet_nhip( $sid ) );
     if ( sitetop_nguon_gia_xu_ly( $sid, 'xinma' ) === 'chan' ) wp_send_json_error( array( 'message' => 'Hãy mở trang đích để lấy mã.' ) );
     // Referer lệch Origin (24/09/2026) — CÙNG câu báo lỗi với lớp trên để không lộ luật nào đã bắt.
@@ -935,6 +936,8 @@ function sitetop_ajax_verify_shortlink_code() {
     $ip = sitetop_get_real_ip();
     $rate = sitetop_rate_limit_check('verify_code', $ip);
     if ( ! $rate['allowed'] ) wp_send_json_error(array('message' => 'Quá nhiều lần thử, vui lòng đợi.'));
+    /* Lỡ có mã trong tay (lấy trước khi bị bắt) thì gõ vào cũng vô ích. */
+    sitetop_tuagio_chan( $sid, 'xacminh' );
 
     /* Captcha cổng TIẾP TỤC — tách công tắc riêng (unlock_captcha_enabled) khỏi captcha
        của widget (widget_captcha_enabled) để bật/tắt độc lập. Khi công tắc tắt hoặc chưa
@@ -1387,6 +1390,28 @@ function sitetop_ajax_mark_visit_expired() {
     wp_send_json_success();
 }
 
+/* CHẶN CỨNG TOÀN PHIÊN KHI DÍNH TUA GIỜ — chủ site chốt 28/09/2026: "kể cả camp 1 bước,
+   2 bước và Direct, bỏ luôn không cho hiện mã".
+   Một hàm dùng chung cho MỌI cổng của phiên, để không cổng nào sót: bắt được ở đâu thì
+   phiên đó chết ở mọi chỗ, không riêng cổng cấp mã.
+   Cờ do bốn đường đặt: widget thấy nhịp tới sớm, widget thấy performance.now bị vá, máy chủ
+   đếm nhịp đòi mã, và máy chủ thấy chưa đủ giờ bước 1. Mức 3 (mặc định) = chặn.
+   Trả kèm chan_tuagio để widget DỪNG HẲN, không hẹn gọi lại — dưới script tua 50x thì mỗi
+   lần hẹn 3 giây thành 60ms, tự biến máy kẻ gian thành cỗ máy dội cổng admin-ajax. */
+function sitetop_tuagio_chan( $sid, $cong = '' ) {
+    if ( (int) sitetop_get_option( 'tua_gio_muc', 3 ) < 3 ) return false;
+    if ( ! get_transient( 'sitetop_tuagio_' . $sid ) ) return false;
+    if ( $cong && function_exists( 'sitetop_ghi_vet' ) ) {
+        sitetop_ghi_vet( $sid, 'chan_tuagio', $cong );
+    }
+    wp_send_json_error( array(
+        'message'     => 'Phát hiện can thiệp đồng hồ trình duyệt. Phiên này bị huỷ — hãy tắt công cụ rồi mở nhiệm vụ mới.',
+        'data'        => array( 'chan_tuagio' => 1 ),
+        'chan_tuagio' => 1,
+    ) );
+    return true;
+}
+
 // Widget start timer: reset created_at so onsite_time counts from click moment
 add_action('wp_ajax_sitetop_widget_start_timer', 'sitetop_ajax_widget_start_timer');
 add_action('wp_ajax_nopriv_sitetop_widget_start_timer', 'sitetop_ajax_widget_start_timer');
@@ -1394,6 +1419,7 @@ function sitetop_ajax_widget_start_timer() {
     $sid = sanitize_text_field($_POST['session_id'] ?? '');
     if ( ! $sid ) wp_send_json_error();
     sitetop_ghi_vet( $sid, 'batgio' );
+    sitetop_tuagio_chan( $sid, 'batgio' );   // dính tua giờ thì không cho bấm bắt đầu nữa
     if ( sitetop_nguon_gia_xu_ly( $sid, 'batgio' ) === 'chan' ) wp_send_json_error( array( 'message' => 'Hãy mở trang đích để làm nhiệm vụ.' ) );
     if ( sitetop_ref_lech_xu_ly( $sid, 'batgio' ) === 'chan' ) wp_send_json_error( array( 'message' => 'Hãy mở trang đích để làm nhiệm vụ.' ) );
 
@@ -1425,6 +1451,32 @@ function sitetop_ajax_widget_start_timer() {
         $visited_ts = ! empty( $visit->target_visited_at ) ? strtotime( $visit->target_visited_at ) : 0;
         $spent_on_target = $visited_ts ? max( 0, $now_ts - $visited_ts ) : 0;
         $credit = min( $onsite, $spent_on_target );
+        /* ĐÒI ĐỦ GIỜ Ở TRANG THỨ NHẤT — chủ site chốt 28/09/2026 ("vẫn tua time bước 1 được").
+           Lỗ hổng cấu trúc: đồng hồ bước 1 chỉ chạy ở trình duyệt. Tua nó thì user nhảy sang
+           trang hai sau vài giây; phép trừ ở trên tuy không cho họ ăn gian TỔNG thời gian
+           (phải ngồi bù ở trang hai) nhưng KHÁCH HÀNG MẤT đúng thứ họ trả tiền: lượt đứng
+           đủ giờ trên TRANG THỨ NHẤT.
+           target_visited_at là mốc MÁY CHỦ ghi lúc widget ping lần đầu trên trang đích —
+           console không chạm tới được. Nên ở đây đòi thẳng: chưa ở đủ (onsite - 5) giây thì
+           KHÔNG cho mở bước 2, báo rõ còn thiếu bao nhiêu giây.
+           Người thật luôn qua: đồng hồ của họ chạy đúng nhịp nên khi hiện hướng dẫn bước 2 là
+           đã trôi trọn onsite giây; các chốt hành vi còn TẠM DỪNG đồng hồ nên thời gian thật
+           chỉ dài hơn. Biên 5 giây chừa cho sai số mạng, đúng biên đang dùng ở cổng cấp mã. */
+        $can_co = max( 10, $onsite - 5 );
+        if ( $spent_on_target < $can_co ) {
+            $con_thieu = $can_co - $spent_on_target;
+            if ( function_exists( 'sitetop_ghi_vet' ) ) {
+                sitetop_ghi_vet( $sid, 'tuagio', 'buoc1_thieu=' . $spent_on_target . '/' . $can_co . 's' );
+            }
+            if ( (int) sitetop_get_option( 'tua_gio_muc', 3 ) > 0 ) {
+                set_transient( 'sitetop_tuagio_' . $sid, 1, 2 * HOUR_IN_SECONDS );
+            }
+            wp_send_json_error( array(
+                'message' => 'Chưa đủ thời gian ở trang thứ nhất — còn thiếu ' . $con_thieu
+                    . ' giây. Hãy quay lại trang đó và ở đủ giờ rồi mới sang bước 2.',
+            ) );
+        }
+
         $past_time = date( 'Y-m-d H:i:s', $now_ts - $credit );
         $wpdb->update("{$p}shortlink_visits", array(
             'created_at' => $past_time,
