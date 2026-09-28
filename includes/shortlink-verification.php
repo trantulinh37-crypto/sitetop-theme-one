@@ -478,6 +478,16 @@ function sitetop_verify_and_pay( $session_id, $code, $customer_only = false ) {
         }
     }
 
+    /* TUA ĐỒNG HỒ BẰNG CONSOLE (28/09/2026) — cờ do sitetop_ajax_report_behavior đặt.
+       Khác bộ đếm ở trên: bộ đếm kia chỉ bắt được khi kẻ tua ĐÒI MÃ SỚM nhiều lần, mà từ bản
+       này widget đếm theo đồng hồ thật nên không còn lần đòi sớm nào để đếm. Cờ này thay chỗ.
+       tua_gio_muc: 0 tắt, 1 chỉ ghi nhận, 2 không trả thưởng, 3 chặn luôn cấp mã (mặc định). */
+    $tg_muc = (int) sitetop_get_option( 'tua_gio_muc', 3 );
+    if ( $tg_muc > 0 && get_transient( 'sitetop_tuagio_' . $session_id ) ) {
+        $skip_reasons[] = 'tua_gio';
+        if ( $tg_muc >= 2 ) $should_pay_reward = false;
+    }
+
     /* CÔNG CỤ BYPASS DẠNG USERSCRIPT — cổng get_code/verify đã gắn cờ phiên khi thấy
        request mang UA Chrome nhưng thiếu Sec-Fetch (dấu hiệu GM_xmlhttpRequest), xem
        sitetop_ghi_nhan_cong_cu(). Ở đây chỉ TỪ CHỐI TRẢ THƯỞNG — KHÔNG chặn nội dung,
@@ -753,6 +763,7 @@ function sitetop_verify_and_pay( $session_id, $code, $customer_only = false ) {
             delete_transient( 'sitetop_verify_code_' . $session_id );
             delete_transient( 'sitetop_google_clicked_' . $session_id );
             delete_transient( 'sitetop_toofast_' . $session_id ); // bộ đếm chống tua giờ
+            delete_transient( 'sitetop_tuagio_' . $session_id );  // cờ tua đồng hồ console
             // Thu hồi giấy phép bàn giao: lượt đã xong thì không được dùng nó để gắn phiên
             // cho bất kỳ lần vào trang đích nào nữa.
             delete_transient( 'sitetop_handoff_' . $session_id );

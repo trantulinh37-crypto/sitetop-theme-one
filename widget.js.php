@@ -1346,10 +1346,40 @@ function _resumeCountdown(){
     _startCountdownInterval();
     updateCountdownUI();
 }
+/* ================= CHỐNG TUA ĐỒNG HỒ BẰNG CONSOLE (28/09/2026) =================
+   Script dán vào console ghi đè window.Date + setTimeout + setInterval để nhân tốc độ 50
+   lần, nên mọi bộ đếm theo NHỊP chạy vèo: 70 giây đốt xong trong hơn một giây.
+   performance.now() là đồng hồ đơn điệu của trình duyệt, script đó không đụng tới. Chỉ trừ
+   giây khi đời thật đã trôi đủ ~1 giây; nhịp tới sớm bị bỏ qua. Người thật không bị phiền
+   vì setInterval của trình duyệt không bao giờ bắn SỚM hơn hạn. Trình duyệt cổ không có
+   performance.now() thì giữ nguyên cách cũ. Đo trên .net 27/09: tua 50x vẫn phải mất 67
+   giây thay vì 1,4 giây. */
+var _cdMocThat=null, _cdTuaDem=0, _bhMocThat=null;
+function _dongHoThat(){
+    return (window.performance && typeof window.performance.now==='function')
+        ? window.performance.now() : null;
+}
+function _nhipSom(oMoc){
+    var t=_dongHoThat();
+    if(t===null)return false;
+    var truoc=(oMoc==='cd')?_cdMocThat:_bhMocThat;
+    if(truoc===null){ if(oMoc==='cd')_cdMocThat=t; else _bhMocThat=t; return false; }
+    if(t-truoc < 950) return true;
+    if(oMoc==='cd')_cdMocThat=t; else _bhMocThat=t;
+    return false;
+}
+function _tuaGioGhiNhan(){
+    _cdTuaDem++;
+    if(_cdTuaDem!==25)return;
+    state.tuaGio=1;
+    try{ reportBehavior(); }catch(e){}
+}
 function _startCountdownInterval(){
     if(timers.countdown)clearInterval(timers.countdown);
+    _cdMocThat=_dongHoThat();
     timers.countdown=setInterval(function(){
         if(document.hidden){_pauseCountdown('tab_hidden');return;}
+        if(_nhipSom('cd')){_tuaGioGhiNhan();return;}
         var _now=Date.now();
         // Cổng đọc-cuộn cũ đã bỏ: nó bắt cuộn xuống liên tục nên mâu thuẫn với chốt hành vi
         // (chốt bảo lên đầu trang, cổng cũ lại nhắc kéo xuống). Việc ép tương tác thật giờ do
@@ -1704,6 +1734,11 @@ function getCode(){
             if(r.data&&r.data.data&&r.data.data.remaining){
                 state.remaining=r.data.data.remaining;
                 startCountdown();
+            }else if(r.data&&r.data.data&&r.data.data.chan_tuagio){
+                /* Bị chặn vì tua đồng hồ: KHÔNG gọi lại. Nhánh dưới hẹn gọi lại sau 3 giây,
+                   mà script tua 50x biến 3 giây thành 60ms — giữ nguyên là máy kẻ gian tự
+                   dội cổng admin-ajax. Phiên này coi như hỏng, phải mở nhiệm vụ mới. */
+                _chanVinhVien(msg);
             }else{
                 // Lỗi CÓ thông báo (chưa qua Google / sai URL đích / hết hạn…) → HIỆN cho user biết lý do
                 // thay vì để nút kẹt "0" im lặng. Vẫn poll lại phòng khi flag verify cross-site tới trễ.
@@ -1712,6 +1747,19 @@ function getCode(){
             }
         }
     });
+}
+/* Dừng hẳn phiên: dọn mọi bộ đếm rồi để lại một dòng báo. Không hẹn gọi lại bất cứ thứ gì.
+   (Tên ô trên .one là tno-*, không phải tn-* như .net.) */
+function _chanVinhVien(msg){
+    state.bikChan=true;
+    for(var k in timers){ if(timers[k]){ try{clearInterval(timers[k]);}catch(e){} timers[k]=null; } }
+    if(_mouseCheckTimer){ try{clearInterval(_mouseCheckTimer);}catch(e){} _mouseCheckTimer=null; }
+    try{ _bhForceHide(); }catch(e){}
+    var btn=document.getElementById('tno-btn');
+    if(btn){ btn.textContent='✕'; btn.title=msg||'Phiên bị từ chối'; btn.style.pointerEvents='none'; }
+    var cd=document.getElementById('tno-cd');
+    if(cd)cd.style.display='none';
+    if(msg){ showToast(msg,15000,'warn'); }
 }
 function showCode(code){
     var btn=document.getElementById('tno-btn');
@@ -1862,14 +1910,18 @@ function trackBehavior(){
         bdata.scroll=Math.max(bdata.scroll,Math.round((window.scrollY/Math.max(1,document.body.scrollHeight-window.innerHeight))*100)||0);
     });
     document.addEventListener('visibilitychange',function(){if(document.hidden)bdata.tabs++;});
-    timers.behavior=setInterval(function(){bdata.time++;},1000);
+    /* Cũng đếm theo đồng hồ thật: script tua làm bộ này nhảy 50 giây mỗi giây thật, tức
+       khai khống "đã ở lại trang rất lâu" — đúng thứ chấm điểm hành vi đang đọc. */
+    _bhMocThat=_dongHoThat();
+    timers.behavior=setInterval(function(){ if(_nhipSom('bh'))return; bdata.time++; },1000);
 }
 
 function reportBehavior(){
     ajax('sitetop_report_behavior',{
         session_id:state.sessionId,
         mouse_movements:bdata.mouse,scroll_depth:bdata.scroll,
-        time_on_page:bdata.time,tab_switches:bdata.tabs,clicks:bdata.clicks
+        time_on_page:bdata.time,tab_switches:bdata.tabs,clicks:bdata.clicks,
+        tua_gio:state.tuaGio?1:0
     },function(){});
 }
 

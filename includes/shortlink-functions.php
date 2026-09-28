@@ -783,6 +783,25 @@ function sitetop_get_widget_code( $session_id ) {
         return new WP_Error( 'invalid', 'Visit không hợp lệ' );
     }
 
+    /* TUA ĐỒNG HỒ BẰNG CONSOLE — MỨC 3: CHẶN CẤP MÃ (chủ site chốt 28/09/2026).
+       Đi ngược nguyên tắc "không chặn để kẻ gian không biết mình lộ" của file này, có chủ ý:
+       bù lại KHÔNG có chốt sớm nên khách hàng KHÔNG bị trừ tiền và không bị tính view cho
+       lượt đó. Hạ về mức 2 ở Cài đặt là quay lại lối cũ, không cần deploy.
+       Đặt TRƯỚC nhánh "mã đã có trong CSDL thì trả lại" để lần xin lại cũng bị chặn.
+       Cờ chan_tuagio để widget DỪNG HẲN vòng gọi lại 3 giây — dưới script tua 50x thì 3 giây
+       thành 60ms, thành ra tự biến máy kẻ gian thành cỗ máy dội cổng admin-ajax. */
+    if ( (int) sitetop_get_option( 'tua_gio_muc', 3 ) >= 3
+         && get_transient( 'sitetop_tuagio_' . $session_id ) ) {
+        if ( function_exists( 'sitetop_ghi_vet' ) ) {
+            sitetop_ghi_vet( $session_id, 'chan_tuagio', 'muc3' );
+        }
+        return new WP_Error(
+            'tua_gio',
+            'Phát hiện can thiệp đồng hồ trình duyệt. Hãy tắt công cụ rồi mở lại nhiệm vụ mới.',
+            array( 'chan_tuagio' => 1 )
+        );
+    }
+
     $traffic_type = $visit->traffic_type ?? '1step';
     $is_nocode = ( $traffic_type === 'nocode' );
 
