@@ -1688,3 +1688,27 @@ add_action( 'wp_loaded', function() {
 /* ONE-TIME FIX: Đã xóa — script bù thưởng from_google đã chạy xong hoặc gây DB overload.
    Nếu cần chạy lại, dùng AJAX diagnostic endpoint thay vì admin_init. */
 
+
+/* ============================================================
+   KHÔNG YÊU CẦU CHUYỂN ĐỘNG — cờ riêng TỪNG CAMP (04/10/2026)
+
+   Camp bật cờ này thì user KHÔNG bị đòi cuộn trang / chạm / click trên web đích: vào web,
+   bấm nút widget xác minh xong là đồng hồ chạy thẳng hết onsite của camp rồi hiện mã như cũ.
+   Camp tắt cờ (mặc định 0) giữ NGUYÊN 100% luồng hiện tại.
+
+   ĐỌC QUA HÀM NÀY, ĐỪNG ĐỌC THẲNG CỘT: cột được thêm bằng migration chạy ở init, nên trong
+   khoảng giữa lúc deploy và lúc migration xong, mọi câu SELECT/INSERT có tên cột này đều lỗi
+   — camp không tạo được, widget không xác minh được. Chưa có cột = trả 0 = y hệt hành vi cũ.
+   ============================================================ */
+function sitetop_camp_khong_doi_cd( $camp_id ) {
+    $camp_id = (int) $camp_id;
+    if ( $camp_id <= 0 ) return 0;
+    if ( ! get_option( 'sitetop_migration_khong_doi_cd_v1' ) ) return 0;
+    static $nho = array();
+    if ( isset( $nho[ $camp_id ] ) ) return $nho[ $camp_id ];
+    global $wpdb;
+    $p = $wpdb->prefix . 'sitetop_';
+    $nho[ $camp_id ] = (int) $wpdb->get_var( $wpdb->prepare(
+        "SELECT khong_doi_cd FROM {$p}keyword_campaigns WHERE id = %d", $camp_id ) );
+    return $nho[ $camp_id ];
+}

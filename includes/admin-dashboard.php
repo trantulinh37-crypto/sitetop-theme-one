@@ -159,6 +159,10 @@ function sitetop_ajax_admin_update_campaign() {
     if (isset($_POST['kw_bat_go_tay'])) {
         $_POST['kw_bat_go_tay'] = ($_POST['kw_bat_go_tay'] === '1') ? 1 : 0;
     }
+    // Không yêu cầu chuyển động: cũng chỉ nhận đúng 0/1 (bảng định dạng dùng %d).
+    if (isset($_POST['khong_doi_cd'])) {
+        $_POST['khong_doi_cd'] = ($_POST['khong_doi_cd'] === '1') ? 1 : 0;
+    }
     foreach (array('screenshot_desktop_url', 'screenshot_mobile_url', 'nocode_screenshot_url', 'step2_image_url', 'step2_target_url') as $col) {
         if (!empty($_POST[$col])) {
             $_POST[$col] = esc_url_raw($_POST[$col]);
@@ -252,6 +256,7 @@ function sitetop_ajax_admin_get_campaign() {
         // không nhận được trường đó, hiện "Chưa có", rồi lần lưu sau ghi đè rỗng lên DB.
         'step2_image_url'=>$c->step2_image_url??'', 'step2_target_url'=>$c->step2_target_url??'',
         'kw_bat_go_tay'=>(int)($c->kw_bat_go_tay ?? 0),
+        'khong_doi_cd'=>(int)($c->khong_doi_cd ?? 0),
         'serp_page'=>(int)($c->serp_page ?? 1),
     ));
 }

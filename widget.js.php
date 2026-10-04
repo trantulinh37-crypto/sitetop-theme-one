@@ -571,7 +571,7 @@ var C={
     tsKey:'<?php echo esc_js($ts_key); ?>',
     btnText:'<?php echo esc_js($widget_btn_text); ?>'
 };
-var state={sessionId:'',countdown:C.cd,onsiteTime:70,trafficType:'1step',remaining:C.cd,codeReady:false,code:null,sessionReady:false,countdownStarted:false,captchaToken:null,isIncognito:false,googleRequired:false,googleVerified:true,urlPathMatched:true,step2Done:false,step2Mode:false,step2Image:null,wantStart:false,failReason:'',wantUrl:'',wantList:[],campId:0};
+var state={sessionId:'',countdown:C.cd,onsiteTime:70,trafficType:'1step',remaining:C.cd,codeReady:false,code:null,sessionReady:false,countdownStarted:false,captchaToken:null,isIncognito:false,googleRequired:false,googleVerified:true,urlPathMatched:true,step2Done:false,step2Mode:false,step2Image:null,wantStart:false,failReason:'',wantUrl:'',wantList:[],campId:0,khongCD:false};
 
 /* Trạng thái cho việc xáo chỗ nút — khai báo cạnh state vì cả createWidget lẫn _xaoChoNut
    đều dùng. Thiếu khai báo thì trình duyệt ném ReferenceError và việc xáo im lặng không chạy. */
@@ -749,6 +749,10 @@ function sendVerifyAccess(unlockSession, unlockTime, unlockActive, campaignType)
             if(d.data.countdown)state.countdown=parseInt(d.data.countdown);
             if(d.data.traffic_type)state.trafficType=d.data.traffic_type;
             if(d.data.onsite_time)state.onsiteTime=parseInt(d.data.onsite_time);
+            /* Camp "Không yêu cầu chuyển động" (04/10/2026) — máy chủ quyết, widget chỉ nghe.
+               Bật thì tắt kịch bản chốt thao tác + chốt "bỏ máy"; đồng hồ, mã, bước 2, captcha,
+               mọi thứ khác giữ nguyên. */
+            state.khongCD=!!(d.data.khong_cd);
 
             // Save session
             try{
@@ -1324,6 +1328,9 @@ function _onMouseMove(){
     if(_cdPaused)_resumeCountdown();
 }
 function _checkMouseIdle(){
+    /* Camp không yêu cầu chuyển động: KHÔNG được dừng đồng hồ vì user ngồi yên — dừng là
+       đồng hồ không bao giờ về 0, user không bao giờ có mã, tức phá đúng thứ cờ này hứa. */
+    if(state.khongCD)return;
     if(!state.countdownStarted||_cdPaused||state.remaining<=0)return;
     if(_mocGio()-_lastMouseMove>_mouseIdleLimit){
         _pauseCountdown('mouse_idle');
@@ -1497,6 +1504,10 @@ var _bh={on:false,i:-1,left:0,gate:null,finalShown:false,stages:[],warnUntil:0,i
 function _bhRnd(a,b){ return a+Math.floor(Math.random()*(b-a+1)); }
 function _bhMinTotal(){ var t=0; for(var i=0;i<_bh.stages.length;i++)t+=_bh.stages[i].dur; return t; }
 function _bhInit(){
+    /* CAMP KHÔNG YÊU CẦU CHUYỂN ĐỘNG: không dựng chặng nào cả. _bh.on=false nên _bhTick()
+       thoát ngay, không chặng nào đóng chốt, đồng hồ chạy một mạch hết onsite của camp rồi
+       xin mã đúng như luồng cũ. */
+    if(state.khongCD){ _bh.on=false; _bh.stages=[]; _bh.gate=null; _bh.i=-1; _bhForceHide(); return; }
     // Nhịp CHUẨN của kịch bản (tổng trung bình 60s). Delay thật sẽ được giãn/co theo
     // onsite của chiến dịch bên dưới, nên bảng này chỉ đóng vai trò TỶ LỆ giữa các chặng.
     var base=[

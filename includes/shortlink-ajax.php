@@ -578,7 +578,7 @@ function sitetop_ajax_report_behavior() {
     // Bind to the requester's own IP — prevents injecting adblock/behavior signals onto another
     // visitor's session by guessing/owning a session_id (fraud-score griefing protection).
     $ip = function_exists('sitetop_get_real_ip') ? sitetop_get_real_ip() : ( $_SERVER['REMOTE_ADDR'] ?? '' );
-    $visit = $wpdb->get_row($wpdb->prepare("SELECT id FROM {$p}shortlink_visits WHERE session_id=%s AND ip_address=%s", $sid, $ip));
+    $visit = $wpdb->get_row($wpdb->prepare("SELECT id, campaign_id FROM {$p}shortlink_visits WHERE session_id=%s AND ip_address=%s", $sid, $ip));
     $visit_id = $visit ? $visit->id : 0;
 
     /* TUA ĐỒNG HỒ BẰNG CONSOLE (28/09/2026) — hai đường nhận biết, chỉ cần dính một.
@@ -624,6 +624,13 @@ function sitetop_ajax_report_behavior() {
     if (function_exists('sitetop_save_behavior_analytics')) {
         // Support both formats: direct POST fields OR JSON in 'data' field
         $behavior_data = $_POST;
+        /* Camp bật "Không yêu cầu chuyển động": bỏ nhóm chấm điểm theo thao tác. Không bỏ thì
+           người làm ĐÚNG LUẬT của camp đó lãnh sẵn 60 điểm (không chuột 30 + không cuộn 10 +
+           không click 20), 3 lượt ≥ 70 điểm trong 60 phút là IP bị khoá 12 giờ.
+           Cờ do MÁY CHỦ đặt và ĐÈ LÊN giá trị client gửi — $behavior_data vốn là $_POST, không
+           đè thì ai cũng tự khai khong_cd=1 để né chấm điểm. */
+        $behavior_data['khong_cd'] = ( $visit && ! empty( $visit->campaign_id ) )
+            ? sitetop_camp_khong_doi_cd( $visit->campaign_id ) : 0;
         if (!empty($_POST['data'])) {
             $decoded = json_decode(stripslashes($_POST['data']), true);
             if (is_array($decoded)) {
@@ -2053,6 +2060,10 @@ function sitetop_ajax_widget_verify_access() {
     $result['countdown'] = (int) ( $visit->countdown_seconds ?? 30 );
     $result['traffic_type'] = $visit->traffic_type ?? '1step';
     $result['onsite_time'] = $onsite;
+    /* Camp "Không yêu cầu chuyển động" (04/10/2026): widget tắt kịch bản chốt thao tác và
+       tắt chốt "bỏ máy". Mọi thứ khác giữ nguyên — đồng hồ vẫn đếm đủ onsite, mã vẫn do
+       máy chủ cấp theo đúng chốt cũ. Đọc qua hàm để lượt nào camp chưa có cột vẫn chạy. */
+    $result['khong_cd'] = sitetop_camp_khong_doi_cd( $visit->campaign_id ?? 0 );
     /* Số giây HIỆN CHO USER phải tính theo TRỌN thời lượng camp, KHÔNG theo $required.
        $required = onsite - 5 là ngưỡng chấp nhận của server, cố ý thấp hơn 5 giây để
        user làm thật luôn vượt qua khi widget đếm xong (xem chú thích ở
