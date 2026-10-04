@@ -1419,6 +1419,27 @@ function sitetop_tuagio_chan( $sid, $cong = '' ) {
     return true;
 }
 
+/* BƯỚC 2 — GHI DẤU LÚC VÀO (04/10/2026).
+   Trang bước 2 trước đây KHÔNG gọi gì cho tới lúc xin mã, nên lượt kẹt giữa chừng không để
+   lại dấu vết nào: chủ site báo "đôi lúc khựng, báo Vui lòng truy cập link nhiệm vụ" mà dấu
+   vết dừng hẳn ở roitrang — không có cách nào biết hỏng ở đâu.
+   Cổng này CHỈ ghi một dòng dấu vết: không đụng tiền, không đổi step, không cấp cờ nào, nên
+   không có gì để lợi dụng. Widget gọi ĐÚNG MỘT LẦN mỗi phiên lúc vào nhánh bước 2 — KHÔNG
+   phải cổng thăm dò lặp (bài học 22/09: gắn máy đo vào cổng thăm dò làm admin chậm hẳn,
+   xem test-do-dau-vet.php). */
+add_action('wp_ajax_sitetop_widget_buoc2_vao', 'sitetop_ajax_widget_buoc2_vao');
+add_action('wp_ajax_nopriv_sitetop_widget_buoc2_vao', 'sitetop_ajax_widget_buoc2_vao');
+function sitetop_ajax_widget_buoc2_vao() {
+    $sid = sanitize_text_field( $_POST['session_id'] ?? '' );
+    if ( ! $sid ) wp_send_json_error();
+    $rate = sitetop_rate_limit_check( 'shortlink_click' );
+    if ( ! $rate['allowed'] ) wp_send_json_error( 'Rate limited' );
+    // nguon=co: widget tự nhận ra bằng cờ localStorage. nguon=maychu: cờ trượt, máy chủ cứu.
+    $nguon = ( ( $_POST['nguon'] ?? '' ) === 'maychu' ) ? 'maychu' : 'co';
+    sitetop_ghi_vet( $sid, 'vaobuoc2', 'nguon=' . $nguon );
+    wp_send_json_success();
+}
+
 // Widget start timer: reset created_at so onsite_time counts from click moment
 add_action('wp_ajax_sitetop_widget_start_timer', 'sitetop_ajax_widget_start_timer');
 add_action('wp_ajax_nopriv_sitetop_widget_start_timer', 'sitetop_ajax_widget_start_timer');

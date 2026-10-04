@@ -693,7 +693,7 @@ function init(){
     }catch(e){}
 
     if(_step2Return){
-        initStep2Return(_step2SavedSession);
+        initStep2Return(_step2SavedSession,'co');
         return;
     }
 
@@ -742,7 +742,7 @@ function sendVerifyAccess(unlockSession, unlockTime, unlockActive, campaignType)
                "sai URL" giữa lúc user đang làm đúng. */
             if(d.data.step2_return&&!state.countdownStarted){
                 try{ localStorage.setItem('tno_session_id',state.sessionId); }catch(e){}
-                initStep2Return(state.sessionId);
+                initStep2Return(state.sessionId,'maychu');
                 return;
             }
 
@@ -2285,20 +2285,29 @@ function listenForLinkClick(){
 // ================================================================
 // STEP 2 RETURN - Quay lại từ step2, hiện widget lấy mã
 // ================================================================
-function initStep2Return(savedSession){
+function initStep2Return(savedSession,nguon){
     state.step2Mode=true;   // chan trackUrlMatch ghi de moc "toi trang dich"
-    try{
-        localStorage.removeItem('tno_step2_waiting');localStorage.removeItem('tno_step2_sid');
-        localStorage.removeItem('tno_step2_time');
-        localStorage.removeItem('tno_link_clicked');
-        localStorage.removeItem('tno_step2_from');
-    }catch(e){}
+    /* NHẬN PHIÊN NGAY (04/10/2026) — hàm này đang cầm sẵn session id mà bản cũ không đặt
+       vào state. Thiếu nó thì mọi trục trặc nhỏ sau đây đều rơi xuống nhánh "chưa khớp
+       phiên nào" của _stoWidgetClick và báo sai "Vui lòng truy cập link nhiệm vụ" — đúng
+       lỗi chủ site gặp khi làm xong bước 1, bấm sang bước 2 rồi bấm nút mã. */
+    state.sessionId=savedSession;
+    state.sessionReady=true;
 
-    var btn=document.getElementById('tno-btn');
-    if(!btn)return;
+    /* BÁO MÁY CHỦ ĐÚNG MỘT LẦN. Trang bước 2 trước đây im lặng hoàn toàn cho tới lúc xin
+       mã, nên lượt kẹt giữa chừng không để lại dấu vết nào để chẩn đoán. Đây KHÔNG phải
+       cổng thăm dò lặp (xem bài học trong test-do-dau-vet.php). */
+    try{ ajax('sitetop_widget_buoc2_vao',{session_id:savedSession,nguon:nguon||'co'},function(){}); }catch(e){}
+
+    var _s2Chay=false,_s2DaGan=false;
+    var _s2Gan=function(btn){
+    if(_s2DaGan)return; _s2DaGan=true;
 
     btn.onclick=function(){
-        btn.onclick=null;
+        /* KHÔNG gỡ handler nữa. Bản cũ đặt btn.onclick=null ngay cú bấm đầu, nên bấm thêm
+           lần nữa trong 15 giây là nút câm hẳn — đúng cảm giác "khựng lại". */
+        if(_s2Chay){ showToast('Đang đếm giờ, vui lòng đợi',2500); return; }
+        _s2Chay=true;
         btn.innerHTML='<span id="tno-btn-text"></span><span id="tno-cd" style="display:block">15</span>'; btn.classList.add('tno-counting');
 
         // Gọi start_timer để reset server timer
@@ -2354,6 +2363,32 @@ function initStep2Return(savedSession){
             }
         },1000);
     };
+
+    /* XOÁ CỜ BƯỚC 2 SAU KHI ĐÃ GẮN ĐƯỢC NÚT. Bản cũ xoá ngay đầu hàm rồi mới `if(!btn)
+       return` — nút chưa kịp vào DOM là phiên mất sạch đường cứu, tải lại trang cũng
+       không còn nhận ra bước 2 nữa. */
+    try{
+        localStorage.removeItem('tno_step2_waiting');localStorage.removeItem('tno_step2_sid');
+        localStorage.removeItem('tno_step2_time');
+        localStorage.removeItem('tno_link_clicked');
+        localStorage.removeItem('tno_step2_from');
+    }catch(e){}
+    };
+
+    var _s2Btn=document.getElementById('tno-btn');
+    if(_s2Btn){ _s2Gan(_s2Btn); return; }
+    /* Nút chưa nằm trong DOM thì CHỜ, đừng bỏ cuộc: widget có thể gắn nút muộn hơn (web
+       khách dựng lại giao diện, hoặc mount dời sang DOMContentLoaded). */
+    var _s2Lan=0;
+    var _s2Cho=setInterval(function(){
+        var b=document.getElementById('tno-btn');
+        if(b){ clearInterval(_s2Cho); _s2Gan(b); return; }
+        if(++_s2Lan>40) clearInterval(_s2Cho);        // 40 x 250ms = 10 giây
+    },250);
+    try{ document.addEventListener('DOMContentLoaded',function(){
+        var b=document.getElementById('tno-btn');
+        if(b){ clearInterval(_s2Cho); _s2Gan(b); }
+    }); }catch(e){}
 }
 
 /* Gỡ kẹt bước captcha — TRẢ NÚT VỀ BẤM ĐƯỢC.
