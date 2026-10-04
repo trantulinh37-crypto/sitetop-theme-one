@@ -194,3 +194,19 @@ assert_true( strpos( $__kc_ajx, "\$result['khong_cd'] = sitetop_camp_khong_doi_c
     'verify_access phai tra co ve cho widget' );
 assert_true( strpos( $__kc_wid, 'state.khongCD=!!(d.data.khong_cd);' ) !== false,
     'Widget phai doc co tu phan hoi cua may chu' );
+
+/* ═══════════ F. CHỈ ADMIN — chủ site chốt 04/10/2026 ═══════════
+   Không chỉ là "ẩn nút": phía khách hàng phải KHÔNG GHI ĐƯỢC cờ. Tạo/sửa camp bên khách
+   dựng mảng theo từng cột nên tự nó an toàn — test này canh để sau này ai thêm vòng lặp
+   đổ thẳng $_POST vào là đỏ ngay. */
+foreach ( array( 'includes/customer-campaign-ajax.php', 'page-customer-dashboard.php', 'includes/customer-load-more.php' ) as $__kc_f ) {
+    $__kc_n = $__kc_goc . '/' . $__kc_f;
+    if ( ! file_exists( $__kc_n ) ) continue;
+    assert_true( strpos( (string) file_get_contents( $__kc_n ), 'khong_doi_cd' ) === false,
+        'CHI ADMIN: ' . $__kc_f . ' khong duoc dong toi co khong_doi_cd' );
+}
+// Cổng sửa camp của admin vẫn phải đòi quyền quản trị.
+$__kc_adm = (string) file_get_contents( $__kc_goc . '/includes/admin-dashboard.php' );
+$__kc_vt = strpos( $__kc_adm, 'function sitetop_ajax_admin_update_campaign()' );
+assert_true( $__kc_vt !== false && strpos( substr( $__kc_adm, $__kc_vt, 400 ), "current_user_can('manage_options')" ) !== false,
+    'Cong sua camp phai doi quyen manage_options' );
