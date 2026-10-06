@@ -74,6 +74,14 @@ function sitetop_submit_withdrawal( $user_id, $amount, $method, $bank_info = arr
             . ' Phần lẻ vẫn nằm trong ví.' );
     }
 
+    /* USD: CHỈ NHẬN TỐI ĐA 2 SỐ LẺ (chủ site chốt 06/10/2026, ví dụ $30,12). Từ chối chứ KHÔNG
+       làm tròn hộ — làm tròn là tự ý đổi số tiền user xin rút. Phần lẻ dưới cent vẫn ở trong ví. */
+    if ( $usd && abs( $amount * 100 - round( $amount * 100 ) ) > 0.000001 ) {
+        return new WP_Error( 'le_cent',
+            'Số tiền rút chỉ nhận tối đa 2 số lẻ sau dấu phẩy, ví dụ $30,12. Bạn nhập '
+            . sitetop_format_tien_user( $amount ) . '.' );
+    }
+
     $available = sitetop_get_user_balance_amount($user_id);
     if ( $amount > $available ) return new WP_Error('insufficient', 'Số dư không đủ: ' . sitetop_format_tien_user($available));
 

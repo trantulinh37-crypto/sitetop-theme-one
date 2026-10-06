@@ -75,15 +75,20 @@ function sitetop_usd_so( $usd, $min_le = 2 ) {
     return preg_replace( '/(,\d{' . (int) $min_le . '}\d*?)0+$/', '$1', $s );
 }
 
-/** Bản GỌN cho con số to ở đầu trang (chủ site chốt 06/10: "$100,02272727" chỉ cần hiện "$100,022"):
- *  CẮT còn tối đa 3 số lẻ — cắt chứ KHÔNG làm tròn (100,0229 → 100,022), làm trên chuỗi để không
- *  dính sai số float (1.005 × 1000 = 1004.999…). Số dư thật trong CSDL và các chỗ khác vẫn đủ 8 số lẻ. */
-function sitetop_format_usd_gon( $usd, $le = 3 ) {
+/** CẮT số USD còn $le số lẻ — cắt chứ KHÔNG làm tròn, làm trên chuỗi để không dính sai số float
+ *  (0,29 × 100 = 28,999… floor ra 28). Dùng cho trần "Toàn bộ số dư" (luật rút tối đa 2 số lẻ,
+ *  chủ site chốt 06/10/2026) và cho bản in gọn bên dưới. */
+function sitetop_usd_cat_le( $usd, $le = 2 ) {
     $usd = (float) $usd;
     $s   = number_format( abs( $usd ), SITETOP_USD_LE, '.', '' );
     list( $nguyen, $thap ) = array_pad( explode( '.', $s, 2 ), 2, '' );
     $cat = (float) ( $nguyen . '.' . substr( $thap, 0, max( 0, (int) $le ) ) );
-    return sitetop_format_usd( $usd < 0 ? -$cat : $cat );
+    return $usd < 0 ? -$cat : $cat;
+}
+/** Bản GỌN cho con số to ở đầu trang (chủ site chốt 06/10: "$100,02272727" chỉ cần hiện "$100,022"):
+ *  cắt còn 3 số lẻ (100,0229 → 100,022). Số dư thật trong CSDL và các chỗ khác vẫn đủ 8 số lẻ. */
+function sitetop_format_usd_gon( $usd, $le = 3 ) {
+    return sitetop_format_usd( sitetop_usd_cat_le( $usd, $le ) );
 }
 function sitetop_format_tien_user_gon( $amount ) {
     return sitetop_che_do_usd() ? sitetop_format_usd_gon( $amount ) : sitetop_format_money( $amount );

@@ -85,7 +85,7 @@ assert_true( strpos( $__rt_ui, 'USDT (BEP20)' ) !== false, 'Phai hien ro phuong 
 assert_true( strpos( $__rt_ui, 'step="1000" placeholder="0" required>' ) !== false
           && strpos( $__rt_ui, 'inputmode="decimal" autocomplete="off" id="wdAmount"' ) !== false,
     'O nhap so tien: VND nhay theo 1.000; USD la o CHU nhan dung so (khong lam tron)' );
-assert_true( strpos( $__rt_ui, '$wd_cap     = $usd_mode ? $wd_cap : (int) ( floor( $wd_cap / 1000 ) * 1000 );' ) !== false,
+assert_true( strpos( $__rt_ui, '$wd_cap     = $usd_mode ? sitetop_usd_cat_le( $wd_cap, 2 ) : (int) ( floor( $wd_cap / 1000 ) * 1000 );' ) !== false,
     'Tran rut: VND lam tron XUONG nghin; USD rut duoc DUNG so du, khong floor' );
 assert_true( strpos( $__rt_ui, ":Math.floor(v/1000)*1000" ) !== false && strpos( $__rt_ui, "?wdHienSo(v):Math.floor(v/1000)*1000" ) !== false,
     'Nut dien nhanh: VND tron nghin, USD dien dung so' );

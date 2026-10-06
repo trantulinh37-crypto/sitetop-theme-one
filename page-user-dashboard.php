@@ -137,7 +137,7 @@ $max_wd     = $usd_mode ? (float) sitetop_get_option( 'max_withdrawal_usd', 0 ) 
 $wd_cap     = ( $max_wd > 0 && $max_wd < $balance ) ? $max_wd : $balance;
 /* Chỉ rút được số tròn 1.000đ (28/09/2026) nên trần cũng phải làm tròn XUỐNG: số dư
    133.500đ thì nút "Toàn bộ số dư" điền 133.000đ, không điền số lẻ rồi bị máy chủ từ chối. */
-$wd_cap     = $usd_mode ? $wd_cap : (int) ( floor( $wd_cap / 1000 ) * 1000 );   // USD: rút được ĐÚNG số dư, không làm tròn
+$wd_cap     = $usd_mode ? sitetop_usd_cat_le( $wd_cap, 2 ) : (int) ( floor( $wd_cap / 1000 ) * 1000 );   // USD: cắt còn 2 số lẻ (luật rút 06/10), phần lẻ ở lại ví
 $nonce  = wp_create_nonce( 'sitetop_nonce' );
 $home   = home_url();
 ?>
@@ -921,12 +921,13 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--p);box-s
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
                 S&#7889; d&#432; kh&#7843; d&#7909;ng
             </div>
-            <?php /* Con số to chỉ hiện GỌN 3 số lẻ, cắt chứ không làm tròn (chủ site chốt 06/10/2026):
-                     $100,02272727 → $100,022. Số dư thật vẫn đủ 8 số lẻ ở mọi chỗ khác. */ ?>
+            <?php /* Thẻ ví (số to + 2 chip "Hôm nay" / "Tổng thu nhập") hiện GỌN 3 số lẻ, cắt chứ không
+                     làm tròn (chủ site chốt 06/10/2026): $100,02272727 → $100,022; $0,02272727 → $0,022.
+                     Số thật vẫn đủ 8 số lẻ trong CSDL và ở các bảng/lịch sử khác. */ ?>
             <div class="wallet-v"><?php echo sitetop_format_tien_user_gon($balance); ?></div>
             <div class="wallet-meta">
-                <span class="wallet-chip">H&#244;m nay <b>+<?php echo sitetop_format_tien_user($today_earned); ?></b></span>
-                <span class="wallet-chip">T&#7893;ng thu nh&#7853;p <b><?php echo sitetop_format_tien_user($total_earned); ?></b></span>
+                <span class="wallet-chip">H&#244;m nay <b>+<?php echo sitetop_format_tien_user_gon($today_earned); ?></b></span>
+                <span class="wallet-chip">T&#7893;ng thu nh&#7853;p <b><?php echo sitetop_format_tien_user_gon($total_earned); ?></b></span>
                 <span class="wallet-chip">R&#250;t t&#7889;i thi&#7875;u <b><?php echo sitetop_format_tien_user($min_wd); ?></b></span>
             </div>
         </div>
@@ -987,7 +988,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--p);box-s
              theo. Đây chính là tỉ giá quy đổi lệnh rút sang VNĐ cho admin — in ra để user biết trước. */ ?>
     <div class="tygia-box">
         <h4><i>&raquo;</i> Tỉ giá $ tại <span class="brand">Sitetop</span></h4>
-        <p>Tỉ giá quy đổi từ $ sang VNĐ tại <span class="brand">Sitetop</span> là: <b>1$ = <?php echo sitetop_format_money( sitetop_usd_rate() ); ?></b></p>
+        <p>Tỉ giá quy đổi từ $ sang VNĐ là: <b>1$ = <?php echo sitetop_format_money( sitetop_usd_rate() ); ?></b></p>
     </div>
     <?php endif; ?>
 
@@ -1395,7 +1396,7 @@ lkFilter();
 <form id="wdForm"<?php echo $usd_mode ? ' novalidate' : ''; ?>>
 
 <div class="wd-step">
-    <div class="wd-step-h"><em>1</em><b>S&#7889; ti&#7873;n mu&#7889;n r&#250;t</b></div>
+    <div class="wd-step-h"><em>1</em><b><?php echo $usd_mode ? 'S&#7889; USDT mu&#7889;n r&#250;t' : 'S&#7889; ti&#7873;n mu&#7889;n r&#250;t'; ?></b></div>
     <div class="wd-amount<?php echo $usd_mode ? ' usd' : ''; ?>">
         <?php if ( $usd_mode ) : ?>
         <?php /* USD (06/10/2026): ô CHỮ chứ không phải ô số — user Việt gõ "30,5" thì ô số của trình
@@ -1980,7 +1981,7 @@ function wdPickMethod(el){var r=el.querySelector('input[type=radio]');if(r)r.che
 function wdSetAmount(v){var i=document.getElementById('wdAmount');if(!i)return;i.value=(typeof ST_USD!=='undefined'&&ST_USD)?wdHienSo(v):Math.floor(v/1000)*1000;i.focus();wdKiemTra()}
 /* ── Ô rút tiền USD (06/10/2026): nhận cả "30,5" lẫn "30.5", báo lỗi tiếng Việt ngay dưới ô ──
    wdLoiSoTien() là hàm THUẦN (không đụng DOM) để test chạy thật được trong node. Thứ tự kiểm
-   theo đúng máy chủ: tối thiểu → trần mỗi lần → số dư, để hai bên không bao giờ báo lệch nhau. */
+   theo đúng máy chủ: tối thiểu → trần mỗi lần → tối đa 2 số lẻ → số dư, để hai bên không bao giờ báo lệch nhau. */
 function wdDocSo(s){s=String(s==null?'':s).replace(/[\s$]/g,'').replace(',','.');return /^(\d+\.?\d*|\.\d+)$/.test(s)?parseFloat(s):NaN}
 function wdHienSo(v){v=Number(v);if(!isFinite(v))return '';return v.toFixed(8).replace(/\.?0+$/,'').replace('.',',')}
 function wdLoiSoTien(raw,min,bal,max){
@@ -1988,10 +1989,10 @@ function wdLoiSoTien(raw,min,bal,max){
     raw=String(raw==null?'':raw).trim();
     if(raw==='')return 'Nhập số tiền muốn rút — tối thiểu '+f(min)+'.';
     var v=wdDocSo(raw);
-    if(isNaN(v)||v<=0)return 'Số tiền không hợp lệ — chỉ nhập số, ví dụ 30 hoặc 30,5.';
-    if((raw.replace(',','.').split('.')[1]||'').length>8)return 'Nhiều nhất 8 chữ số sau dấu phẩy.';
+    if(isNaN(v)||v<=0)return 'Số tiền không hợp lệ — chỉ nhập số, ví dụ 30 hoặc 30,12.';
     if(v<min)return 'Rút tối thiểu '+f(min)+' mỗi lần — bạn đang nhập '+f(v)+'.';
     if(max>0&&v>max)return 'Mỗi lần rút tối đa '+f(max)+'. Số dư nhiều hơn thì chia thành nhiều lần.';
+    if((raw.replace(',','.').split('.')[1]||'').length>2)return 'Chỉ nhận tối đa 2 số lẻ sau dấu phẩy, ví dụ 30,12.';
     if(v>bal)return 'Vượt quá số dư — bạn chỉ có '+f(bal)+'.';
     return ''
 }

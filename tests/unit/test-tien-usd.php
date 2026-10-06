@@ -228,19 +228,26 @@ $__us_rut = function ( $so_tien, $so_du ) use ( $__us_chay, $__us_rate35 ) {
         $r = sitetop_submit_withdrawal( 7, ' . var_export( $so_tien, true ) . ', "bank", array() );
         echo json_encode( array( "loi" => is_wp_error( $r ) ? $r->tin : "", "sql" => $GLOBALS["wpdb"]->sql, "them" => $GLOBALS["wpdb"]->them ) );' );
 };
-// Rút ĐÚNG toàn bộ số dư $9,4909 — không làm tròn theo cent, không bị %f cắt còn 6 số lẻ.
-list( $__us_k, $__us_e ) = $__us_rut( 9.4909, 9.4909 );
+// Rút ĐÚNG toàn bộ số dư $9,49 — không bị %d trừ 9; literal phải đủ 8 số lẻ (%f chỉ in 6).
+list( $__us_k, $__us_e ) = $__us_rut( 9.49, 9.49 );
 $__us_sql = implode( ' | ', (array) ( $__us_k['sql'] ?? array() ) );
-assert_true( strpos( $__us_sql, 'balance=balance-9.49090000' ) !== false && strpos( $__us_sql, 'balance>=9.49090000' ) !== false,
-    'SONG CON: rut $9,4909 phai tru dung 9.49090000 — %d tru 9, %f cat 6 so le. SQL: ' . $__us_sql . ' Loi: ' . ( $__us_k['loi'] ?? '' ) . ' stderr: ' . $__us_e );
+assert_true( strpos( $__us_sql, 'balance=balance-9.49000000' ) !== false && strpos( $__us_sql, 'balance>=9.49000000' ) !== false,
+    'SONG CON: rut $9,49 phai tru dung 9.49000000 — %d tru 9. SQL: ' . $__us_sql . ' Loi: ' . ( $__us_k['loi'] ?? '' ) . ' stderr: ' . $__us_e );
 $__us_lenh = null;
 foreach ( (array) ( $__us_k['them'] ?? array() ) as $__us_r ) {
     if ( strpos( $__us_r['bang'], 'withdrawals' ) !== false ) $__us_lenh = (float) $__us_r['du_lieu']['amount'];
 }
-assert_equals( 9.4909, $__us_lenh, 'Lenh rut ghi dung $9,4909' );
-list( $__us_k, $__us_e ) = $__us_rut( 12.34567891, 100 );
-assert_true( strpos( implode( ' | ', (array) ( $__us_k['sql'] ?? array() ) ), 'balance=balance-12.34567891' ) !== false,
-    'Rut 8 so le phai tru dung 8 so le. Loi: ' . ( $__us_k['loi'] ?? '' ) . ' stderr: ' . $__us_e );
+assert_equals( 9.49, $__us_lenh, 'Lenh rut ghi dung $9,49' );
+// Luật 06/10 chiều: CHỈ NHẬN TỐI ĐA 2 SỐ LẺ — từ 3 số lẻ là từ chối (không làm tròn hộ), không đụng CSDL.
+foreach ( array( 9.4909, 12.34567891, 30.123 ) as $__us_x ) {
+    list( $__us_k, $__us_e ) = $__us_rut( $__us_x, 100 );
+    assert_true( strpos( (string) ( $__us_k['loi'] ?? '' ), '2 số lẻ' ) !== false
+              && strpos( implode( ' | ', (array) ( $__us_k['sql'] ?? array() ) ), 'balance=balance-' ) === false,
+        'Rut ' . $__us_x . ' (qua 2 so le) phai bi tu choi, khong tru tien. Loi: ' . ( $__us_k['loi'] ?? '' ) . ' stderr: ' . $__us_e );
+}
+list( $__us_k, $__us_e ) = $__us_rut( 30.12, 100 );
+assert_true( strpos( implode( ' | ', (array) ( $__us_k['sql'] ?? array() ) ), 'balance=balance-30.12000000' ) !== false,
+    'Rut $30,12 (dung 2 so le) phai duoc nhan, tru dung 30.12000000. Loi: ' . ( $__us_k['loi'] ?? '' ) . ' stderr: ' . $__us_e );
 list( $__us_k, $__us_e ) = $__us_rut( 4.99, 100 );
 assert_true( strpos( (string) ( $__us_k['loi'] ?? '' ), 'Rút tối thiểu: $5' ) !== false,
     'Duoi muc toi thieu USD phai bi chan va bao bang USD. Loi: ' . ( $__us_k['loi'] ?? '' ) . ' stderr: ' . $__us_e );
@@ -378,8 +385,9 @@ assert_true( strpos( $__us_ud, "if(!wdKiemTra(true)){" ) !== false && strpos( $_
 // Khối tỉ giá: dưới thẻ rate, chỉ ở chế độ USD, đọc tỉ giá admin cài, đúng chữ chủ site đưa.
 $__us_vt_tg = strpos( $__us_ud, 'class="tygia-box"' );
 assert_true( $__us_vt_tg !== false, 'Co khoi "Ti gia $ tai Sitetop"' );
-assert_true( strpos( $__us_ud, 'Tỉ giá quy đổi từ $ sang VNĐ tại <span class="brand">Sitetop</span> là: <b>1$ = <?php echo sitetop_format_money( sitetop_usd_rate() ); ?></b>' ) !== false,
-    'Dong ti gia dung chu chu site dua; so lay tu option usd_rate (admin doi la doi theo)' );
+assert_true( strpos( $__us_ud, 'Tỉ giá quy đổi từ $ sang VNĐ là: <b>1$ = <?php echo sitetop_format_money( sitetop_usd_rate() ); ?></b>' ) !== false,
+    'Dong ti gia: bo "tai SITETOP" (chu site chot 06/10 chieu); so lay tu option usd_rate' );
+assert_equals( 1, substr_count( substr( $__us_ud, $__us_vt_tg, 600 ), '<span class="brand">Sitetop</span>' ), 'Chi con MOT nhan SITETOP (o tieu de)' );
 assert_true( strpos( $__us_ud, 'class="rate-box"' ) < $__us_vt_tg
           && substr_count( substr( $__us_ud, strrpos( substr( $__us_ud, 0, $__us_vt_tg ), '<?php if ( $usd_mode ) : ?>' ), 400 ), 'tygia-box' ) >= 1,
     'Khoi ti gia nam DUOI the rate va chi hien o che do USD' );
@@ -392,10 +400,10 @@ $__us_js = substr( $__us_ud, $__us_js_a, $__us_js_b - $__us_js_a ) . <<<'JS'
 
 function stUsd(a){return '$'+String(a).replace('.',',')}
 console.log(JSON.stringify({
-  ok:[wdLoiSoTien('30',30,100,500),wdLoiSoTien('30,5',30,100,500),wdLoiSoTien('30.5',30,100,500),wdLoiSoTien('100',30,100,0),wdLoiSoTien(' 45 $ ',30,100,500)],
+  ok:[wdLoiSoTien('30',30,100,500),wdLoiSoTien('30,5',30,100,500),wdLoiSoTien('30.5',30,100,500),wdLoiSoTien('100',30,100,0),wdLoiSoTien(' 45 $ ',30,100,500),wdLoiSoTien('30,12',30,100,500)],
   duoi:wdLoiSoTien('29,99',30,100,500), vuot:wdLoiSoTien('150',30,100,500), tran:wdLoiSoTien('600',30,1000,500),
   rong:wdLoiSoTien('',30,100,500), chu:wdLoiSoTien('abc',30,100,500), hai:wdLoiSoTien('1.000,50',30,5000,0),
-  le9:wdLoiSoTien('30,123456789',30,100,500), am:wdLoiSoTien('-5',30,100,500), khong:wdLoiSoTien('0',30,100,500),
+  le9:wdLoiSoTien('30,123456789',30,100,500), le3:wdLoiSoTien('30,123',30,100,500), am:wdLoiSoTien('-5',30,100,500), khong:wdLoiSoTien('0',30,100,500),
   doc:[wdDocSo('30,5'),wdDocSo('30.5'),wdDocSo('30 $'),String(wdDocSo('abc')),String(wdDocSo('1e3'))],
   hien:[wdHienSo(30),wdHienSo(100.12345678),wdHienSo(0.5),wdHienSo(100),wdHienSo(10.5)]
 }));
@@ -406,14 +414,15 @@ $__us_r = (string) shell_exec( 'node ' . escapeshellarg( $__us_f ) . ' 2>&1' );
 @unlink( $__us_f );
 $__us_k = json_decode( trim( $__us_r ), true );
 assert_true( is_array( $__us_k ), 'Chay duoc bo kiem o rut tien bang node. Ra: ' . $__us_r );
-assert_equals( array( '', '', '', '', '' ), $__us_k['ok'] ?? null, 'Hop le: 30 · "30,5" · "30.5" · dung bang so du · co khoang trang/$ — deu KHONG bao loi. Ra: ' . json_encode( $__us_k['ok'] ?? null, JSON_UNESCAPED_UNICODE ) );
+assert_equals( array( '', '', '', '', '', '' ), $__us_k['ok'] ?? null, 'Hop le: 30 · "30,5" · "30.5" · dung bang so du · co khoang trang/$ · 30,12 — deu KHONG bao loi. Ra: ' . json_encode( $__us_k['ok'] ?? null, JSON_UNESCAPED_UNICODE ) );
 assert_true( strpos( (string) ( $__us_k['duoi'] ?? '' ), 'tối thiểu $30' ) !== false, 'Duoi muc toi thieu → bao ro "Rut toi thieu $30". Ra: ' . ( $__us_k['duoi'] ?? '' ) );
 assert_true( strpos( (string) ( $__us_k['vuot'] ?? '' ), 'số dư' ) !== false && strpos( (string) ( $__us_k['vuot'] ?? '' ), '$100' ) !== false, 'Vuot so du → bao ro so du dang co. Ra: ' . ( $__us_k['vuot'] ?? '' ) );
 assert_true( strpos( (string) ( $__us_k['tran'] ?? '' ), 'tối đa $500' ) !== false, 'Vuot tran moi lan → bao tran. Ra: ' . ( $__us_k['tran'] ?? '' ) );
 assert_true( strpos( (string) ( $__us_k['rong'] ?? '' ), 'Nhập số tiền' ) !== false, 'Bo trong → nhac nhap' );
 foreach ( array( 'chu', 'hai', 'am', 'khong' ) as $__us_c )
     assert_true( strpos( (string) ( $__us_k[ $__us_c ] ?? '' ), 'không hợp lệ' ) !== false, 'Khong phai so (' . $__us_c . ') → "khong hop le". Ra: ' . ( $__us_k[ $__us_c ] ?? '' ) );
-assert_true( strpos( (string) ( $__us_k['le9'] ?? '' ), '8 chữ số' ) !== false, 'Qua 8 so le → tu choi (CSDL giu 8 so le, khong lam tron ngam)' );
+assert_true( strpos( (string) ( $__us_k['le9'] ?? '' ), '2 số lẻ' ) !== false && strpos( (string) ( $__us_k['le3'] ?? '' ), '2 số lẻ' ) !== false,
+    'Qua 2 so le (30,123) → tu choi, bao ro "toi da 2 so le" (chu site chot 06/10: chi rut toi cent). Ra: ' . ( $__us_k['le3'] ?? '' ) );
 assert_equals( array( 30.5, 30.5, 30, 'NaN', 'NaN' ), $__us_k['doc'] ?? null, 'wdDocSo: phay va cham deu la thap phan; chu, 1e3 → NaN. Ra: ' . json_encode( $__us_k['doc'] ?? null ) );
 assert_equals( array( '30', '100,12345678', '0,5', '100', '10,5' ), $__us_k['hien'] ?? null, 'wdHienSo: dien nut nhanh dang Viet, khong so 0 thua, khong e-8. Ra: ' . json_encode( $__us_k['hien'] ?? null ) );
 
@@ -428,7 +437,7 @@ var ST_USD=1; function stUsd(a){return '$'+String(a).replace('.',',')}
 var _i={value:'',dataset:{min:'30.00000000',bal:'100.12345678',max:'500.00000000'},focus:function(){},classList:{bad:false,toggle:function(c,v){this.bad=!!v}}};
 var _e={textContent:'',classList:{on:false,toggle:function(c,v){this.on=!!v}}};
 var document={getElementById:function(id){return id==='wdAmount'?_i:(id==='wdAmtErr'?_e:null)}};
-wdSetAmount(100.12345678); var a=_i.value, aErr=_e.textContent;
+wdSetAmount(100.12); var a=_i.value, aErr=_e.textContent;
 wdSetAmount(30); var b=_i.value, bErr=_e.textContent;
 wdSetAmount(0.5); var b2=_i.value, b2Err=_e.textContent;
 _i.value='29,99'; wdKiemTra(); var cErr=_e.textContent, cOn=_e.classList.on, cBad=_i.classList.bad;
@@ -442,7 +451,7 @@ $__us_r = (string) shell_exec( 'node ' . escapeshellarg( $__us_f ) . ' 2>&1' );
 @unlink( $__us_f );
 $__us_k = json_decode( trim( $__us_r ), true );
 assert_true( is_array( $__us_k ), 'Chay duoc wdSetAmount/wdKiemTra bang node. Ra: ' . $__us_r );
-assert_equals( '100,12345678', $__us_k['a'] ?? '', 'Nut "Toan bo so du" dien DUNG so du, dau phay kieu Viet (khong phai 100.12345678). Ra: ' . json_encode( $__us_k, JSON_UNESCAPED_UNICODE ) );
+assert_equals( '100,12', $__us_k['a'] ?? '', 'Nut "Toan bo so du" dien tran da cat 2 so le, dau phay kieu Viet (khong phai 100.12). Ra: ' . json_encode( $__us_k, JSON_UNESCAPED_UNICODE ) );
 assert_equals( '', $__us_k['aErr'] ?? 'x', 'Dien dung bang so du thi khong bao loi' );
 assert_equals( '30', $__us_k['b'] ?? '', 'Nut $30 dien "30"' );
 assert_equals( '0,5', $__us_k['b2'] ?? '', 'So le dien dang Viet "0,5"' );
@@ -457,8 +466,8 @@ $__us_wd_ajax = $__us_ham( $__us_ajx, 'sitetop_ajax_user_withdraw' );
 assert_true( $__us_wd_ajax !== '', 'Trich duoc sitetop_ajax_user_withdraw' );
 list( $__us_k, $__us_e ) = $__us_chay( true, $__us_rate35, $__us_wd_ajax . '
     function check_ajax_referer() {} function sitetop_block_advertiser_ajax() {} function get_current_user_id() { return 7; }
-    function wp_send_json_success( $d ) { echo json_encode( array( "ok" => $d, "sql" => $GLOBALS["wpdb"]->sql ) ); }
-    function wp_send_json_error( $d ) { echo json_encode( array( "loi" => $d, "sql" => $GLOBALS["wpdb"]->sql ) ); }
+    function wp_send_json_success( $d ) { echo json_encode( array( "ok" => $d, "sql" => $GLOBALS["wpdb"]->sql ) ); exit; }
+    function wp_send_json_error( $d ) { echo json_encode( array( "loi" => $d, "sql" => $GLOBALS["wpdb"]->sql ) ); exit; }
     $GLOBALS["SO_DU"] = 100;
     $_POST = array( "amount" => "30,5", "method" => "bank", "bank_name" => "VCB", "bank_account" => "123", "bank_holder" => "A" );
     sitetop_ajax_user_withdraw();' );
@@ -466,6 +475,17 @@ $__us_sql = implode( ' | ', (array) ( $__us_k['sql'] ?? array() ) );
 assert_true( ! empty( $__us_k['ok'] ), 'Rut "30,5" phai duoc nhan. Ra: ' . json_encode( $__us_k, JSON_UNESCAPED_UNICODE ) . ' stderr: ' . $__us_e );
 assert_true( strpos( $__us_sql, '30.50000000' ) !== false && strpos( $__us_sql, '- 30.00000000' ) === false,
     '"30,5" phai tru dung 30.5 — khong phai 30. SQL: ' . substr( $__us_sql, 0, 300 ) );
+// "30,123" (3 số lẻ) → cổng từ chối, không đụng CSDL — máy chủ không tin JS.
+list( $__us_k, $__us_e ) = $__us_chay( true, $__us_rate35, $__us_wd_ajax . '
+    function check_ajax_referer() {} function sitetop_block_advertiser_ajax() {} function get_current_user_id() { return 7; }
+    function wp_send_json_success( $d ) { echo json_encode( array( "ok" => $d, "sql" => $GLOBALS["wpdb"]->sql ) ); exit; }
+    function wp_send_json_error( $d ) { echo json_encode( array( "loi" => $d, "sql" => $GLOBALS["wpdb"]->sql ) ); exit; }
+    $GLOBALS["SO_DU"] = 100;
+    $_POST = array( "amount" => "30,123", "method" => "bank", "bank_name" => "VCB", "bank_account" => "123", "bank_holder" => "A" );
+    sitetop_ajax_user_withdraw();' );
+assert_true( strpos( (string) ( $__us_k['loi'] ?? '' ), '2 số lẻ' ) !== false
+          && strpos( implode( ' | ', (array) ( $__us_k['sql'] ?? array() ) ), 'balance=balance-' ) === false,
+    'MAY CHU chan 3 so le ("30,123"), khong tru tien. Ra: ' . json_encode( $__us_k, JSON_UNESCAPED_UNICODE ) . ' stderr: ' . $__us_e );
 
 /* ═══ P. CON SỐ TO Ở ĐẦU TRANG HIỆN GỌN (chủ site chốt 06/10 chiều): "$100,02272727" → "$100,022" ═══ */
 list( $__us_k, $__us_e ) = $__us_chay( true, $__us_rate35, 'echo json_encode( array_map( "sitetop_format_usd_gon", array(
@@ -478,13 +498,29 @@ assert_equals( '$1,005',   $__us_k['e'] ?? '', 'Khong dinh sai so float: 1.005 �
 assert_equals( '$0,022',   $__us_k['f'] ?? '', 'So nho cung cat 3 so le' );
 assert_equals( '-$2,345',  $__us_k['g'] ?? '', 'So am giu dau, cat ve 0' );
 assert_equals( '$0,30',    $__us_k['h'] ?? '', '0.3 khong bi thanh 0,299' );
-// Chỉ con số to dùng bản gọn; "Hôm nay", "Tổng thu nhập" và mọi chỗ khác vẫn in đủ.
+// Bản gọn dùng đúng 3 chỗ trên thẻ ví: số to + chip "Hôm nay" + chip "Tổng thu nhập" (chủ site chốt 06/10 chiều); chỗ khác in đủ.
 $__us_ud = (string) file_get_contents( $__us_goc . '/page-user-dashboard.php' );
 assert_true( strpos( $__us_ud, '<div class="wallet-v"><?php echo sitetop_format_tien_user_gon($balance); ?></div>' ) !== false,
     'Con so to "So du kha dung" dung ban gon 3 so le' );
-assert_equals( 1, substr_count( $__us_ud, 'sitetop_format_tien_user_gon(' ), 'Ban gon CHI dung cho con so to, khong lan sang cho khac' );
-assert_true( strpos( $__us_ud, 'H&#244;m nay <b>+<?php echo sitetop_format_tien_user($today_earned); ?></b>' ) !== false,
-    '"Hom nay" van in du so le' );
+assert_equals( 3, substr_count( $__us_ud, 'sitetop_format_tien_user_gon(' ), 'Ban gon dung DUNG 3 cho tren the vi, khong lan sang bang/lich su' );
+assert_true( strpos( $__us_ud, 'H&#244;m nay <b>+<?php echo sitetop_format_tien_user_gon($today_earned); ?></b>' ) !== false
+          && strpos( $__us_ud, 'T&#7893;ng thu nh&#7853;p <b><?php echo sitetop_format_tien_user_gon($total_earned); ?></b>' ) !== false,
+    'Hai chip "Hom nay" / "Tong thu nhap" cung in gon 3 so le ($0,02272727 → $0,022)' );
+assert_true( strpos( $__us_ud, 'R&#250;t t&#7889;i thi&#7875;u <b><?php echo sitetop_format_tien_user($min_wd); ?></b>' ) !== false,
+    'Chip "Rut toi thieu" giu ban in du (nguong admin cai, khong cat)' );
 // Chế độ VNĐ: bản gọn in y như cũ.
 list( $__us_k, $__us_e ) = $__us_chay( false, array(), 'echo json_encode( array( "t" => sitetop_format_tien_user_gon( 133500 ) ) );' );
 assert_equals( '133.500đ', $__us_k['t'] ?? '', 'VND: ban gon = sitetop_format_money nhu cu. stderr: ' . $__us_e );
+// Hàm cắt dùng cho trần "Toàn bộ số dư": đúng 2 số lẻ, không làm tròn, không dính sai số float.
+list( $__us_k, $__us_e ) = $__us_chay( true, $__us_rate35, 'echo json_encode( array_map( "sitetop_usd_cat_le", array(
+    "a" => 100.12345678, "b" => 0.29, "c" => 1.005, "d" => 30, "e" => -2.345, "f" => 100.999 ) ) );' );
+assert_equals( 100.12, $__us_k['a'] ?? null, 'Tran "Toan bo so du" 100,12345678 → 100,12 (phan le o lai vi). stderr: ' . $__us_e );
+assert_equals( 0.29,   $__us_k['b'] ?? null, '0,29 phai ra 0,29 — floor(0.29*100) ra 28 la sai' );
+assert_equals( 1,      $__us_k['c'] ?? null, '1,005 → 1,00 (cat, khong lam tron len 1,01)' );
+assert_equals( 30,     $__us_k['d'] ?? null, 'So chan giu nguyen' );
+assert_equals( -2.34,  $__us_k['e'] ?? null, 'So am cat ve 0: -2,345 → -2,34' );
+assert_equals( 100.99, $__us_k['f'] ?? null, '100,999 → 100,99 (khong thanh 101)' );
+assert_true( strpos( $__us_ud, '$wd_cap     = $usd_mode ? sitetop_usd_cat_le( $wd_cap, 2 )' ) !== false,
+    'Tran o rut USD phai cat 2 so le — khong thi nut "Toan bo so du" dien 8 so le roi bi chinh luat 2 so le chan' );
+assert_true( strpos( $__us_ud, "<b><?php echo \$usd_mode ? 'S&#7889; USDT mu&#7889;n r&#250;t' : 'S&#7889; ti&#7873;n mu&#7889;n r&#250;t'; ?></b>" ) !== false,
+    'Nhan buoc 1: "So USDT muon rut" o che do USD, chu cu o VND' );
