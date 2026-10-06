@@ -502,7 +502,15 @@ assert_equals( '$0,30',    $__us_k['h'] ?? '', '0.3 khong bi thanh 0,299' );
 $__us_ud = (string) file_get_contents( $__us_goc . '/page-user-dashboard.php' );
 assert_true( strpos( $__us_ud, '<div class="wallet-v"><?php echo sitetop_format_tien_user_gon($balance); ?></div>' ) !== false,
     'Con so to "So du kha dung" dung ban gon 3 so le' );
-assert_equals( 3, substr_count( $__us_ud, 'sitetop_format_tien_user_gon(' ), 'Ban gon dung DUNG 3 cho tren the vi, khong lan sang bang/lich su' );
+assert_equals( 4, substr_count( $__us_ud, 'sitetop_format_tien_user_gon(' ), 'Ban gon dung DUNG 4 cho: the vi (3) + o "Co the rut", khong lan sang bang/lich su' );
+// Ô "Có thể rút" (tab Rút tiền) = số rút được thật theo luật 2 số lẻ: $100,02272727 → $100,02.
+assert_true( strpos( $__us_ud, '<div class="t-v"><?php echo sitetop_format_tien_user_gon($balance, 2); ?></div>' ) !== false,
+    'O "Co the rut" cat 2 so le (dung bang so rut duoc thuc te)' );
+list( $__us_k, $__us_e ) = $__us_chay( true, $__us_rate35, 'echo json_encode( array( "a" => sitetop_format_tien_user_gon( 100.02272727, 2 ), "b" => sitetop_format_tien_user_gon( 100.02272727 ), "c" => sitetop_format_tien_user_gon( 100.5, 2 ), "d" => sitetop_format_tien_user_gon( 100.999, 2 ) ) );' );
+assert_equals( '$100,02', $__us_k['a'] ?? '', '"Co the rut" $100,02272727 → $100,02. stderr: ' . $__us_e );
+assert_equals( '$100,022', $__us_k['b'] ?? '', 'Mac dinh van 3 so le cho the vi' );
+assert_equals( '$100,50', $__us_k['c'] ?? '', '100,5 → $100,50' );
+assert_equals( '$100,99', $__us_k['d'] ?? '', '100,999 → $100,99 — cat, khong len $101' );
 assert_true( strpos( $__us_ud, 'H&#244;m nay <b>+<?php echo sitetop_format_tien_user_gon($today_earned); ?></b>' ) !== false
           && strpos( $__us_ud, 'T&#7893;ng thu nh&#7853;p <b><?php echo sitetop_format_tien_user_gon($total_earned); ?></b>' ) !== false,
     'Hai chip "Hom nay" / "Tong thu nhap" cung in gon 3 so le ($0,02272727 → $0,022)' );

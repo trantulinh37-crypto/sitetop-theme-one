@@ -90,8 +90,8 @@ function sitetop_usd_cat_le( $usd, $le = 2 ) {
 function sitetop_format_usd_gon( $usd, $le = 3 ) {
     return sitetop_format_usd( sitetop_usd_cat_le( $usd, $le ) );
 }
-function sitetop_format_tien_user_gon( $amount ) {
-    return sitetop_che_do_usd() ? sitetop_format_usd_gon( $amount ) : sitetop_format_money( $amount );
+function sitetop_format_tien_user_gon( $amount, $le = 3 ) {
+    return sitetop_che_do_usd() ? sitetop_format_usd_gon( $amount, $le ) : sitetop_format_money( $amount );
 }
 
 /** In tiền USER theo đơn vị hiện hành. Tiền KHÁCH HÀNG vẫn dùng sitetop_format_money(). */

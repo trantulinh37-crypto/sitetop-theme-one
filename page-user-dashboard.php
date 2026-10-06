@@ -1368,7 +1368,9 @@ lkFilter();
 <div class="wd-top">
     <div class="wd-tile t-avail">
         <div class="t-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg></div>
-        <div><div class="t-l">C&#243; th&#7875; r&#250;t</div><div class="t-v"><?php echo sitetop_format_tien_user($balance); ?></div></div>
+        <?php /* "Có thể rút" = số RÚT ĐƯỢC THẬT: luật rút chỉ nhận 2 số lẻ nên cắt về cent (chủ site chốt
+                 06/10/2026: $100,02272727 → $100,02). Phần dưới cent vẫn trong ví, hiện đủ ở bảng/lịch sử. */ ?>
+        <div><div class="t-l">C&#243; th&#7875; r&#250;t</div><div class="t-v"><?php echo sitetop_format_tien_user_gon($balance, 2); ?></div></div>
         <div class="wd-progress">
             <div class="bar"><i style="width:<?php echo round($wd_pct); ?>%"></i></div>
             <div class="txt"><?php echo $wd_ready
