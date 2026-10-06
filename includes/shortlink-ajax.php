@@ -997,6 +997,12 @@ function sitetop_ajax_verify_shortlink_code() {
     if ( is_wp_error($result) ) {
         wp_send_json_error(array('message' => $result->get_error_message(), 'data' => $result->get_error_data()));
     }
+    /* User phải THẤY số tiền vừa được cộng ngay sau mỗi view (chủ site chốt 06/10/2026, lúc
+       chuyển thưởng sang USD). Định dạng ở MÁY CHỦ theo đúng đơn vị đang dùng — trang nhiệm
+       vụ không có bộ định dạng JS và không được tự đoán đơn vị. */
+    if ( is_array( $result ) && ! empty( $result['paid'] ) && ! empty( $result['reward'] ) ) {
+        $result['reward_text'] = sitetop_format_tien_user( $result['reward'] );
+    }
     wp_send_json_success($result);
 }
 

@@ -140,7 +140,9 @@ if(isset($_POST['campaign_action']) && wp_verify_nonce($_POST['_wpnonce'],'sitet
         $daily_traffic = max(10, intval($_POST['daily_traffic'] ?? 100));
         $quantity = max(1, intval($_POST['quantity'] ?? 150));
         $price_per_view = floatval($_POST['price_per_view'] ?? 1200);
-        $user_reward = floatval($_POST['user_reward'] ?? 800);
+        /* Tính ở MÁY CHỦ (06/10/2026) thay vì tin số JS gửi lên — JS đọc rate VNĐ, sang USD là
+           gửi 500 thành $500/view. VNĐ ra đúng số cũ (cùng công thức rate + phụ phí onsite). */
+        $user_reward = sitetop_user_reward_cho_camp( $task_type, $traffic_type, $onsite_time );
         $status = sanitize_text_field($_POST['camp_status'] ?? 'active');
 
         if($dest['error']){
@@ -720,6 +722,20 @@ var ADM_REWARD_SETTINGS = {
     traffic_direct: {'1step':<?php echo (int)sitetop_get_option('direct_user_1step',500); ?>,'2step':<?php echo (int)sitetop_get_option('direct_user_2step',700); ?>,'nocode':<?php echo (int)sitetop_get_option('direct_user_nocode',800); ?>}
 };
 var ADM_ONSITE_EXTRA = {70:<?php echo (int)sitetop_get_option('onsite_extra_70',0); ?>,80:<?php echo (int)sitetop_get_option('onsite_extra_80',100); ?>,90:<?php echo (int)sitetop_get_option('onsite_extra_90',200); ?>,100:<?php echo (int)sitetop_get_option('onsite_extra_100',300); ?>,120:<?php echo (int)sitetop_get_option('onsite_extra_120',400); ?>,150:<?php echo (int)sitetop_get_option('onsite_extra_150',500); ?>};
+/* Thưởng user / view cho từng (loại camp, loại traffic, onsite) — tính SẴN ở máy chủ bằng chính
+   sitetop_user_reward_cho_camp(), hàm máy chủ dùng khi lưu (06/10/2026). JS chỉ tra bảng, không
+   tự tính lại theo rate VNĐ nữa: sang USD mà tự tính là ra 500 thay vì $0,0227. */
+var ADM_USER_REWARD_TINH = <?php
+    $_bang = array();
+    foreach ( array( 'keyword_search', 'traffic_direct' ) as $_ct ) {
+        foreach ( array( '1step', '2step', 'nocode' ) as $_tt ) {
+            foreach ( array( 70, 80, 90, 100, 120, 150 ) as $_os ) {
+                $_bang[ $_ct ][ $_tt ][ $_os ] = sitetop_user_reward_cho_camp( $_ct, $_tt, $_os );
+            }
+        }
+    }
+    echo wp_json_encode( $_bang );
+?>;
 var ADM_USER_ONSITE_EXTRA2 = {70:<?php echo (int)sitetop_get_option('user_onsite_extra_70',0); ?>,80:<?php echo (int)sitetop_get_option('user_onsite_extra_80',0); ?>,90:<?php echo (int)sitetop_get_option('user_onsite_extra_90',0); ?>,100:<?php echo (int)sitetop_get_option('user_onsite_extra_100',0); ?>,120:<?php echo (int)sitetop_get_option('user_onsite_extra_120',0); ?>,150:<?php echo (int)sitetop_get_option('user_onsite_extra_150',0); ?>};
 var _admEditTaskType = 'keyword_search';
 var _admEditStatus = '';
@@ -733,16 +749,19 @@ function admCalcPriceReward() {
     var prices = ADM_PRICE_SETTINGS[_admEditTaskType] || ADM_PRICE_SETTINGS.keyword_search;
     var rewards = ADM_REWARD_SETTINGS[_admEditTaskType] || ADM_REWARD_SETTINGS.keyword_search;
     var price = (prices[tt] || 1200) + (ADM_ONSITE_EXTRA[os] || 0);
-    var reward = (rewards[tt] || 800) + (ADM_USER_ONSITE_EXTRA2[os] || 0);
+    var _bt = ((ADM_USER_REWARD_TINH[_admEditTaskType] || ADM_USER_REWARD_TINH.keyword_search)[tt] || {})[os];
+    var reward = (_bt !== undefined) ? Number(_bt) : (rewards[tt] || 800) + (ADM_USER_ONSITE_EXTRA2[os] || 0);
     document.getElementById('admEditPrice').value = price;
     _admEditRewardVal = reward;
-    document.getElementById('admEditReward').textContent = reward.toLocaleString('vi-VN') + 'đ';
+    document.getElementById('admEditReward').textContent = (typeof stTienUser==='function') ? stTienUser(reward) : reward.toLocaleString('vi-VN') + 'đ';
     admEditPriceWarnCheck();
 }
 
 function admEditPriceWarnCheck() {
     var price = parseFloat(document.getElementById('admEditPrice').value) || 0;
-    document.getElementById('admEditPriceWarn').style.display = (price > 0 && price < _admEditRewardVal) ? 'block' : 'none';
+    /* Giá khách là VNĐ; thưởng user có thể là USD — quy về VNĐ rồi mới so (06/10/2026). */
+    var _thuongVnd = _admEditRewardVal * ((typeof ST_USD!=='undefined' && ST_USD) ? ST_TYGIA : 1);
+    document.getElementById('admEditPriceWarn').style.display = (price > 0 && price < _thuongVnd) ? 'block' : 'none';
 }
 
 document.getElementById('admEditTT').addEventListener('change', function(){
@@ -826,8 +845,9 @@ function openAdminEditCamp(id) {
         priceInput.readOnly = !priceEditable;
         priceInput.style.background = priceEditable ? '#fff' : '#f7f5f0';
         document.getElementById('admEditPriceHint').style.display = priceEditable ? 'none' : 'block';
-        _admEditRewardVal = Math.round(parseFloat(c.user_reward)||0);
-        document.getElementById('admEditReward').textContent = _admEditRewardVal.toLocaleString('vi-VN') + 'đ';
+        // KHÔNG làm tròn: chế độ USD thưởng là $0,0227/view — Math.round ra 0 (06/10/2026).
+        _admEditRewardVal = parseFloat(c.user_reward)||0;
+        document.getElementById('admEditReward').textContent = (typeof stTienUser==='function') ? stTienUser(_admEditRewardVal) : _admEditRewardVal.toLocaleString('vi-VN') + 'đ';
         admEditPriceWarnCheck();
         // Screenshots
         var dp = document.getElementById('admEditSsDPrev');

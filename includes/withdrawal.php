@@ -8,7 +8,13 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 function sitetop_submit_withdrawal( $user_id, $amount, $method, $bank_info = array() ) {
     global $wpdb;
     $p = $wpdb->prefix . SITETOP_PREFIX;
-    $amount = absint($amount); // VND is integer currency (no decimals)
+    /* Tạm khoá ~1 phút lúc chuyển VNĐ → USD (xem includes/tien-usd.php). */
+    if ( function_exists( 'sitetop_tam_khoa_tien' ) && sitetop_tam_khoa_tien() ) {
+        return new WP_Error( 'tam_khoa_tien', sitetop_tam_khoa_tien_thong_bao() );
+    }
+    /* VNĐ: số nguyên đồng như cũ. USD (06/10/2026): rút theo cent — absint biến $9,49 thành 9. */
+    $usd    = sitetop_che_do_usd();
+    $amount = $usd ? round( abs( (float) $amount ), 2 ) : absint( $amount );
 
     // Banned user check
     if ( get_user_meta( $user_id, 'sitetop_banned', true ) ) {
@@ -39,15 +45,15 @@ function sitetop_submit_withdrawal( $user_id, $amount, $method, $bank_info = arr
 
     if ( $amount <= 0 ) return new WP_Error( 'invalid', 'Số tiền không hợp lệ' );
 
-    $min = absint( sitetop_get_option('min_withdrawal', 50000) );
-    if ( $amount < $min ) return new WP_Error('min_amount', 'Rút tối thiểu: ' . sitetop_format_money($min));
+    $min = $usd ? (float) sitetop_get_option( 'min_withdrawal_usd', 4.55 ) : absint( sitetop_get_option('min_withdrawal', 50000) );
+    if ( $amount < $min ) return new WP_Error('min_amount', 'Rút tối thiểu: ' . sitetop_format_tien_user($min));
 
     /* Trần mỗi lần rút. 0 = không giới hạn (giữ nguyên cách chạy cũ nếu admin chưa đặt).
        Chặn ở đây chứ không chỉ ở thuộc tính max của ô nhập, vì thuộc tính đó user sửa
        được bằng công cụ trình duyệt. */
-    $max = absint( sitetop_get_option('max_withdrawal', 0) );
+    $max = $usd ? (float) sitetop_get_option( 'max_withdrawal_usd', 0 ) : absint( sitetop_get_option('max_withdrawal', 0) );
     if ( $max > 0 && $amount > $max ) {
-        return new WP_Error('max_amount', 'Mỗi lần rút tối đa ' . sitetop_format_money($max)
+        return new WP_Error('max_amount', 'Mỗi lần rút tối đa ' . sitetop_format_tien_user($max)
             . '. Vui lòng chia thành nhiều lần.');
     }
 
@@ -57,8 +63,10 @@ function sitetop_submit_withdrawal( $user_id, $amount, $method, $bank_info = arr
        user sửa được bằng công cụ hoặc gọi thẳng cổng ajax.
        Đặt SAU chốt tối thiểu/tối đa để khi nhập 500đ thì báo "rút tối thiểu ..." cho đúng
        việc, chứ không báo lạc sang chuyện tròn nghìn. */
+    /* Luật tròn nghìn CHỈ cho VNĐ. USD đã làm tròn tới cent ở đầu hàm; phần lẻ dưới 1 cent
+       vẫn nằm trong ví. */
     $buoc_nghin = 1000;
-    if ( $amount % $buoc_nghin !== 0 ) {
+    if ( ! $usd && $amount % $buoc_nghin !== 0 ) {
         $goi_y = intdiv( $amount, $buoc_nghin ) * $buoc_nghin;
         return new WP_Error( 'le_nghin',
             'Chỉ rút được số tròn 1.000đ. Bạn nhập ' . sitetop_format_money( $amount )
@@ -67,7 +75,7 @@ function sitetop_submit_withdrawal( $user_id, $amount, $method, $bank_info = arr
     }
 
     $available = sitetop_get_user_balance_amount($user_id);
-    if ( $amount > $available ) return new WP_Error('insufficient', 'Số dư không đủ: ' . sitetop_format_money($available));
+    if ( $amount > $available ) return new WP_Error('insufficient', 'Số dư không đủ: ' . sitetop_format_tien_user($available));
 
     // Pre-check pending (fast fail, will be rechecked inside transaction)
     $pending = (int) $wpdb->get_var( $wpdb->prepare(
@@ -98,7 +106,8 @@ function sitetop_submit_withdrawal( $user_id, $amount, $method, $bank_info = arr
         }
         // Atomic deduct
         $updated = $wpdb->query( $wpdb->prepare(
-            "UPDATE {$p}user_balance SET balance=balance-%d, updated_at=%s WHERE user_id=%d AND balance>=%d",
+            /* USD: %f — %d sẽ trừ $9,49 thành 9 và chốt "balance>=9" thay vì 9,49. */
+            "UPDATE {$p}user_balance SET balance=balance-" . ( $usd ? '%f' : '%d' ) . ", updated_at=%s WHERE user_id=%d AND balance>=" . ( $usd ? '%f' : '%d' ),
             $amount, sitetop_current_time(), $user_id, $amount ));
         if ( !$updated ) { $wpdb->query('ROLLBACK'); return new WP_Error('race', 'Lỗi trừ số dư'); }
 

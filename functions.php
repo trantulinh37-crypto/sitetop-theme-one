@@ -768,6 +768,7 @@ $includes = array(
     'low-balance-alerts',     // Low balance alerts
     'cron-cleanup',           // Cron jobs, counter sync
     'class-google-drive-upload', // ImgBB upload + WordPress fallback
+    'tien-usd',               // Tiền USER bằng USD (06/10/2026): công tắc, định dạng, chuyển dữ liệu
     'admin-dashboard',        // Admin AJAX handlers
     'settings-management',    // Admin save settings (pricing, fraud, SMTP, etc.)
     'payment-settings',       // Bank QR, USDT config
@@ -1436,9 +1437,15 @@ function sitetop_effective_ip_limit() {
 }
 
 function sitetop_get_reward_amount( $campaign ) {
-    // Priority 1: Campaign-specific user_reward
+    // Priority 1: Campaign-specific user_reward (chế độ USD: đã quy đổi sang USD / view)
     if ( ! empty( $campaign->user_reward ) && $campaign->user_reward > 0 ) {
         return (float) $campaign->user_reward;
+    }
+    /* CHẾ ĐỘ USD (06/10/2026): rate admin cài là USD / 1.000 view. KHÔNG được rơi xuống mặc
+       định 800 ở cuối hàm — 800 là VNĐ, sang USD thành $800 MỖI VIEW. Chưa cài rate thì 0. */
+    if ( function_exists( 'sitetop_che_do_usd' ) && sitetop_che_do_usd() ) {
+        $usd = sitetop_usd_rate_nghin_view( $campaign->campaign_type ?? 'keyword_search', $campaign->traffic_type ?? '1step' );
+        return $usd > 0 ? round( $usd / 1000, SITETOP_USD_LE ) : 0.0;
     }
     // Priority 2: Settings by campaign_type (keyword_search/traffic_direct) + traffic_type (1step/2step/nocode)
     $campaign_type = $campaign->campaign_type ?? 'keyword_search';

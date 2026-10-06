@@ -116,6 +116,12 @@ function sitetop_bridge_rescue_code( $visit, $session_id, $code ) {
  *  không buồn gõ mã; nhưng thưởng thì phải gõ mã mới có.)
  */
 function sitetop_verify_and_pay( $session_id, $code, $customer_only = false ) {
+    /* TẠM KHOÁ TIỀN (~1 phút lúc chuyển VNĐ → USD, xem includes/tien-usd.php). Thoát TRƯỚC
+       mọi thao tác — không trừ khách, không trả user, không đổi trạng thái lượt — để không
+       khoản nào bị ghi sai đơn vị giữa lúc đang chia số dư cho tỷ giá. */
+    if ( function_exists( 'sitetop_tam_khoa_tien' ) && sitetop_tam_khoa_tien() ) {
+        return new WP_Error( 'tam_khoa_tien', sitetop_tam_khoa_tien_thong_bao() );
+    }
     global $wpdb;
     $p = $wpdb->prefix . 'sitetop_';
     $ip = sitetop_get_real_ip();
@@ -730,8 +736,10 @@ function sitetop_verify_and_pay( $session_id, $code, $customer_only = false ) {
             $add_view = $visit->camp_id ? ( $customer_paid ? 1 : 0 ) : ( $user_paid ? 1 : 0 );
             if ( $add_view || $user_paid ) {
                 $wpdb->query( $wpdb->prepare(
-                    "UPDATE {$p}user_shortlinks SET total_completed = total_completed + %d, total_earnings = total_earnings + %d WHERE id = %d",
-                    $add_view, $user_paid ? (int) $reward_amount : 0, $visit->sl_id
+                    /* USD: thưởng 1 view là $0,0xx — ép (int) là thành 0 (06/10/2026). */
+                    "UPDATE {$p}user_shortlinks SET total_completed = total_completed + %d, total_earnings = total_earnings + "
+                        . ( sitetop_che_do_usd() ? '%f' : '%d' ) . " WHERE id = %d",
+                    $add_view, $user_paid ? ( sitetop_che_do_usd() ? (float) $reward_amount : (int) $reward_amount ) : 0, $visit->sl_id
                 ));
             }
         }
@@ -858,12 +866,16 @@ function sitetop_rate_rieng_khoa( $campaign_type, $traffic_type ) {
 
 /** Rate riêng của một user cho một loại camp. Trả 0 nếu không đặt. */
 function sitetop_rate_rieng_cua_user( $user_id, $campaign_type, $traffic_type ) {
-    $bang = get_user_meta( (int) $user_id, 'sitetop_rate_rieng', true );
+    /* Chế độ USD (06/10/2026): rate riêng nằm ở khoá RIÊNG 'sitetop_rate_rieng_usd', đơn vị
+       USD / 1.000 view như mọi rate user khác. Khoá VNĐ cũ để nguyên để lùi được. */
+    $usd  = function_exists( 'sitetop_che_do_usd' ) && sitetop_che_do_usd();
+    $bang = get_user_meta( (int) $user_id, $usd ? 'sitetop_rate_rieng_usd' : 'sitetop_rate_rieng', true );
     $khoa = sitetop_rate_rieng_khoa( $campaign_type, $traffic_type );
     /* isset() đã lo mọi kiểu hỏng: meta rỗng, meta lưu nhầm thành chuỗi hay số đều cho
        false ở khoá chữ, nên không cần thêm chốt is_array — chốt đó không bao giờ chạy tới
        (đột biến xoá nó không làm test đỏ, đó là cách biết). */
     $muc = isset( $bang[ $khoa ] ) ? (float) $bang[ $khoa ] : 0.0;
+    if ( $usd ) $muc = round( $muc / 1000, SITETOP_USD_LE );   // USD / 1.000 view → USD / view
     return $muc > 0 ? $muc : 0.0;
 }
 
@@ -871,7 +883,10 @@ function sitetop_add_user_balance( $user_id, $amount, $type = 'shortlink_reward'
     global $wpdb;
     $p = $wpdb->prefix . 'sitetop_';
 
-    $amount = absint( $amount ); // VND integer
+    /* VNĐ: absint như cũ. USD: giữ số lẻ — absint biến $0,035 thành 0, user làm không công
+       mà không ai thấy lỗi (bẫy lớn nhất khi chuyển USD, 06/10/2026). */
+    $amount = sitetop_lam_tron_tien_user( $amount );
+    $_f = sitetop_che_do_usd() ? '%f' : '%d';   // định dạng SQL của cột tiền
 
     // referral_commission có SỔ RIÊNG (xem includes/referral-management.php): rút riêng,
     // ngưỡng rút riêng (referral_min_payout), không gộp vào balance/total_earned chung ở
@@ -881,21 +896,21 @@ function sitetop_add_user_balance( $user_id, $amount, $type = 'shortlink_reward'
     if ( $type !== 'referral_commission' ) {
         // 1. Try UPDATE
         $updated = $wpdb->query( $wpdb->prepare(
-            "UPDATE {$p}user_balance SET balance = balance + %d, total_earned = total_earned + %d, updated_at = %s WHERE user_id = %d",
+            "UPDATE {$p}user_balance SET balance = balance + {$_f}, total_earned = total_earned + {$_f}, updated_at = %s WHERE user_id = %d",
             $amount, $amount, sitetop_current_time(), $user_id
         ));
 
         // 2. If 0 rows → INSERT IGNORE
         if ( $updated === 0 ) {
             $wpdb->query( $wpdb->prepare(
-                "INSERT IGNORE INTO {$p}user_balance (user_id, balance, total_earned, updated_at) VALUES (%d, %d, %d, %s)",
+                "INSERT IGNORE INTO {$p}user_balance (user_id, balance, total_earned, updated_at) VALUES (%d, {$_f}, {$_f}, %s)",
                 $user_id, $amount, $amount, sitetop_current_time()
             ));
 
             // 3. Race condition → RETRY UPDATE
             if ( $wpdb->rows_affected === 0 ) {
                 $wpdb->query( $wpdb->prepare(
-                    "UPDATE {$p}user_balance SET balance = balance + %d, total_earned = total_earned + %d, updated_at = %s WHERE user_id = %d",
+                    "UPDATE {$p}user_balance SET balance = balance + {$_f}, total_earned = total_earned + {$_f}, updated_at = %s WHERE user_id = %d",
                     $amount, $amount, sitetop_current_time(), $user_id
                 ));
             }

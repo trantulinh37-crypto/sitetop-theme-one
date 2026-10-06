@@ -90,7 +90,7 @@ $total_user_earned = (float) $wpdb->get_var("SELECT COALESCE(SUM(amount),0) FROM
         <div class="ov-ico ci3"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div>
     </div>
     <div class="ov-stat cs4">
-        <div><div class="ov-val"><?php echo sitetop_format_money($total_user_earned); ?></div><div class="ov-label">User kiếm được (all-time)</div></div>
+        <div><div class="ov-val"><?php echo sitetop_format_rut_cho_admin($total_user_earned); ?></div><div class="ov-label">User kiếm được (all-time)</div></div>
         <div class="ov-ico ci4"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
     </div>
 </div>
@@ -159,10 +159,11 @@ $total_user_earned = (float) $wpdb->get_var("SELECT COALESCE(SUM(amount),0) FROM
 
             document.getElementById('smViews').textContent = fmtFull(s.verified);
             document.getElementById('smCpaid').textContent = fmtMoney(s.customer_paid);
-            document.getElementById('smUearn').textContent = fmtMoney(s.user_earned);
+            // Chế độ USD: máy chủ gửi kèm số USD; user_earned là VNĐ quy đổi (để so với khách trả).
+            document.getElementById('smUearn').textContent = (s.user_earned_usd !== null && s.user_earned_usd !== undefined) ? stRutAdmin(s.user_earned_usd) : fmtMoney(s.user_earned);
             document.getElementById('smRevenue').textContent = fmtMoney(s.platform_revenue);
             document.getElementById('smDeposits').textContent = fmtMoney(s.deposits);
-            document.getElementById('smWithdrawals').textContent = fmtMoney(s.withdrawals);
+            document.getElementById('smWithdrawals').textContent = (s.withdrawals_usd !== null && s.withdrawals_usd !== undefined) ? stRutAdmin(s.withdrawals_usd) : fmtMoney(s.withdrawals);
             document.getElementById('smNewUsers').textContent = fmtFull(s.new_users);
             document.getElementById('smTotalVisits').textContent = fmtFull(s.total_visits);
 

@@ -1690,8 +1690,11 @@ border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
                         showToast('Không lấy được link đích, vui lòng thử lại.', 'error');
                         return;
                     }
-                    showToast('Thành công! Đang chuyển hướng...', 'success');
-                    setTimeout(function() { window.location.href = url; }, 1200);
+                    /* Có thưởng thì nói rõ số tiền vừa cộng (máy chủ đã định dạng đúng đơn vị) và
+                       giữ thông báo lâu hơn một nhịp cho user kịp đọc — 06/10/2026. */
+                    var _thuong = data.data && data.data.reward_text ? data.data.reward_text : '';
+                    showToast(_thuong ? ('Thành công! +' + _thuong + ' đã cộng vào số dư. Đang chuyển hướng...') : 'Thành công! Đang chuyển hướng...', 'success');
+                    setTimeout(function() { window.location.href = url; }, _thuong ? 2200 : 1200);
                 } else {
                     if (window._clearPending) window._clearPending();
                     resetUnlockCaptcha();
