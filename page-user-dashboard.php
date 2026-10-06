@@ -158,21 +158,6 @@ $home   = home_url();
 :root{--p:#4E80B4;--pl:#6E9CC6;--pd:#0A1633;--a:#8FBEDD;--al:#A5CDE6;--bg:#F5F7F9;--card:#fff;--dark:#0A1633;--txt:#1F2A44;--txtl:#5A6684;--txtm:#8A93AB;--brd:#DFE5F3;--brdl:#ECF0FA;--ok:#00A96E;--err:#E0364B;--warn:#E08700;--info:#4E80B4;--font:'Inter',sans-serif;--fonth:'Plus Jakarta Sans',sans-serif;--mono:'JetBrains Mono',monospace;--rad:1px;--rads:1px;--sidebar-w:248px;/* Bảng màu sidebar tối theo mẫu tham khảo 20/08/2026 */--sb-bg:#232D36;--sb-on:#1A232B;--sb-hover:#2B3742;--sb-blue:#4E80B4;--sb-txt:#8A95A2;--sb-accent:#4A90D9;--sb-line:#2E3841}
 *{box-sizing:border-box;margin:0;padding:0}html,body{width:100%;overflow-x:hidden}body{font-family:var(--font);color:var(--txt);background:var(--bg);line-height:1.6}
 .card{max-width:100%;overflow:hidden}
-$nonce  = wp_create_nonce( 'sitetop_nonce' );
-$home   = home_url();
-?>
-<!DOCTYPE html>
-<html <?php language_attributes(); ?>>
-<head>
-<meta charset="<?php bloginfo('charset'); ?>">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard - <?php bloginfo('name'); ?></title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<?php wp_head(); ?>
-<style>
-:root{--p:#4E80B4;--pl:#6E9CC6;--pd:#0A1633;--a:#8FBEDD;--al:#A5CDE6;--bg:#F5F7F9;--card:#fff;--dark:#0A1633;--txt:#1F2A44;--txtl:#5A6684;--txtm:#8A93AB;--brd:#DFE5F3;--brdl:#ECF0FA;--ok:#00A96E;--err:#E0364B;--warn:#E08700;--info:#4E80B4;--font:'Inter',sans-serif;--fonth:'Plus Jakarta Sans',sans-serif;--mono:'JetBrains Mono',monospace;--rad:1px;--rads:1px;--sidebar-w:248px;/* Bảng màu sidebar tối theo mẫu tham khảo 20/08/2026 */--sb-bg:#232D36;--sb-on:#1A232B;--sb-hover:#2B3742;--sb-blue:#4E80B4;--sb-txt:#8A95A2;--sb-accent:#4A90D9;--sb-line:#2E3841}
-*{box-sizing:border-box;margin:0;padding:0}html,body{width:100%;overflow-x:hidden}body{font-family:var(--font);color:var(--txt);background:var(--bg);line-height:1.6}
-.card{max-width:100%;overflow:hidden}
 
 /* ── Sidebar TỐI theo mẫu tham khảo người dùng gửi (20/08/2026): dải xanh tiêu đề
    trên cùng, hàng CTA "Tạo link mới" nền tối có ô icon riêng, danh sách menu nền
