@@ -153,20 +153,20 @@ function _lno($k,$d=''){return sitetop_get_option($k,$d);}
     <h3 style="margin:16px 0 8px;font-size:14px">User nhận ($ / 1.000 view)</h3>
     <div class="ln-grid">
         <?php foreach ( array( 'keyword_1step'=>'Keyword 1 bước','keyword_2step'=>'Keyword 2 bước','keyword_nocode'=>'Keyword Mã cố định','direct_1step'=>'Direct 1 bước','direct_2step'=>'Direct 2 bước','direct_nocode'=>'Direct Mã cố định' ) as $_k => $_t ) : ?>
-        <div class="ln-field"><label><?php echo $_t; ?></label><input type="number" name="usd_user_<?php echo $_k; ?>" value="<?php echo esc_attr( _lno('usd_user_'.$_k,'') ); ?>" step="0.0001" min="0"><div class="unit">$ / 1.000 view</div></div>
+        <div class="ln-field"><label><?php echo $_t; ?></label><input type="number" name="usd_user_<?php echo $_k; ?>" value="<?php echo esc_attr( _lno('usd_user_'.$_k,'') ); ?>" step="any" min="0"><div class="unit">$ / 1.000 view</div></div>
         <?php endforeach; ?>
     </div>
     <h3 style="margin:16px 0 8px;font-size:14px">Phụ phí Onsite User ($ / 1.000 view, cộng thêm)</h3>
     <div class="ln-grid">
         <?php foreach ( array( 70, 80, 90, 100, 120, 150 ) as $_s ) : ?>
-        <div class="ln-field"><label><?php echo $_s; ?>s</label><input type="number" name="usd_user_onsite_extra_<?php echo $_s; ?>" value="<?php echo esc_attr( _lno('usd_user_onsite_extra_'.$_s,'') ); ?>" step="0.0001" min="0"></div>
+        <div class="ln-field"><label><?php echo $_s; ?>s</label><input type="number" name="usd_user_onsite_extra_<?php echo $_s; ?>" value="<?php echo esc_attr( _lno('usd_user_onsite_extra_'.$_s,'') ); ?>" step="any" min="0"></div>
         <?php endforeach; ?>
     </div>
     <h3 style="margin:16px 0 8px;font-size:14px">Rút tiền (USD)</h3>
     <div class="ln-grid">
-        <div class="ln-field"><label>Rút tối thiểu</label><input type="number" name="min_withdrawal_usd" value="<?php echo esc_attr( _lno('min_withdrawal_usd','') ); ?>" step="0.01" min="0"><div class="unit">$</div></div>
-        <div class="ln-field"><label>Rút tối đa / lần</label><input type="number" name="max_withdrawal_usd" value="<?php echo esc_attr( _lno('max_withdrawal_usd','') ); ?>" step="0.01" min="0"><div class="unit">$ — 0 = không giới hạn</div></div>
-        <div class="ln-field"><label>Rút hoa hồng tối thiểu</label><input type="number" name="referral_min_payout_usd" value="<?php echo esc_attr( _lno('referral_min_payout_usd','') ); ?>" step="0.01" min="0"><div class="unit">$</div></div>
+        <div class="ln-field"><label>Rút tối thiểu</label><input type="number" name="min_withdrawal_usd" value="<?php echo esc_attr( _lno('min_withdrawal_usd','') ); ?>" step="any" min="0"><div class="unit">$</div></div>
+        <div class="ln-field"><label>Rút tối đa / lần</label><input type="number" name="max_withdrawal_usd" value="<?php echo esc_attr( _lno('max_withdrawal_usd','') ); ?>" step="any" min="0"><div class="unit">$ — 0 = không giới hạn</div></div>
+        <div class="ln-field"><label>Rút hoa hồng tối thiểu</label><input type="number" name="referral_min_payout_usd" value="<?php echo esc_attr( _lno('referral_min_payout_usd','') ); ?>" step="any" min="0"><div class="unit">$</div></div>
     </div>
 </div>
 

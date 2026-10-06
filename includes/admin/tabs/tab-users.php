@@ -551,7 +551,7 @@ function rateOpen(uid, login, dangCo, macDinh){
         var v  = dangCo[k] ? dangCo[k] : '';
         h+='<tr><td style="padding:5px 0">'+RATE_TEN[k]+'</td>';
         h+='<td style="padding:5px 8px;text-align:right;color:#6b7280">'+md+'</td>';
-        h+='<td style="padding:5px 0"><input type="number" name="rate_'+k+'" min="0" max="'+((typeof ST_USD!=='undefined'&&ST_USD)?'1000':'100000')+'" step="'+((typeof ST_USD!=='undefined'&&ST_USD)?'0.0001':'1')+'" value="'+v+'" placeholder="theo mặc định" style="width:100%;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px"></td></tr>';
+        h+='<td style="padding:5px 0"><input type="number" name="rate_'+k+'" min="0" max="'+((typeof ST_USD!=='undefined'&&ST_USD)?'1000':'100000')+'" step="'+((typeof ST_USD!=='undefined'&&ST_USD)?'any':'1')+'" value="'+v+'" placeholder="theo mặc định" style="width:100%;padding:6px 8px;border:1px solid #d1d5db;border-radius:6px;font-size:13px"></td></tr>';
     });
     h+='</table>';
     h+='<div id="rateMsg" style="font-size:13px;margin:12px 0 10px"></div>';
@@ -589,7 +589,7 @@ function rateSubmit(e, uid){
    tới, nên doanh thu và số dư khách không thể xê dịch. */
 function soDuTien(n){ return (typeof stTienUser==='function') ? stTienUser(n) : (Number(n)||0).toLocaleString('vi-VN') + 'đ'; }
 /* Chế độ USD (06/10/2026): ô nhập tiền nhận số lẻ — parseInt sẽ biến $1,50 thành 1. */
-function soDuDoc(v){ return (typeof ST_USD!=='undefined' && ST_USD) ? (Math.round((parseFloat(v)||0)*100)/100) : (parseInt(v,10)||0); }
+function soDuDoc(v){ return (typeof ST_USD!=='undefined' && ST_USD) ? (parseFloat(v)||0) : (parseInt(v,10)||0); }   // USD: giữ đúng số gõ, không làm tròn
 function soDuOpen(uid, login, soDuHienTai){
     var c=document.getElementById('soDuModal');
     var h='<div style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding-top:60px" onclick="if(event.target===this)soDuClose()">';
@@ -604,7 +604,7 @@ function soDuOpen(uid, login, soDuHienTai){
     h+='<label style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px;border:2px solid #dc2626;border-radius:8px;cursor:pointer;font-weight:600;color:#dc2626"><input type="radio" name="huong" value="tru"> Trừ tiền</label>';
     h+='</div>';
     h+='<div style="margin-bottom:14px"><label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px">Số tiền ('+((typeof ST_USD!=='undefined'&&ST_USD)?'$':'đ')+')</label>';
-    h+='<input type="number" name="so_tien" min="'+((typeof ST_USD!=='undefined'&&ST_USD)?'0.01':'1')+'" max="'+((typeof ST_USD!=='undefined'&&ST_USD)?'2500':'50000000')+'" step="'+((typeof ST_USD!=='undefined'&&ST_USD)?'0.01':'1')+'" required oninput="soDuXem(this,'+soDuHienTai+')" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:14px">';
+    h+='<input type="number" name="so_tien" min="'+((typeof ST_USD!=='undefined'&&ST_USD)?'0':'1')+'" max="'+((typeof ST_USD!=='undefined'&&ST_USD)?'2500':'50000000')+'" step="'+((typeof ST_USD!=='undefined'&&ST_USD)?'any':'1')+'" required oninput="soDuXem(this,'+soDuHienTai+')" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:14px">';
     h+='<div id="soDuXemTruoc" style="font-size:12px;color:#6b7280;margin-top:5px"></div></div>';
     h+='<div style="margin-bottom:16px"><label style="display:block;font-size:13px;font-weight:600;margin-bottom:4px">Lý do <span style="color:#dc2626">*</span></label>';
     h+='<input type="text" name="ly_do" required minlength="3" maxlength="150" placeholder="VD: bù lượt lỗi ngày 05/10" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:14px">';

@@ -49,18 +49,20 @@ function sitetop_don_vi_tien_user() {
 /* ============================================================
    ĐỊNH DẠNG
    Theo đúng cách chủ site viết trong yêu cầu: dấu phẩy là phần lẻ, dấu chấm là nghìn
-   ("$0,035", "$3,50", "$1.234,50"). Số từ $1 trở lên in 2 số lẻ; dưới $1 in tới 4 số lẻ
-   để thưởng từng view ($0,035) không bị làm tròn thành $0,04.
+   ("$0,035", "$3,50", "$1.234,50"). KHÔNG LÀM TRÒN (chủ site chốt 06/10/2026): in đúng
+   số đang có trong sổ, tối thiểu 2 số lẻ, tối đa 8 (bằng độ lẻ cột lưu), chỉ bỏ số 0 thừa.
+   $9,4909 in là "$9,4909", không phải "$9,49". Số chẵn bỏ phần lẻ: "$30" chứ không "$30,00";
+   có lẻ thì giữ tối thiểu 2 số lẻ: "$3,50", "$0,035".
    ============================================================ */
 function sitetop_format_usd( $usd ) {
     $usd = (float) $usd;
     $am  = $usd < 0 ? '-' : '';
     $x   = abs( $usd );
-    if ( $x >= 1 ) {
-        $s = number_format( $x, 2, ',', '.' );
+    $s = number_format( $x, SITETOP_USD_LE, ',', '.' );          // đủ 8 số lẻ — không cắt phần nào đang có
+    if ( preg_match( '/,0+$/', $s ) ) {
+        $s = preg_replace( '/,0+$/', '', $s );                      // số chẵn: "$30" chứ không "$30,00" (chủ site chốt 06/10)
     } else {
-        $s = number_format( $x, 4, ',', '.' );
-        $s = preg_replace( '/(,\d{2}\d*?)0+$/', '$1', $s );   // bỏ số 0 thừa, giữ tối thiểu 2 số lẻ
+        $s = preg_replace( '/(,\d{2}\d*?)0+$/', '$1', $s );      // có lẻ: giữ tối thiểu 2 số lẻ ($3,50), chỉ bỏ số 0 thừa
     }
     return $am . '$' . $s;
 }
@@ -80,7 +82,19 @@ function sitetop_format_rut_cho_admin( $amount ) {
     return sitetop_format_usd( $amount ) . ' (≈ ' . sitetop_format_money( sitetop_usd_sang_vnd( $amount ) ) . ')';
 }
 
-/** Làm tròn một khoản tiền user trước khi ghi sổ. VNĐ giữ đúng hành vi cũ (absint). */
+/**
+ * Số tiền USD để GHÉP THẲNG vào câu SQL — KHÔNG đi qua %f. wpdb::prepare() đổi %f thành %F rồi
+ * vsprintf với 6 số lẻ mặc định: 0,02272727 thành 0,022727 — mất tiền user mỗi view, đúng cái
+ * "làm tròn" chủ site cấm (06/10/2026). Chuỗi trả về chỉ gồm chữ số và dấu chấm nên ghép
+ * thẳng là an toàn; cột DECIMAL(20,8) cộng với literal DECIMAL là phép tính chính xác.
+ */
+function sitetop_so_sql_usd( $amount ) {
+    return number_format( abs( (float) $amount ), SITETOP_USD_LE, '.', '' );
+}
+
+/** Chuẩn hoá một khoản tiền user trước khi ghi sổ: USD giữ đủ 8 số lẻ (chỉ gạt nhiễu float ở
+ *  số lẻ thứ 9 trở đi — mọi mức rate admin nhập được đều ≤ 7 số lẻ/view nên không mất gì);
+ *  VNĐ giữ đúng hành vi cũ (absint). */
 function sitetop_lam_tron_tien_user( $amount ) {
     return sitetop_che_do_usd() ? round( abs( (float) $amount ), SITETOP_USD_LE ) : absint( $amount );
 }
@@ -324,7 +338,7 @@ function sitetop_in_js_tien_user() {
     $da_in = true;
     printf(
         '<script>var ST_USD=%d,ST_TYGIA=%s;'
-        . 'function stUsd(n){n=Number(n||0);var a=Math.abs(n),o=a>=1?{minimumFractionDigits:2,maximumFractionDigits:2}:{minimumFractionDigits:2,maximumFractionDigits:4};return(n<0?"-":"")+"$"+a.toLocaleString("vi-VN",o);}'
+        . 'function stUsd(n){n=Number(n||0);var a=Math.abs(n),o=Number.isInteger(a)?{maximumFractionDigits:0}:{minimumFractionDigits:2,maximumFractionDigits:8};return(n<0?"-":"")+"$"+a.toLocaleString("vi-VN",o);}'
         . 'function stVnd(n){return Math.round(Number(n||0)).toLocaleString("vi-VN")+"đ";}'
         . 'function stTienUser(n){return ST_USD?stUsd(n):stVnd(n);}'
         . 'function stRutAdmin(n){return ST_USD?stUsd(n)+" (≈ "+stVnd(Number(n||0)*ST_TYGIA)+")":stVnd(n);}'

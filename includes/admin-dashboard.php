@@ -1340,7 +1340,7 @@ function sitetop_ajax_admin_rate_rieng() {
         /* Chế độ USD (06/10/2026): admin nhập USD / 1.000 view, có số lẻ — absint sẽ biến
            22,73 thành 22. Trần $1.000/1.000 view (= $1/view) cùng mục đích chặn gõ thừa số 0. */
         if ( $usd_mode ) {
-            $v = round( (float) str_replace( ',', '.', $v ), 4 );
+            $v = round( (float) str_replace( ',', '.', $v ), SITETOP_USD_LE );   // đủ 8 số lẻ, không làm tròn
             if ( $v <= 0 ) continue;
             if ( $v > 1000 ) wp_send_json_error( 'Mức tối đa $1.000 / 1.000 view' );
         } else {
@@ -1398,9 +1398,9 @@ function sitetop_ajax_admin_sodu_user() {
 
     $uid   = absint( $_POST['user_id'] ?? 0 );
     $huong = ( ( $_POST['huong'] ?? '' ) === 'tru' ) ? 'tru' : 'cong';
-    /* Chế độ USD (06/10/2026): nhận tới cent — absint biến $1,50 thành 1. */
+    /* Chế độ USD (06/10/2026): nhận đúng số admin gõ, đủ 8 số lẻ (không làm tròn) — absint biến $1,50 thành 1. */
     $usd_mode = function_exists( 'sitetop_che_do_usd' ) && sitetop_che_do_usd();
-    $so    = $usd_mode ? round( abs( (float) str_replace( ',', '.', (string) ( $_POST['so_tien'] ?? 0 ) ) ), 2 ) : absint( $_POST['so_tien'] ?? 0 );
+    $so    = $usd_mode ? round( abs( (float) str_replace( ',', '.', (string) ( $_POST['so_tien'] ?? 0 ) ) ), SITETOP_USD_LE ) : absint( $_POST['so_tien'] ?? 0 );
     $ly_do = trim( sanitize_text_field( $_POST['ly_do'] ?? '' ) );
 
     $u = $uid ? get_userdata( $uid ) : false;

@@ -738,8 +738,10 @@ function sitetop_verify_and_pay( $session_id, $code, $customer_only = false ) {
                 $wpdb->query( $wpdb->prepare(
                     /* USD: thưởng 1 view là $0,0xx — ép (int) là thành 0 (06/10/2026). */
                     "UPDATE {$p}user_shortlinks SET total_completed = total_completed + %d, total_earnings = total_earnings + "
-                        . ( sitetop_che_do_usd() ? '%f' : '%d' ) . " WHERE id = %d",
-                    $add_view, $user_paid ? ( sitetop_che_do_usd() ? (float) $reward_amount : (int) $reward_amount ) : 0, $visit->sl_id
+                        . ( sitetop_che_do_usd() ? sitetop_so_sql_usd( $user_paid ? $reward_amount : 0 ) : '%d' ) . " WHERE id = %d",
+                    sitetop_che_do_usd()
+                        ? array( $add_view, $visit->sl_id )
+                        : array( $add_view, $user_paid ? (int) $reward_amount : 0, $visit->sl_id )
                 ));
             }
         }
@@ -886,7 +888,11 @@ function sitetop_add_user_balance( $user_id, $amount, $type = 'shortlink_reward'
     /* VNĐ: absint như cũ. USD: giữ số lẻ — absint biến $0,035 thành 0, user làm không công
        mà không ai thấy lỗi (bẫy lớn nhất khi chuyển USD, 06/10/2026). */
     $amount = sitetop_lam_tron_tien_user( $amount );
-    $_f = sitetop_che_do_usd() ? '%f' : '%d';   // định dạng SQL của cột tiền
+    /* Chế độ USD: ghép THẲNG số 8 số lẻ vào SQL, KHÔNG dùng %f — wpdb::prepare đổi %f thành %F
+       6 số lẻ, 0,02272727 thành 0,022727, mất tiền user mỗi view (chủ site cấm làm tròn). */
+    $_usd = sitetop_che_do_usd();
+    $_f   = $_usd ? sitetop_so_sql_usd( $amount ) : '%d';
+    $_a   = $_usd ? array() : array( $amount, $amount );
 
     // referral_commission có SỔ RIÊNG (xem includes/referral-management.php): rút riêng,
     // ngưỡng rút riêng (referral_min_payout), không gộp vào balance/total_earned chung ở
@@ -897,21 +903,21 @@ function sitetop_add_user_balance( $user_id, $amount, $type = 'shortlink_reward'
         // 1. Try UPDATE
         $updated = $wpdb->query( $wpdb->prepare(
             "UPDATE {$p}user_balance SET balance = balance + {$_f}, total_earned = total_earned + {$_f}, updated_at = %s WHERE user_id = %d",
-            $amount, $amount, sitetop_current_time(), $user_id
+            array_merge( $_a, array( sitetop_current_time(), $user_id ) )
         ));
 
         // 2. If 0 rows → INSERT IGNORE
         if ( $updated === 0 ) {
             $wpdb->query( $wpdb->prepare(
                 "INSERT IGNORE INTO {$p}user_balance (user_id, balance, total_earned, updated_at) VALUES (%d, {$_f}, {$_f}, %s)",
-                $user_id, $amount, $amount, sitetop_current_time()
+                array_merge( array( $user_id ), $_a, array( sitetop_current_time() ) )
             ));
 
             // 3. Race condition → RETRY UPDATE
             if ( $wpdb->rows_affected === 0 ) {
                 $wpdb->query( $wpdb->prepare(
                     "UPDATE {$p}user_balance SET balance = balance + {$_f}, total_earned = total_earned + {$_f}, updated_at = %s WHERE user_id = %d",
-                    $amount, $amount, sitetop_current_time(), $user_id
+                    array_merge( $_a, array( sitetop_current_time(), $user_id ) )
                 ));
             }
         }

@@ -12,9 +12,10 @@ function sitetop_submit_withdrawal( $user_id, $amount, $method, $bank_info = arr
     if ( function_exists( 'sitetop_tam_khoa_tien' ) && sitetop_tam_khoa_tien() ) {
         return new WP_Error( 'tam_khoa_tien', sitetop_tam_khoa_tien_thong_bao() );
     }
-    /* VNĐ: số nguyên đồng như cũ. USD (06/10/2026): rút theo cent — absint biến $9,49 thành 9. */
+    /* VNĐ: số nguyên đồng như cũ. USD (06/10/2026): nhận ĐÚNG số user nhập, đủ 8 số lẻ — không
+       làm tròn theo cent (chủ site cấm làm tròn); absint thì biến $9,49 thành 9. */
     $usd    = sitetop_che_do_usd();
-    $amount = $usd ? round( abs( (float) $amount ), 2 ) : absint( $amount );
+    $amount = $usd ? round( abs( (float) $amount ), SITETOP_USD_LE ) : absint( $amount );
 
     // Banned user check
     if ( get_user_meta( $user_id, 'sitetop_banned', true ) ) {
@@ -63,8 +64,7 @@ function sitetop_submit_withdrawal( $user_id, $amount, $method, $bank_info = arr
        user sửa được bằng công cụ hoặc gọi thẳng cổng ajax.
        Đặt SAU chốt tối thiểu/tối đa để khi nhập 500đ thì báo "rút tối thiểu ..." cho đúng
        việc, chứ không báo lạc sang chuyện tròn nghìn. */
-    /* Luật tròn nghìn CHỈ cho VNĐ. USD đã làm tròn tới cent ở đầu hàm; phần lẻ dưới 1 cent
-       vẫn nằm trong ví. */
+    /* Luật tròn nghìn CHỈ cho VNĐ. USD rút đúng số đã nhập, không có bước làm tròn nào. */
     $buoc_nghin = 1000;
     if ( ! $usd && $amount % $buoc_nghin !== 0 ) {
         $goi_y = intdiv( $amount, $buoc_nghin ) * $buoc_nghin;
@@ -106,9 +106,10 @@ function sitetop_submit_withdrawal( $user_id, $amount, $method, $bank_info = arr
         }
         // Atomic deduct
         $updated = $wpdb->query( $wpdb->prepare(
-            /* USD: %f — %d sẽ trừ $9,49 thành 9 và chốt "balance>=9" thay vì 9,49. */
-            "UPDATE {$p}user_balance SET balance=balance-" . ( $usd ? '%f' : '%d' ) . ", updated_at=%s WHERE user_id=%d AND balance>=" . ( $usd ? '%f' : '%d' ),
-            $amount, sitetop_current_time(), $user_id, $amount ));
+            /* USD: ghép thẳng số 8 số lẻ (sitetop_so_sql_usd) — %d trừ $9,49 thành 9, còn %f thì
+               wpdb cắt còn 6 số lẻ. */
+            "UPDATE {$p}user_balance SET balance=balance-" . ( $usd ? sitetop_so_sql_usd( $amount ) : '%d' ) . ", updated_at=%s WHERE user_id=%d AND balance>=" . ( $usd ? sitetop_so_sql_usd( $amount ) : '%d' ),
+            $usd ? array( sitetop_current_time(), $user_id ) : array( $amount, sitetop_current_time(), $user_id, $amount ) ));
         if ( !$updated ) { $wpdb->query('ROLLBACK'); return new WP_Error('race', 'Lỗi trừ số dư'); }
 
         /* CHỐT KỲ ngay lúc đặt lệnh (31/08/2026). period_end là chính thời điểm này;

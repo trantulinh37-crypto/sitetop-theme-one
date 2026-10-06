@@ -82,12 +82,12 @@ assert_true( strpos( $__rt_ui, 'USDT (BEP20)' ) !== false, 'Phai hien ro phuong 
 /* ---- 4. Giao diện khớp luật ---- */
 /* 06/10/2026: giao diện chọn theo chế độ tiền. VNĐ giữ NGUYÊN luật tròn nghìn bên dưới;
    USD rút theo cent nên làm tròn xuống $0,01 thay cho 1.000đ. */
-assert_true( strpos( $__rt_ui, "step=\"<?php echo \$usd_mode ? '0.01' : '1000'; ?>\"" ) !== false,
-    'O nhap so tien phai nhay theo 1.000 (VND) / 0,01 (USD)' );
-assert_true( strpos( $__rt_ui, '$wd_cap     = $usd_mode ? floor( $wd_cap * 100 ) / 100 : (int) ( floor( $wd_cap / 1000 ) * 1000 );' ) !== false,
-    'Tran rut phai lam tron XUONG — nut "Toan bo so du" khong duoc dien so le (VND: nghin, USD: cent)' );
-assert_true( strpos( $__rt_ui, ":Math.floor(v/1000)*1000" ) !== false && strpos( $__rt_ui, "Math.floor(Number(v)*100)/100" ) !== false,
-    'Nut dien nhanh cung phai lam tron xuong (VND: nghin, USD: cent)' );
+assert_true( strpos( $__rt_ui, "step=\"<?php echo \$usd_mode ? 'any' : '1000'; ?>\"" ) !== false,
+    'O nhap so tien phai nhay theo 1.000 (VND); USD nhan dung so (khong lam tron)' );
+assert_true( strpos( $__rt_ui, '$wd_cap     = $usd_mode ? $wd_cap : (int) ( floor( $wd_cap / 1000 ) * 1000 );' ) !== false,
+    'Tran rut: VND lam tron XUONG nghin; USD rut duoc DUNG so du, khong floor' );
+assert_true( strpos( $__rt_ui, ":Math.floor(v/1000)*1000" ) !== false && strpos( $__rt_ui, "String(Number(v))" ) !== false,
+    'Nut dien nhanh: VND tron nghin, USD dien dung so' );
 assert_true( strpos( $__rt_ui, "if(!(typeof ST_USD!=='undefined'&&ST_USD) && _st%1000!==0){" ) !== false,
     'Bao ngay tai cho cho khoi mat mot vong goi — va CHI o che do VND' );
 

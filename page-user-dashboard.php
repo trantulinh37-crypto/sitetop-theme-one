@@ -137,7 +137,7 @@ $max_wd     = $usd_mode ? (float) sitetop_get_option( 'max_withdrawal_usd', 0 ) 
 $wd_cap     = ( $max_wd > 0 && $max_wd < $balance ) ? $max_wd : $balance;
 /* Chỉ rút được số tròn 1.000đ (28/09/2026) nên trần cũng phải làm tròn XUỐNG: số dư
    133.500đ thì nút "Toàn bộ số dư" điền 133.000đ, không điền số lẻ rồi bị máy chủ từ chối. */
-$wd_cap     = $usd_mode ? floor( $wd_cap * 100 ) / 100 : (int) ( floor( $wd_cap / 1000 ) * 1000 );   // USD: làm tròn xuống cent
+$wd_cap     = $usd_mode ? $wd_cap : (int) ( floor( $wd_cap / 1000 ) * 1000 );   // USD: rút được ĐÚNG số dư, không làm tròn
 $nonce  = wp_create_nonce( 'sitetop_nonce' );
 $home   = home_url();
 ?>
@@ -1376,7 +1376,7 @@ lkFilter();
 <div class="wd-step">
     <div class="wd-step-h"><em>1</em><b>S&#7889; ti&#7873;n mu&#7889;n r&#250;t</b></div>
     <div class="wd-amount">
-        <input type="number" id="wdAmount" name="amount" min="<?php echo $min_wd; ?>" max="<?php echo $wd_cap; ?>" step="<?php echo $usd_mode ? '0.01' : '1000'; ?>" placeholder="0" required>
+        <input type="number" id="wdAmount" name="amount" min="<?php echo $min_wd; ?>" max="<?php echo $wd_cap; ?>" step="<?php echo $usd_mode ? 'any' : '1000'; ?>" placeholder="0" required>
         <span>&#273;</span>
     </div>
     <?php if ( $max_wd > 0 ) : ?>
@@ -1384,7 +1384,7 @@ lkFilter();
     <?php endif; ?>
     <div class="wd-quick">
         <?php foreach ( $wd_quick as $q ) : ?>
-        <button type="button" onclick="wdSetAmount(<?php echo $usd_mode ? round( $q, 2 ) : (int) $q; ?>)" <?php echo $q > $wd_cap ? 'disabled' : ''; ?>><?php echo sitetop_format_tien_user($q); ?></button>
+        <button type="button" onclick="wdSetAmount(<?php echo $usd_mode ? (float) $q : (int) $q; ?>)" <?php echo $q > $wd_cap ? 'disabled' : ''; ?>><?php echo sitetop_format_tien_user($q); ?></button>
         <?php endforeach; ?>
         <button type="button" onclick="wdSetAmount(<?php echo $usd_mode ? $wd_cap : (int) $wd_cap; ?>)" <?php echo ! $wd_ready ? 'disabled' : ''; ?>><?php
             /* Có trần thì nút này điền tới TRẦN, không phải toàn bộ số dư — nếu không user
@@ -1499,7 +1499,7 @@ $ref_ready = $ref_avail >= $ref_min;
 <p style="color:var(--txtm);font-size:13px;margin:0 0 10px">Khả dụng để rút: <b style="color:var(--ok)"><?php echo sitetop_format_tien_user($ref_avail); ?></b> · Tối thiểu <b><?php echo sitetop_format_tien_user($ref_min); ?></b>. Sổ hoa hồng tách riêng khỏi số dư nhiệm vụ, không cộng chung vào nút "Rút tiền" ở trên.</p>
 <form id="refWdForm">
     <div class="wfg">
-        <div class="wd-bank-field full"><label class="wfl">Số tiền muốn rút</label><input class="wfi" type="number" name="amount" min="<?php echo $usd_mode ? $ref_min : (int) $ref_min; ?>" max="<?php echo $usd_mode ? floor( $ref_avail * 100 ) / 100 : (int) $ref_avail; ?>" step="<?php echo $usd_mode ? '0.01' : '1'; ?>" placeholder="<?php echo $usd_mode ? $ref_min : (int) $ref_min; ?>" <?php echo $ref_ready ? 'required' : 'disabled'; ?>></div>
+        <div class="wd-bank-field full"><label class="wfl">Số tiền muốn rút</label><input class="wfi" type="number" name="amount" min="<?php echo $usd_mode ? $ref_min : (int) $ref_min; ?>" max="<?php echo $usd_mode ? (float) $ref_avail : (int) $ref_avail; ?>" step="<?php echo $usd_mode ? 'any' : '1'; ?>" placeholder="<?php echo $usd_mode ? $ref_min : (int) $ref_min; ?>" <?php echo $ref_ready ? 'required' : 'disabled'; ?>></div>
         <div class="wd-bank-field full"><label class="wfl">Ngân hàng</label><input class="wfi" name="bank_name" placeholder="Nhập tên ngân hàng" value="<?php echo esc_attr($saved_bank); ?>" <?php echo $ref_ready ? 'required' : 'disabled'; ?>></div>
         <div class="wd-bank-field"><label class="wfl">Số tài khoản</label><input class="wfi" name="bank_account" placeholder="Chỉ nhập số" value="<?php echo esc_attr($saved_account); ?>" <?php echo $ref_ready ? 'required' : 'disabled'; ?>></div>
         <div class="wd-bank-field"><label class="wfl">Chủ tài khoản</label><input class="wfi" name="bank_holder" placeholder="HỌ VÀ TÊN" value="<?php echo esc_attr($saved_holder); ?>" <?php echo $ref_ready ? 'required' : 'disabled'; ?>></div>
@@ -1944,7 +1944,7 @@ document.querySelectorAll('.sidebar-nav-item').forEach(function(b){b.addEventLis
 
 function toggleWdFields(){var sel=document.querySelector('#wdForm input[name="method"]:checked');var isUsdt=!!sel&&sel.value==='usdt';document.querySelectorAll('.wd-bank-field').forEach(function(el){el.style.display=isUsdt?'none':'';el.querySelector('input').required=!isUsdt});document.querySelectorAll('.wd-usdt-field').forEach(function(el){el.style.display=isUsdt?'':'none';el.querySelector('input').required=isUsdt})}
 function wdPickMethod(el){var r=el.querySelector('input[type=radio]');if(r)r.checked=true;document.querySelectorAll('.wd-method').forEach(function(x){x.classList.toggle('on',x===el)});toggleWdFields()}
-function wdSetAmount(v){var i=document.getElementById('wdAmount');if(!i)return;i.value=(typeof ST_USD!=='undefined'&&ST_USD)?(Math.floor(Number(v)*100)/100).toFixed(2):Math.floor(v/1000)*1000;i.focus()}
+function wdSetAmount(v){var i=document.getElementById('wdAmount');if(!i)return;i.value=(typeof ST_USD!=='undefined'&&ST_USD)?String(Number(v)):Math.floor(v/1000)*1000;i.focus()}
 
 function ajax(action,data,cb){data.action=action;data.nonce='<?php echo $nonce;?>';var fd=new FormData();for(var k in data)fd.append(k,data[k]);fetch('<?php echo admin_url("admin-ajax.php");?>',{method:'POST',body:fd,credentials:'same-origin'}).then(function(r){return r.json()}).then(cb).catch(function(e){toast('Lỗi: '+e.message,'err')})}
 

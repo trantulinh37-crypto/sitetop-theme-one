@@ -149,8 +149,8 @@ function sitetop_get_referral_balance_amount( $user_id ) {
 function sitetop_submit_referral_withdrawal( $user_id, $amount, $method, $bank_info = array() ) {
     global $wpdb;
     $p = $wpdb->prefix . 'sitetop_';
-    // USD: rút theo cent ($0,01); VNĐ: số nguyên đồng như cũ.
-    $amount = sitetop_che_do_usd() ? round( abs( (float) $amount ), 2 ) : absint( $amount );
+    // USD: nhận đúng số đã nhập (8 số lẻ, không làm tròn theo cent); VNĐ: số nguyên đồng như cũ.
+    $amount = sitetop_che_do_usd() ? round( abs( (float) $amount ), SITETOP_USD_LE ) : absint( $amount );
 
     if ( get_user_meta( $user_id, 'sitetop_banned', true ) ) {
         return new WP_Error( 'banned', 'Tài khoản bị khóa' );

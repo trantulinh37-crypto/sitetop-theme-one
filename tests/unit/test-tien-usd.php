@@ -123,17 +123,26 @@ $__us_rate35 = array( 'sitetop_usd_rate' => 22000,
 
 /* ═══ A. ĐỊNH DẠNG — đúng cách chủ site viết ═══ */
 list( $__us_k, $__us_e ) = $__us_chay( true, $__us_rate35, 'echo json_encode( array_map( "sitetop_format_usd", array(
-    "a" => 0.035, "b" => 0.35, "c" => 3.5, "d" => 35, "e" => 1234.5, "f" => 0.0227273, "g" => 9.4909, "h" => -3.5, "i" => 0 ) ) );' );
+    "a" => 0.035, "b" => 0.35, "c" => 3.5, "d" => 35, "e" => 1234.5, "f" => 0.0227273, "g" => 9.4909, "h" => -3.5, "i" => 0,
+    "j" => 0.02272727, "k" => 12.3, "m" => 1234.5678 ) ) );' );
 assert_true( is_array( $__us_k ) && $__us_k, 'Chay duoc sitetop_format_usd. stderr: ' . $__us_e );
 assert_equals( '$0,035',    $__us_k['a'] ?? '', '1 view $0,035 (khong duoc lam tron thanh $0,04)' );
 assert_equals( '$0,35',     $__us_k['b'] ?? '', '10 view $0,35' );
 assert_equals( '$3,50',     $__us_k['c'] ?? '', '100 view $3,50' );
-assert_equals( '$35,00',    $__us_k['d'] ?? '', '1.000 view $35' );
+assert_equals( '$35',       $__us_k['d'] ?? '', '1.000 view $35 — so chan khong in ,00' );
 assert_equals( '$1.234,50', $__us_k['e'] ?? '', 'Hang nghin dung dau cham, phan le dau phay' );
-assert_equals( '$0,0227',   $__us_k['f'] ?? '', 'Duoi $1 in toi 4 so le' );
-assert_equals( '$9,49',     $__us_k['g'] ?? '', 'Tu $1 tro len in 2 so le' );
+assert_equals( '$0,0227273', $__us_k['f'] ?? '', 'KHONG LAM TRON: in dung 7 so le dang co' );
+assert_equals( '$9,4909',    $__us_k['g'] ?? '', 'KHONG LAM TRON: $9,4909 khong duoc in thanh $9,49' );
 assert_equals( '-$3,50',    $__us_k['h'] ?? '', 'So am' );
-assert_equals( '$0,00',     $__us_k['i'] ?? '', 'So 0' );
+assert_equals( '$0',        $__us_k['i'] ?? '', 'So 0' );
+assert_equals( '$0,02272727', $__us_k['j'] ?? '', 'KHONG LAM TRON: du 8 so le' );
+assert_equals( '$12,30',      $__us_k['k'] ?? '', 'Toi thieu 2 so le' );
+assert_equals( '$1.234,5678', $__us_k['m'] ?? '', 'Hang nghin + 4 so le, khong cat' );
+list( $__us_k, $__us_e ) = $__us_chay( true, $__us_rate35, 'echo json_encode( array_map( "sitetop_format_usd", array( "a" => 30, "b" => 30.5, "c" => 3.5, "d" => 1000 ) ) );' );
+assert_equals( '$30',    $__us_k['a'] ?? '', 'Rate $30 in "$30", KHONG "$30,00" (chu site chot)' );
+assert_equals( '$30,50', $__us_k['b'] ?? '', 'Co le thi giu toi thieu 2 so le' );
+assert_equals( '$3,50',  $__us_k['c'] ?? '', '100 view = $3,50 (vi du trong yeu cau)' );
+assert_equals( '$1.000', $__us_k['d'] ?? '', 'Hang nghin chan: "$1.000"' );
 
 /* ═══ B. VÍ DỤ CỦA CHỦ SITE: rate $35/1.000 view, cộng dồn từng view ═══ */
 list( $__us_k, $__us_e ) = $__us_chay( true, $__us_rate35, '
@@ -145,7 +154,7 @@ list( $__us_k, $__us_e ) = $__us_chay( true, $__us_rate35, '
 assert_equals( 0.035, (float) ( $__us_k['mot'] ?? -1 ), '1 view = $0,035 (rate $35/1.000). stderr: ' . $__us_e );
 assert_equals( '$0,35',  $__us_k['in10'] ?? '', '10 view = $0,35' );
 assert_equals( '$3,50',  $__us_k['in100'] ?? '', '100 view = $3,50' );
-assert_equals( '$35,00', $__us_k['in1000'] ?? '', '1.000 view = $35' );
+assert_equals( '$35', $__us_k['in1000'] ?? '', '1.000 view = $35' );
 
 /* ═══ C. KHÔNG ĐƯỢC RƠI VỀ MẶC ĐỊNH 800 ═══ */
 list( $__us_k, $__us_e ) = $__us_chay( true, array( 'sitetop_usd_rate' => 22000 ), '
@@ -183,10 +192,18 @@ list( $__us_k, $__us_e ) = $__us_chay( true, $__us_rate35, '
     sitetop_add_user_balance( 7, 0.035, "shortlink_reward", "test" );
     echo json_encode( array( "sql" => $GLOBALS["wpdb"]->sql, "them" => $GLOBALS["wpdb"]->them ) );' );
 $__us_sql = implode( ' | ', (array) ( $__us_k['sql'] ?? array() ) );
-assert_true( strpos( $__us_sql, 'balance = balance + 0.035000' ) !== false,
-    'SONG CON: cong so du $0,035 phai ra 0.035 — absint + %d lam no thanh 0. SQL: ' . $__us_sql . ' stderr: ' . $__us_e );
+assert_true( strpos( $__us_sql, 'balance = balance + 0.03500000' ) !== false,
+    'SONG CON: cong so du $0,035 phai ra 0.03500000 — absint + %d lam no thanh 0. SQL: ' . $__us_sql . ' stderr: ' . $__us_e );
 $__us_dong = $__us_k['them'][0]['du_lieu'] ?? array();
 assert_equals( 0.035, (float) ( $__us_dong['amount'] ?? -1 ), 'So cai (transactions) phai ghi dung $0,035' );
+// Bẫy %f: wpdb::prepare đổi %f → %F 6 số lẻ. 0,02272727 (rate $22,727273/1.000 view) phải vào sổ ĐỦ 8 số lẻ.
+list( $__us_k, $__us_e ) = $__us_chay( true, $__us_rate35, '
+    sitetop_add_user_balance( 7, 0.02272727, "shortlink_reward", "test" );
+    echo json_encode( array( "sql" => $GLOBALS["wpdb"]->sql, "them" => $GLOBALS["wpdb"]->them ) );' );
+$__us_sql = implode( ' | ', (array) ( $__us_k['sql'] ?? array() ) );
+assert_true( strpos( $__us_sql, 'balance = balance + 0.02272727,' ) !== false && strpos( $__us_sql, '0.022727,' ) === false,
+    'KHONG LAM TRON: $0,02272727 phai vao SQL du 8 so le, khong duoc bi %f cat con 0.022727. SQL: ' . $__us_sql . ' stderr: ' . $__us_e );
+assert_equals( 0.02272727, (float) ( $__us_k['them'][0]['du_lieu']['amount'] ?? -1 ), 'So cai ghi du 8 so le' );
 // Chế độ VNĐ: y hệt cũ (số nguyên, %d).
 list( $__us_k, $__us_e ) = $__us_chay( false, array(), '
     sitetop_add_user_balance( 7, 500, "shortlink_reward", "test" );
@@ -211,20 +228,24 @@ $__us_rut = function ( $so_tien, $so_du ) use ( $__us_chay, $__us_rate35 ) {
         $r = sitetop_submit_withdrawal( 7, ' . var_export( $so_tien, true ) . ', "bank", array() );
         echo json_encode( array( "loi" => is_wp_error( $r ) ? $r->tin : "", "sql" => $GLOBALS["wpdb"]->sql, "them" => $GLOBALS["wpdb"]->them ) );' );
 };
-list( $__us_k, $__us_e ) = $__us_rut( 9.49, 9.4909 );
+// Rút ĐÚNG toàn bộ số dư $9,4909 — không làm tròn theo cent, không bị %f cắt còn 6 số lẻ.
+list( $__us_k, $__us_e ) = $__us_rut( 9.4909, 9.4909 );
 $__us_sql = implode( ' | ', (array) ( $__us_k['sql'] ?? array() ) );
-assert_true( strpos( $__us_sql, 'balance=balance-9.490000' ) !== false && strpos( $__us_sql, 'balance>=9.490000' ) !== false,
-    'SONG CON: rut $9,49 phai tru dung 9.49 — %d se tru 9. SQL: ' . $__us_sql . ' Loi: ' . ( $__us_k['loi'] ?? '' ) . ' stderr: ' . $__us_e );
+assert_true( strpos( $__us_sql, 'balance=balance-9.49090000' ) !== false && strpos( $__us_sql, 'balance>=9.49090000' ) !== false,
+    'SONG CON: rut $9,4909 phai tru dung 9.49090000 — %d tru 9, %f cat 6 so le. SQL: ' . $__us_sql . ' Loi: ' . ( $__us_k['loi'] ?? '' ) . ' stderr: ' . $__us_e );
 $__us_lenh = null;
 foreach ( (array) ( $__us_k['them'] ?? array() ) as $__us_r ) {
     if ( strpos( $__us_r['bang'], 'withdrawals' ) !== false ) $__us_lenh = (float) $__us_r['du_lieu']['amount'];
 }
-assert_equals( 9.49, $__us_lenh, 'Lenh rut ghi dung $9,49' );
+assert_equals( 9.4909, $__us_lenh, 'Lenh rut ghi dung $9,4909' );
+list( $__us_k, $__us_e ) = $__us_rut( 12.34567891, 100 );
+assert_true( strpos( implode( ' | ', (array) ( $__us_k['sql'] ?? array() ) ), 'balance=balance-12.34567891' ) !== false,
+    'Rut 8 so le phai tru dung 8 so le. Loi: ' . ( $__us_k['loi'] ?? '' ) . ' stderr: ' . $__us_e );
 list( $__us_k, $__us_e ) = $__us_rut( 4.99, 100 );
-assert_true( strpos( (string) ( $__us_k['loi'] ?? '' ), 'Rút tối thiểu: $5,00' ) !== false,
+assert_true( strpos( (string) ( $__us_k['loi'] ?? '' ), 'Rút tối thiểu: $5' ) !== false,
     'Duoi muc toi thieu USD phai bi chan va bao bang USD. Loi: ' . ( $__us_k['loi'] ?? '' ) . ' stderr: ' . $__us_e );
 list( $__us_k, $__us_e ) = $__us_rut( 50.01, 100 );
-assert_true( strpos( (string) ( $__us_k['loi'] ?? '' ), 'tối đa $50,00' ) !== false,
+assert_true( strpos( (string) ( $__us_k['loi'] ?? '' ), 'tối đa $50' ) !== false,
     'Vuot tran USD phai bi chan. Loi: ' . ( $__us_k['loi'] ?? '' ) );
 list( $__us_k, $__us_e ) = $__us_rut( 12.35, 100 );
 assert_true( strpos( (string) ( $__us_k['loi'] ?? '' ), '1.000đ' ) === false,
@@ -241,7 +262,7 @@ assert_equals( 0.05, (float) ( $__us_k['r'] ?? -1 ),
 /* ═══ I. ADMIN XEM LỆNH RÚT — ví dụ của chủ site ═══ */
 list( $__us_k, $__us_e ) = $__us_chay( true, array( 'sitetop_usd_rate' => 22000 ), 'echo json_encode( array(
     "a" => sitetop_format_rut_cho_admin( 35 ), "vnd" => sitetop_usd_sang_vnd( 35 ) ) );' );
-assert_equals( '$35,00 (≈ 770.000đ)', $__us_k['a'] ?? '', 'Admin thay $35 kem 770.000d (ty gia 22.000). stderr: ' . $__us_e );
+assert_equals( '$35 (≈ 770.000đ)', $__us_k['a'] ?? '', 'Admin thay $35 kem 770.000d (ty gia 22.000). stderr: ' . $__us_e );
 assert_equals( 770000, (int) ( $__us_k['vnd'] ?? 0 ), 'Quy doi $35 x 22.000 = 770.000d' );
 list( $__us_k, $__us_e ) = $__us_chay( false, array(), 'echo json_encode( array( "a" => sitetop_format_rut_cho_admin( 233000 ) ) );' );
 assert_equals( '233.000đ', $__us_k['a'] ?? '', 'Che do VND: admin van thay VND nhu cu. stderr: ' . $__us_e );
