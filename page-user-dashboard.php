@@ -19,6 +19,23 @@ if ( function_exists( 'sitetop_is_advertiser_account' ) && sitetop_is_advertiser
     exit;
 }
 
+/* ═══ CỔNG XÁC MINH TÀI KHOẢN (06/10/2026) ═══
+   Chủ site chốt: user mới đăng ký phải ĐƯỢC DUYỆT NGUỒN mới vào được hệ thống. Nên đây là
+   CỔNG CHẶN chứ không phải thẻ nhắc: dựng trang riêng rồi exit, KHÔNG render dashboard phía
+   sau — ẩn bằng CSS thì mở F12 vẫn đọc được số dư, link, rate.
+   Đặt TRƯỚC mọi truy vấn thống kê: người chưa được duyệt thì không cần chạy 8 câu SQL kia.
+   Ai đi qua cổng này: chỉ user đăng ký TỪ mốc sitetop_onboard_src_since trở đi và chưa có
+   nguồn nào được duyệt. Admin, tài khoản quảng cáo, user cũ không đụng tới —
+   xem sitetop_la_user_moi_khai_nguon() trong includes/source-approval.php. */
+if ( function_exists( 'sitetop_la_user_moi_khai_nguon' ) && sitetop_la_user_moi_khai_nguon( $user_id ) ) {
+    $xm_items = function_exists( 'sitetop_get_source_items' ) ? sitetop_get_source_items( $user_id ) : array();
+    $xm_tg    = function_exists( 'sitetop_source_telegram' )  ? sitetop_source_telegram() : 'sitetopnet';
+    $xm_cho   = ! empty( $xm_items );
+    $xm_nonce = wp_create_nonce( 'sitetop_nonce' );
+    include get_template_directory() . '/includes/trang-xac-minh.php';
+    exit;
+}
+
 global $wpdb;
 $prefix = $wpdb->prefix . 'sitetop_';
 $today  = date( 'Y-m-d', strtotime( sitetop_current_time() ) );
@@ -1001,105 +1018,6 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--p);box-s
 <!-- Announcements -->
 <div class="ann-section" id="userAnnouncements" style="display:none"></div>
 
-<!-- ═══ XÁC MINH TÀI KHOẢN — CHỈ USER ĐĂNG KÝ TỪ 06/10/2026 (xem includes/source-approval.php) ═══ -->
-<?php
-$ob_moi = function_exists( 'sitetop_la_user_moi_khai_nguon' ) && sitetop_la_user_moi_khai_nguon( $user_id );
-if ( $ob_moi ) :
-    $ob_items = function_exists( 'sitetop_get_source_items' ) ? sitetop_get_source_items( $user_id ) : array();
-    $ob_tg    = function_exists( 'sitetop_source_telegram' )  ? sitetop_source_telegram() : 'sitetopnet';
-    $ob_cho   = ! empty( $ob_items );   // đã khai rồi → màn "đang chờ xét duyệt"
-?>
-<style>
-.ob-card{background:var(--card);border:1px solid var(--brd);border-left:4px solid var(--p);border-radius:14px;overflow:hidden;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
-.ob-card.cho{border-left-color:#d9a441}
-.ob-h{display:flex;align-items:center;gap:14px;padding:18px 20px;border-bottom:1px solid var(--brd)}
-.ob-ic{flex:none;width:52px;height:52px;border-radius:12px;background:#eef3fb;color:var(--p);display:flex;align-items:center;justify-content:center}
-.ob-card.cho .ob-ic{background:#fdf3e2;color:#9a6b12}
-.ob-ht{flex:1;min-width:0}
-.ob-ht b{display:block;font-size:17px;color:var(--dark);line-height:1.35}
-.ob-ht span{font-size:13px;color:#6b7280}
-.ob-step{flex:none;font-size:12px;font-weight:600;padding:5px 12px;border-radius:999px;background:#eef3fb;color:var(--p);border:1px solid #d6e3f5;white-space:nowrap}
-.ob-card.cho .ob-step{background:#fdf3e2;color:#9a6b12;border-color:#f0dcb4}
-.ob-b{padding:20px}
-.ob-note{display:flex;gap:10px;background:#eef3fb;border-left:4px solid var(--p);border-radius:8px;padding:13px 14px;font-size:13.5px;line-height:1.55;color:#33415a;margin-bottom:18px}
-.ob-note svg{flex:none;margin-top:2px}
-.ob-lb{display:block;font-size:12px;font-weight:700;letter-spacing:.5px;color:#4b5563;margin-bottom:8px}
-.ob-lb i{color:var(--err);font-style:normal}
-.ob-ta{width:100%;min-height:170px;border:1.5px solid var(--p);border-radius:10px;padding:13px 14px;font:inherit;font-size:14.5px;line-height:1.7;resize:vertical;color:var(--dark);box-sizing:border-box}
-.ob-hint{font-size:12.5px;color:#6b7280;margin:7px 2px 16px}
-.ob-btn{width:100%;border:0;border-radius:10px;background:var(--p);color:#fff;font-size:15.5px;font-weight:600;padding:15px;cursor:pointer}
-.ob-btn:disabled{opacity:.65;cursor:default}
-.ob-wait{text-align:center;padding:8px 0 4px}
-.ob-big{width:86px;height:86px;border-radius:50%;background:#fdf3e2;color:#9a6b12;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
-.ob-wait b{display:block;font-size:17px;color:var(--dark);margin-bottom:8px}
-.ob-wait p{font-size:14px;color:#6b7280;line-height:1.6;margin:0 auto 16px;max-width:440px}
-.ob-tg{display:block;background:#f6f7f9;border:1px solid var(--brd);border-radius:10px;padding:14px;font-size:14.5px;color:var(--p);text-decoration:none;word-break:break-all;margin-bottom:14px}
-.ob-wbtn{display:inline-block;border:1px solid #f0dcb4;background:#fdf3e2;color:#9a6b12;border-radius:999px;padding:11px 22px;font-size:14px;font-weight:600}
-.ob-ds{text-align:left;margin:16px 0 0;padding:14px;background:#f9fafb;border:1px solid var(--brd);border-radius:10px}
-.ob-ds b{font-size:12px;font-weight:700;letter-spacing:.4px;color:#4b5563;margin-bottom:8px}
-.ob-ds div{font-size:13.5px;color:var(--dark);padding:4px 0;word-break:break-all}
-.ob-f{display:flex;justify-content:space-between;align-items:center;padding:13px 20px;border-top:1px solid var(--brd);font-size:13px}
-.ob-f a{color:var(--p);text-decoration:none}
-.ob-f span{color:#9ca3af}
-.ob-msg{font-size:13px;margin-top:10px;min-height:18px}
-@media(max-width:600px){.ob-h{padding:15px;gap:11px}.ob-b{padding:15px}.ob-ic{width:44px;height:44px}.ob-ht b{font-size:15.5px}.ob-step{font-size:11px;padding:4px 9px}}
-</style>
-<div class="ob-card<?php echo $ob_cho ? ' cho' : ''; ?>" id="obCard">
-    <div class="ob-h">
-        <div class="ob-ic">
-        <?php if ( $ob_cho ) : ?>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>
-        <?php else : ?>
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
-        <?php endif; ?>
-        </div>
-        <div class="ob-ht">
-            <b><?php echo $ob_cho ? 'Đang chờ xét duyệt' : 'Xác minh tài khoản'; ?></b>
-            <span><?php echo $ob_cho ? 'Admin sẽ xác minh trong thời gian sớm nhất' : 'Khai báo nguồn traffic để bắt đầu sử dụng'; ?></span>
-        </div>
-        <div class="ob-step"><?php echo $ob_cho ? '⏳ Đang duyệt' : 'Bước 1/2'; ?></div>
-    </div>
-
-    <div class="ob-b">
-    <?php if ( ! $ob_cho ) : ?>
-        <div class="ob-note">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01" stroke-linecap="round"/></svg>
-            <span>Để sử dụng hệ thống, bạn cần khai báo nguồn traffic. Nếu có nhiều nguồn, hãy xuống dòng để liệt kê từng nguồn.</span>
-        </div>
-        <label class="ob-lb" for="obTa">NGUỒN VIEW / TRAFFIC <i>*</i></label>
-        <textarea id="obTa" class="ob-ta" maxlength="2000" placeholder="VD:&#10;Facebook&#10;YouTube&#10;TikTok&#10;Website cá nhân"></textarea>
-        <div class="ob-hint">Mỗi nguồn một dòng · Tối đa 2000 ký tự</div>
-        <button type="button" class="ob-btn" id="obBtn" onclick="obGuiNguon()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
-            Gửi yêu cầu xác minh
-        </button>
-        <div class="ob-msg" id="obMsg"></div>
-    <?php else : ?>
-        <div class="ob-wait">
-            <div class="ob-big">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>
-            </div>
-            <b>Yêu cầu đang được xử lý</b>
-            <p>Bạn đã đăng ký nguồn traffic bên dưới. Hãy liên hệ Admin để được xác minh nhanh hơn.</p>
-            <a class="ob-tg" href="https://t.me/<?php echo esc_attr( $ob_tg ); ?>" target="_blank" rel="noopener">https://t.me/<?php echo esc_html( $ob_tg ); ?></a>
-            <div class="ob-wbtn">⏳ Chờ admin xác minh</div>
-            <div class="ob-ds">
-                <b>NGUỒN ĐÃ GỬI</b>
-                <?php foreach ( $ob_items as $ob_it ) : ?>
-                    <div>• <?php echo esc_html( $ob_it['text'] ?? '' ); ?></div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-    <?php endif; ?>
-    </div>
-
-    <div class="ob-f">
-        <a href="https://t.me/<?php echo esc_attr( $ob_tg ); ?>" target="_blank" rel="noopener">✈ Hỗ trợ</a>
-        <span>Hỗ trợ 24/7</span>
-    </div>
-</div>
-<?php endif; ?>
-
 <!-- ═══ NGUỒN FILE GỐC (duyệt nguồn) ═══ -->
 <?php
 $src_exempt = function_exists( 'sitetop_source_is_exempt' ) && sitetop_source_is_exempt( $user_id );
@@ -1118,7 +1036,7 @@ $src_meta = array(
 $src_m = $src_meta[ $src_status ] ?? $src_meta['none'];
 
 // Admin / tài khoản quảng cáo được miễn → ẩn hẳn ô, tránh hiểu nhầm là cổng chặn hỏng.
-if ( ! $ob_moi && ! $src_exempt && ( $src_gate || $src_items ) ) :
+if ( ! $src_exempt && ( $src_gate || $src_items ) ) :
 ?>
 <div class="src-box <?php echo $src_m['cls']; ?>" id="srcBox">
     <div class="src-h">
@@ -2042,24 +1960,6 @@ function submitSource(){
             setTimeout(function(){location.reload()},1200);
         }else{
             msg.innerHTML='<span style="color:var(--err)">'+((r&&r.data)||'Lỗi')+'</span>';
-            btn.disabled=false;btn.innerHTML=old;
-        }
-    });
-}
-/* Gửi yêu cầu xác minh — user mới, nhiều nguồn một lần (06/10/2026). */
-function obGuiNguon(){
-    var ta=document.getElementById('obTa'),btn=document.getElementById('obBtn'),msg=document.getElementById('obMsg');
-    if(!ta||!btn) return;
-    var val=(ta.value||'').trim();
-    if(!val){msg.innerHTML='<span style="color:var(--err)">Vui lòng nhập ít nhất một nguồn.</span>';ta.focus();return;}
-    if(val.length>2000){msg.innerHTML='<span style="color:var(--err)">Tối đa 2000 ký tự.</span>';return;}
-    btn.disabled=true;var old=btn.innerHTML;btn.textContent='Đang gửi...';msg.textContent='';
-    ajax('sitetop_submit_sources',{sources:val},function(r){
-        if(r&&r.success){
-            toast((r.data&&r.data.message)||'Đã gửi yêu cầu xác minh!','ok');
-            setTimeout(function(){location.reload()},1000);
-        }else{
-            msg.innerHTML='<span style="color:var(--err)">'+((r&&r.data)||'Lỗi, vui lòng thử lại')+'</span>';
             btn.disabled=false;btn.innerHTML=old;
         }
     });

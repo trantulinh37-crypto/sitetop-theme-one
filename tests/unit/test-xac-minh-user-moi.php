@@ -158,10 +158,10 @@ list( $__xm_k, $__xm_e ) = $__xm_khai( implode( "\n", array_map( function ( $i )
 assert_equals( 10, count( (array) ( $__xm_k['items'] ?? array() ) ),
     'Tran 10 nguon cua he thong phai giu nguyen. stderr: ' . $__xm_e );
 
-/* ═══ C. KHÔNG ĐỤNG LUỒNG CŨ ═══ */
+/* ═══ C. CỔNG CHẶN + KHÔNG ĐỤNG LUỒNG CŨ ═══ */
 // C1. Thêm một nguồn kiểu cũ vẫn chạy y nguyên (hồi quy).
 list( $__xm_k, $__xm_e ) = $__xm_chay( array(
-    'truoc' => '$GLOBALS["USERS"][7] = (object) array( "ID" => 7, "display_name" => "nguoi_test", "user_login" => "nguoi_test", "user_email" => "a@b.c", "user_registered" => "2026-10-06 09:00:00" );',
+    'truoc' => '$GLOBALS["USERS"][7] = (object) array( "ID" => 7, "display_name" => "n", "user_login" => "n", "user_email" => "a@b.c", "user_registered" => "2026-10-06 09:00:00" );',
     'sau'   => '$r = sitetop_add_source_item( 7, "https://facebook.com/trangcuatoi" );' . "\n"
              . 'echo json_encode( array( "ok" => $r === true, "so" => count( sitetop_get_source_items(7) ),'
              . ' "trangthai" => sitetop_get_source_status(7) ) );',
@@ -169,21 +169,48 @@ list( $__xm_k, $__xm_e ) = $__xm_chay( array(
 assert_true( ! empty( $__xm_k['ok'] ) && (int) $__xm_k['so'] === 1 && $__xm_k['trangthai'] === 'pending',
     'Luong them tung nguon (o cu) phai chay y nguyen. stderr: ' . $__xm_e );
 
-// C2. Giao diện: người đang ở luồng mới thì ẩn ô khai nguồn cũ, không hiện hai ô chồng nhau.
 $__xm_dash = (string) file_get_contents( $__xm_goc . '/page-user-dashboard.php' );
-assert_true( strpos( $__xm_dash, 'if ( ! $ob_moi && ! $src_exempt && ( $src_gate || $src_items ) ) :' ) !== false,
-    'O khai nguon cu phai an khi user dang o man xac minh moi' );
-assert_true( strpos( $__xm_dash, "sitetop_la_user_moi_khai_nguon( \$user_id )" ) !== false,
-    'Dashboard phai hoi cong "user moi" truoc khi dung the' );
-// Hai trạng thái đúng như ảnh chủ site gửi.
+$__xm_trang = (string) file_get_contents( $__xm_goc . '/includes/trang-xac-minh.php' );
+
+/* C2. PHẢI LÀ CỔNG CHẶN, KHÔNG PHẢI THẺ NHẮC — chủ site chốt 06/10: "Duyệt mới được phép
+   truy cập vào hệ thống". Ẩn bằng CSS là mở F12 vẫn đọc được số dư, link, rate. */
+$__xm_vt_cong = strpos( $__xm_dash, 'sitetop_la_user_moi_khai_nguon( $user_id )' );
+assert_true( $__xm_vt_cong !== false, 'Dashboard phai hoi cong "user moi"' );
+$__xm_sau_cong = substr( $__xm_dash, $__xm_vt_cong, 700 );
+assert_true( strpos( $__xm_sau_cong, "include get_template_directory() . '/includes/trang-xac-minh.php';" ) !== false
+          && strpos( $__xm_sau_cong, 'exit;' ) !== false,
+    'SONG CON: chua duyet thi dung trang rieng roi EXIT — khong duoc render dashboard phia sau' );
+
+// C3. Cổng phải đứng TRƯỚC mọi truy vấn thống kê (không chạy 8 câu SQL cho người chưa vào được).
+$__xm_vt_sql = strpos( $__xm_dash, "\$prefix = \$wpdb->prefix . 'sitetop_';" );
+assert_true( $__xm_vt_sql !== false && $__xm_vt_cong < $__xm_vt_sql,
+    'Cong phai dat TRUOC cac truy van thong ke cua dashboard' );
+
+/* C4. DUYỆT XONG GIỮ NGUYÊN Ô "NGUỒN FILE GỐC" — chủ site chốt thêm 06/10: user đổi nguồn
+   thì vẫn phải tự thêm / xoá nguồn được. Điều kiện ô đó phải y như bản gốc. */
+assert_true( strpos( $__xm_dash, 'if ( ! $src_exempt && ( $src_gate || $src_items ) ) :' ) !== false,
+    'O "Nguon file goc" phai giu nguyen dieu kien goc — duyet xong user van them/xoa nguon duoc' );
+assert_true( strpos( $__xm_dash, '$ob_moi' ) === false,
+    'Khong duoc con bien $ob_moi sot lai trong dashboard (the cu da chuyen thanh trang cong)' );
+assert_true( strpos( $__xm_dash, 'Thêm nguồn' ) !== false, 'Nut "Them nguon" cua o cu phai con' );
+
+// C5. Trang cổng có đủ hai trạng thái đúng như ảnh chủ site gửi.
 foreach ( array( 'Xác minh tài khoản', 'Bước 1/2', 'Khai báo nguồn traffic để bắt đầu sử dụng',
                  'NGUỒN VIEW / TRAFFIC', 'Mỗi nguồn một dòng · Tối đa 2000 ký tự', 'Gửi yêu cầu xác minh',
-                 'Đang chờ xét duyệt', 'Yêu cầu đang được xử lý', 'Chờ admin xác minh' ) as $__xm_chu ) {
-    assert_true( strpos( $__xm_dash, $__xm_chu ) !== false, 'Thieu chu tren giao dien: "' . $__xm_chu . '"' );
+                 'Đang chờ xét duyệt', 'Yêu cầu đang được xử lý', 'Chờ admin xác minh', 'Hỗ trợ 24/7' ) as $__xm_chu ) {
+    assert_true( strpos( $__xm_trang, $__xm_chu ) !== false, 'Trang cong thieu chu: "' . $__xm_chu . '"' );
 }
-// Link Telegram phải lấy từ cấu hình, không gắn cứng.
-assert_true( strpos( $__xm_dash, 'https://t.me/<?php echo esc_attr( $ob_tg ); ?>' ) !== false,
-    'Link Telegram phai lay tu cau hinh source_telegram, khong gan cung' );
+// Link Telegram lấy từ cấu hình, không gắn cứng.
+assert_true( strpos( $__xm_trang, 'https://t.me/<?php echo esc_attr( $xm_tg ); ?>' ) !== false,
+    'Link Telegram phai lay tu cau hinh source_telegram' );
+// Có đường thoát: user bị chặn vẫn đăng xuất được, không bị nhốt.
+assert_true( strpos( $__xm_trang, 'wp_logout_url' ) !== false,
+    'Trang cong phai co nut Dang xuat — khong duoc nhot user' );
+// Trang cổng KHÔNG được in số liệu của dashboard.
+foreach ( array( 'Số dư', 'balance', 'total_earned', 'Rút tiền' ) as $__xm_cam ) {
+    assert_true( strpos( $__xm_trang, $__xm_cam ) === false,
+        'Trang cong khong duoc lo du lieu dashboard: "' . $__xm_cam . '"' );
+}
 
 /* ═══ D. CỔNG AJAX ═══ */
 $__xm_src = (string) file_get_contents( $__xm_goc . '/includes/source-approval.php' );
