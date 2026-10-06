@@ -545,3 +545,35 @@ assert_equals( 3, substr_count( $__us_tw, 'sitetop_format_rut_cho_admin_html(' )
 assert_true( strpos( $__us_tw, '.wd-val{font-size:clamp(13px,1.35vw,17px)' ) !== false && strpos( $__us_tw, 'white-space:nowrap' ) !== false
           && strpos( $__us_tw, '.wd-val small{display:block' ) !== false && strpos( $__us_tw, '@media(max-width:900px){.wd-stats{grid-template-columns:repeat(2,1fr)}' ) !== false,
     'Chu thu nho (toi da 17px, co theo be rong), KHONG be so giua chung, hep thi xuong 2 cot; phan VND dong rieng nho hon' );
+
+/* ═══ R. TỔNG QUAN ADMIN — cùng thiết kế thẻ (chủ site 06/10: "thiết kế phải bảng tổng quan luôn") ═══ */
+$__us_ov = (string) file_get_contents( $__us_goc . '/includes/admin/tabs/tab-overview.php' );
+assert_true( strpos( $__us_ov, 'sitetop_format_rut_cho_admin_html($total_user_earned)' ) !== false, 'The "User kiem duoc (all-time)" dung ban HTML' );
+assert_true( strpos( $__us_ov, '.ov-val{font-size:clamp(13px,1.35vw,17px)' ) !== false && strpos( $__us_ov, '.ov-sv{font-size:clamp(13px,1.2vw,16px)' ) !== false
+          && substr_count( $__us_ov, 'white-space:nowrap' ) >= 2 && strpos( $__us_ov, '@media(max-width:900px){.ov-stats,.ov-summary{grid-template-columns:repeat(2,1fr)}' ) !== false,
+    'Chu co theo be rong, KHONG be so, hep thi 2 cot — ca hang all-time lan hang thang' );
+assert_true( strpos( $__us_ov, "getElementById('smUearn').innerHTML = (s.user_earned_usd !== null && s.user_earned_usd !== undefined) ? stRutAdminHtml(s.user_earned_usd)" ) !== false
+          && strpos( $__us_ov, "getElementById('smWithdrawals').innerHTML = (s.withdrawals_usd !== null && s.withdrawals_usd !== undefined) ? stRutAdminHtml(s.withdrawals_usd)" ) !== false,
+    'Hai the thang (User kiem, Rut tien) in ban HTML co <small>' );
+// Chạy THẬT bộ JS admin in ra từ sitetop_in_js_tien_user() + fmtMoney của tab trong node.
+list( $__us_k, $__us_e ) = $__us_chay( true, $__us_rate35, 'ob_start(); sitetop_in_js_tien_user(); echo json_encode( array( "js" => ob_get_clean() ) );' );
+$__us_js_adm = preg_replace( '/^<script>|<\/script>$/', '', trim( (string) ( $__us_k['js'] ?? '' ) ) );
+assert_true( strpos( $__us_js_adm, 'function stRutAdminHtml(' ) !== false, 'Bo JS admin phai co stRutAdminHtml. stderr: ' . $__us_e );
+preg_match( '/function fmtMoney\(n\) \{[^\n]*\}/', $__us_ov, $__us_m );
+assert_true( ! empty( $__us_m[0] ), 'Trich duoc fmtMoney cua tab tong quan' );
+$__us_f = sys_get_temp_dir() . '/st-usd-ov-' . getmypid() . '.js';
+file_put_contents( $__us_f, $__us_js_adm . "\n" . ( $__us_m[0] ?? '' ) . "\n" . 'console.log(JSON.stringify({a:stRutAdminHtml(185.0727273), b:stRutAdminHtml(0), c:fmtMoney(11037850.074), d:fmtMoney(15319100)}));' );
+$__us_r = (string) shell_exec( 'node ' . escapeshellarg( $__us_f ) . ' 2>&1' ); @unlink( $__us_f );
+$__us_k = json_decode( trim( $__us_r ), true );
+assert_true( is_array( $__us_k ), 'Chay duoc JS admin bang node. Ra: ' . $__us_r );
+assert_equals( '$185,0727273 <small>≈ 4.071.600đ</small>', $__us_k['a'] ?? '', 'stRutAdminHtml: USD + <small>≈ VND</small>. Ra: ' . json_encode( $__us_k, JSON_UNESCAPED_UNICODE ) );
+assert_equals( '$0 <small>≈ 0đ</small>', $__us_k['b'] ?? '', 'So 0' );
+assert_equals( '11.037.850đ', $__us_k['c'] ?? '', 'Loi nhuan nen tang: VND lam tron ve dong, khong in "11.037.850,074đ"' );
+assert_equals( '15.319.100đ', $__us_k['d'] ?? '', 'So chan giu nguyen' );
+// Chế độ VNĐ: stRutAdminHtml in VNĐ thuần.
+list( $__us_k, $__us_e ) = $__us_chay( false, array(), 'ob_start(); sitetop_in_js_tien_user(); echo json_encode( array( "js" => ob_get_clean() ) );' );
+$__us_js_adm = preg_replace( '/^<script>|<\/script>$/', '', trim( (string) ( $__us_k['js'] ?? '' ) ) );
+file_put_contents( $__us_f, $__us_js_adm . "\n" . 'console.log(JSON.stringify({a:stRutAdminHtml(4071600)}));' );
+$__us_r = (string) shell_exec( 'node ' . escapeshellarg( $__us_f ) . ' 2>&1' ); @unlink( $__us_f );
+$__us_k = json_decode( trim( $__us_r ), true );
+assert_equals( '4.071.600đ', $__us_k['a'] ?? '', 'VND thuan: khong <small>. Ra: ' . $__us_r );

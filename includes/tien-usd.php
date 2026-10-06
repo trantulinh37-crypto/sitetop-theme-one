@@ -377,6 +377,7 @@ function sitetop_in_js_tien_user() {
         . 'function stVnd(n){return Math.round(Number(n||0)).toLocaleString("vi-VN")+"đ";}'
         . 'function stTienUser(n){return ST_USD?stUsd(n):stVnd(n);}'
         . 'function stRutAdmin(n){return ST_USD?stUsd(n)+" (≈ "+stVnd(Number(n||0)*ST_TYGIA)+")":stVnd(n);}'
+        . 'function stRutAdminHtml(n){return ST_USD?stUsd(n)+" <small>≈ "+stVnd(Number(n||0)*ST_TYGIA)+"</small>":stVnd(n);}'
         . '</script>',
         sitetop_che_do_usd() ? 1 : 0,
         wp_json_encode( (float) sitetop_usd_rate() )
