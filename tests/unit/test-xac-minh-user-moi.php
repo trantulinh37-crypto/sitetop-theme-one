@@ -197,9 +197,14 @@ assert_true( strpos( $__xm_dash, 'Thêm nguồn' ) !== false, 'Nut "Them nguon" 
 // C5. Trang cổng có đủ hai trạng thái đúng như ảnh chủ site gửi.
 foreach ( array( 'Xác minh tài khoản', 'Bước 1/2', 'Khai báo nguồn traffic để bắt đầu sử dụng',
                  'NGUỒN VIEW / TRAFFIC', 'Mỗi nguồn một dòng · Tối đa 2000 ký tự', 'Gửi yêu cầu xác minh',
-                 'Đang chờ xét duyệt', 'Yêu cầu đang được xử lý', 'Chờ admin xác minh', 'Hỗ trợ 24/7' ) as $__xm_chu ) {
+                 'Đang chờ xét duyệt', 'Yêu cầu đang được xử lý', 'Chờ admin xác minh', 'Hỗ trợ 24/7',
+                 // Câu chữ chủ site chốt 06/10 — sửa chữ thì sửa cả ở đây cho khỏi trôi.
+                 'Bạn đã đăng ký nguồn View Nhiệm Vụ bên dưới. Hãy liên hệ Admin Gửi Email để được xác minh nhanh hơn.' ) as $__xm_chu ) {
     assert_true( strpos( $__xm_trang, $__xm_chu ) !== false, 'Trang cong thieu chu: "' . $__xm_chu . '"' );
 }
+// Dòng thông báo chờ duyệt phải màu ĐỎ (chủ site chốt 06/10).
+assert_true( preg_match( '/\.xm-wait p\{[^}]*color:var\(--err\)/', $__xm_trang ) === 1,
+    'Dong thong bao cho duyet phai de mau do' );
 // Link Telegram lấy từ cấu hình, không gắn cứng.
 assert_true( strpos( $__xm_trang, 'https://t.me/<?php echo esc_attr( $xm_tg ); ?>' ) !== false,
     'Link Telegram phai lay tu cau hinh source_telegram' );

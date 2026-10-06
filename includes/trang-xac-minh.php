@@ -52,7 +52,8 @@ body{font-family:'Inter',-apple-system,"Segoe UI",Roboto,sans-serif;background:#
 .xm-wait{text-align:center;padding:8px 0 2px}
 .xm-big{width:92px;height:92px;border-radius:50%;background:var(--amb);color:var(--am);display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
 .xm-wait b{display:block;font-size:18px;color:var(--dark);margin-bottom:9px}
-.xm-wait p{font-size:14.5px;color:#6b7280;line-height:1.65;margin:0 auto 18px;max-width:430px}
+/* Dòng thông báo để ĐỎ — chủ site chốt 06/10, cho user đọc là thấy ngay việc phải làm. */
+.xm-wait p{font-size:14.5px;color:var(--err);font-weight:500;line-height:1.65;margin:0 auto 18px;max-width:440px}
 .xm-tg{display:block;background:#f6f7f9;border:1px solid var(--brd);border-radius:11px;padding:15px;font-size:15px;color:var(--p);text-decoration:none;word-break:break-all;margin-bottom:15px}
 .xm-wbtn{display:inline-block;border:1px solid var(--amv);background:var(--amb);color:var(--am);border-radius:999px;padding:12px 24px;font-size:14.5px;font-weight:600}
 .xm-ds{text-align:left;margin-top:18px;padding:15px;background:#f9fafb;border:1px solid var(--brd);border-radius:11px}
@@ -105,7 +106,7 @@ body{font-family:'Inter',-apple-system,"Segoe UI",Roboto,sans-serif;background:#
                 <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>
             </div>
             <b>Yêu cầu đang được xử lý</b>
-            <p>Bạn đã đăng ký nguồn traffic bên dưới. Hãy liên hệ Admin để được xác minh nhanh hơn.</p>
+            <p>Bạn đã đăng ký nguồn View Nhiệm Vụ bên dưới. Hãy liên hệ Admin Gửi Email để được xác minh nhanh hơn.</p>
             <a class="xm-tg" href="https://t.me/<?php echo esc_attr( $xm_tg ); ?>" target="_blank" rel="noopener">https://t.me/<?php echo esc_html( $xm_tg ); ?></a>
             <div class="xm-wbtn">⏳ Chờ admin xác minh</div>
             <div class="xm-ds">
