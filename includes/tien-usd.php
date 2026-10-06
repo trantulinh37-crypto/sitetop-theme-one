@@ -109,6 +109,14 @@ function sitetop_format_rut_cho_admin( $amount ) {
     return sitetop_format_usd( $amount ) . ' (≈ ' . sitetop_format_money( sitetop_usd_sang_vnd( $amount ) ) . ')';
 }
 
+/** Bản HTML cho thẻ thống kê admin (chủ site 06/10: "thu nhỏ chữ lại"): USD đứng trước, phần VNĐ
+ *  quy đổi xuống dòng riêng trong <small> để CSS thu nhỏ. VNĐ thuần thì in như cũ. Đã esc_html. */
+function sitetop_format_rut_cho_admin_html( $amount ) {
+    if ( ! sitetop_che_do_usd() ) return esc_html( sitetop_format_money( $amount ) );
+    return esc_html( sitetop_format_usd( $amount ) )
+        . ' <small>≈ ' . esc_html( sitetop_format_money( sitetop_usd_sang_vnd( $amount ) ) ) . '</small>';
+}
+
 /**
  * Số tiền USD để GHÉP THẲNG vào câu SQL — KHÔNG đi qua %f. wpdb::prepare() đổi %f thành %F rồi
  * vsprintf với 6 số lẻ mặc định: 0,02272727 thành 0,022727 — mất tiền user mỗi view, đúng cái

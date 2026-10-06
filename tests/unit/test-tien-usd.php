@@ -72,6 +72,7 @@ function add_action() {} function do_action( $h ) { $GLOBALS['HOOK'][] = func_ge
 function wp_json_encode( $v ) { return json_encode( $v ); }
 function absint( $v ) { return abs( (int) $v ); }
 function sanitize_text_field( $s ) { return trim( (string) $s ); }
+function esc_html( $s ) { return htmlspecialchars( (string) $s, ENT_QUOTES, 'UTF-8' ); }
 function sitetop_current_time() { return '2026-10-06 12:00:00'; }
 function get_user_meta( $u, $k, $s = false ) { return $GLOBALS['META'][ $u ][ $k ] ?? ''; }
 function get_userdata( $u ) { return (object) array( 'user_registered' => '2026-01-01 00:00:00' ); }
@@ -532,3 +533,15 @@ assert_true( strpos( $__us_ud, '$wd_cap     = $usd_mode ? sitetop_usd_cat_le( $w
     'Tran o rut USD phai cat 2 so le — khong thi nut "Toan bo so du" dien 8 so le roi bi chinh luat 2 so le chan' );
 assert_true( strpos( $__us_ud, "<b><?php echo \$usd_mode ? 'S&#7889; USDT mu&#7889;n r&#250;t' : 'S&#7889; ti&#7873;n mu&#7889;n r&#250;t'; ?></b>" ) !== false,
     'Nhan buoc 1: "So USDT muon rut" o che do USD, chu cu o VND' );
+
+/* ═══ Q. THẺ THỐNG KÊ ADMIN TAB RÚT TIỀN — "thu nhỏ chữ lại" (chủ site 06/10 chiều) ═══ */
+list( $__us_k, $__us_e ) = $__us_chay( true, $__us_rate35, 'echo json_encode( array( "a" => sitetop_format_rut_cho_admin_html( 35 ), "b" => sitetop_format_rut_cho_admin_html( 260.23862701 ) ) );' );
+assert_equals( '$35 <small>≈ 770.000đ</small>', $__us_k['a'] ?? '', 'USD dung truoc, VND quy doi trong <small> de CSS thu nho. stderr: ' . $__us_e );
+assert_equals( '$260,23862701 <small>≈ 5.725.250đ</small>', $__us_k['b'] ?? '', 'So le dai van in du, VND lam tron dong nhu ban chu' );
+list( $__us_k, $__us_e ) = $__us_chay( false, array(), 'echo json_encode( array( "a" => sitetop_format_rut_cho_admin_html( 770000 ) ) );' );
+assert_equals( '770.000đ', $__us_k['a'] ?? '', 'VND thuan: khong co <small>, in nhu cu' );
+$__us_tw = (string) file_get_contents( $__us_goc . '/includes/admin/tabs/tab-withdrawals.php' );
+assert_equals( 3, substr_count( $__us_tw, 'sitetop_format_rut_cho_admin_html(' ), 'Ba the tien (so du, cho rut, da rut) dung ban HTML' );
+assert_true( strpos( $__us_tw, '.wd-val{font-size:clamp(13px,1.35vw,17px)' ) !== false && strpos( $__us_tw, 'white-space:nowrap' ) !== false
+          && strpos( $__us_tw, '.wd-val small{display:block' ) !== false && strpos( $__us_tw, '@media(max-width:900px){.wd-stats{grid-template-columns:repeat(2,1fr)}' ) !== false,
+    'Chu thu nho (toi da 17px, co theo be rong), KHONG be so giua chung, hep thi xuong 2 cot; phan VND dong rieng nho hon' );

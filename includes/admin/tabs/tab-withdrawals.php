@@ -114,14 +114,20 @@ $stats_month_cnt = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$p
 .wd-stat{border-radius:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:14px}
 .wd-stat.ws1{background:#eff6ff;border:2px solid #bfdbfe} .wd-stat.ws2{background:#eff6ff;border:2px solid #bfdbfe}
 .wd-stat.ws3{background:#fef2f2;border:2px solid #fecaca} .wd-stat.ws4{background:#fffbeb;border:2px solid #fde68a}
-.wd-val{font-size:22px;font-weight:700;line-height:1.2}
+/* 06/10/2026: số USD kèm VNĐ quy đổi dài gấp đôi số VNĐ cũ nên thu chữ lại (22 → tối đa 17px, co theo
+   bề rộng) và cho phần "≈ VNĐ" xuống dòng riêng, nhỏ hơn. KHÔNG bẻ số giữa chừng ("$260,238627 / 01"
+   đọc sai tiền) — hẹp quá thì xuống 2 cột (≤900px) thay vì bẻ. */
+.wd-stat>div:first-child{min-width:0}
+.wd-val{font-size:clamp(13px,1.35vw,17px);font-weight:700;line-height:1.25;white-space:nowrap}
+.wd-val small{display:block;margin-top:2px;font-size:12px;font-weight:600;opacity:.78}
+@media(max-width:900px){.wd-stats{grid-template-columns:repeat(2,1fr)} .wd-val{font-size:16px}}
 .wd-stat.ws1 .wd-val{color:#1e40af} .wd-stat.ws2 .wd-val{color:#1e40af}
 .wd-stat.ws3 .wd-val{color:#991b1b} .wd-stat.ws4 .wd-val{color:#92400e}
 .wd-label{font-size:12px;color:#6b7280}
 .wd-ico{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center}
 .wd-ico.wi1{background:#dbeafe;color:#2563eb} .wd-ico.wi2{background:#dbeafe;color:#6b7280}
 .wd-ico.wi3{background:#fecaca;color:#dc2626} .wd-ico.wi4{background:#fde68a;color:#d97706}
-@media(max-width:600px){.wd-stats{grid-template-columns:repeat(2,1fr)} .wd-val{font-size:16px} .wd-stat{padding:12px 14px} .wd-ico{width:38px;height:38px} .wd-ico svg{width:20px;height:20px}}
+@media(max-width:600px){.wd-stats{grid-template-columns:repeat(2,1fr)} .wd-val{font-size:13px;white-space:normal} .wd-stat{padding:12px 14px} .wd-ico{width:38px;height:38px} .wd-ico svg{width:20px;height:20px}}
 .wd-tbl th{white-space:nowrap;font-size:13px} .wd-tbl td{font-size:13px;vertical-align:middle}
 .wd-tbl .col-id{width:30px;text-align:center}
 .wd-tbl .col-num{white-space:nowrap;text-align:right}
@@ -193,9 +199,9 @@ $stats_month_cnt = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$p
 </style>
 <div class="wd-stats">
     <div class="wd-stat ws1"><div><div class="wd-val"><?php echo $stats_pending_cnt; ?></div><div class="wd-label">Chờ xử lý</div></div><div class="wd-ico wi1"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div></div>
-    <div class="wd-stat ws2"><div><div class="wd-val"><?php echo sitetop_format_rut_cho_admin($stats_balance); ?></div><div class="wd-label">Số dư khả dụng</div></div><div class="wd-ico wi2"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div></div>
-    <div class="wd-stat ws3"><div><div class="wd-val"><?php echo sitetop_format_rut_cho_admin($stats_pending_amt + $stats_approved_amt); ?></div><div class="wd-label">Đang chờ rút</div></div><div class="wd-ico wi3"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div></div>
-    <div class="wd-stat ws4"><div><div class="wd-val"><?php echo sitetop_format_rut_cho_admin($stats_completed); ?></div><div class="wd-label">Đã rút</div></div><div class="wd-ico wi4"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div></div>
+    <div class="wd-stat ws2"><div><div class="wd-val"><?php echo sitetop_format_rut_cho_admin_html($stats_balance); ?></div><div class="wd-label">Số dư khả dụng</div></div><div class="wd-ico wi2"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div></div>
+    <div class="wd-stat ws3"><div><div class="wd-val"><?php echo sitetop_format_rut_cho_admin_html($stats_pending_amt + $stats_approved_amt); ?></div><div class="wd-label">Đang chờ rút</div></div><div class="wd-ico wi3"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div></div>
+    <div class="wd-stat ws4"><div><div class="wd-val"><?php echo sitetop_format_rut_cho_admin_html($stats_completed); ?></div><div class="wd-label">Đã rút</div></div><div class="wd-ico wi4"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div></div>
 </div>
 
 <?php
