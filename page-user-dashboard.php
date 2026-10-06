@@ -707,8 +707,6 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--p);box-s
 .wd-quick button{padding:7px 13px;border-radius:1px;border:1px solid var(--brd);background:#fff;color:var(--txtl);font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;transition:all .18s}
 .wd-quick button:hover:not(:disabled){border-color:var(--p);color:var(--p);background:#F6F9FC}
 .wd-quick button:disabled{opacity:.4;cursor:not-allowed}
-.wd-hint{font-size:11.5px;color:var(--txtm);margin-top:9px;font-weight:600}
-.wd-hint b{color:var(--txtl);font-weight:800}
 
 .wd-methods{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .wd-method{display:flex;align-items:center;gap:11px;padding:13px;border:1.5px solid var(--brd);border-radius:1px;cursor:pointer;transition:all .18s;background:#fff;position:relative}
@@ -1377,7 +1375,7 @@ lkFilter();
     <div class="wd-step-h"><em>1</em><b>S&#7889; ti&#7873;n mu&#7889;n r&#250;t</b></div>
     <div class="wd-amount">
         <input type="number" id="wdAmount" name="amount" min="<?php echo $min_wd; ?>" max="<?php echo $wd_cap; ?>" step="<?php echo $usd_mode ? 'any' : '1000'; ?>" placeholder="0" required>
-        <span>&#273;</span>
+        <span><?php echo $usd_mode ? '$' : '&#273;'; ?></span>
     </div>
     <?php if ( $max_wd > 0 ) : ?>
     <div class="wd-cap-note">Mỗi lần rút tối đa <b><?php echo sitetop_format_tien_user( $max_wd ); ?></b>. Số dư nhiều hơn thì chia thành nhiều lần.</div>
@@ -1392,7 +1390,6 @@ lkFilter();
             echo ( $max_wd > 0 && $max_wd < $balance ) ? 'M&#7913;c t&#7889;i &#273;a' : 'To&#224;n b&#7897; s&#7889; d&#432;';
         ?></button>
     </div>
-    <div class="wd-hint">T&#7889;i thi&#7875;u <b><?php echo sitetop_format_tien_user($min_wd); ?></b> &#183; T&#7889;i &#273;a <b><?php echo sitetop_format_tien_user($wd_cap); ?></b> &#183; ch&#7881; nh&#7853;n s&#7889; <b>tr&#242;n 1.000&#273;</b> (ph&#7847;n l&#7867; gi&#7919; l&#7841;i trong v&#237;)</div>
 </div>
 
 <div class="wd-step">

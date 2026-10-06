@@ -337,3 +337,11 @@ assert_true( ! empty( $__us_k['kq']['loi'] ) && empty( $__us_k['sql'] ),
 // Đang ở VNĐ thì chuyển-sang-USD mới chạy; đang USD thì từ chối chuyển lại.
 list( $__us_k, $__us_e ) = $__us_chay( true, array(), 'echo json_encode( array( "kq" => sitetop_chuyen_sang_usd( false ) ) );' );
 assert_true( ! empty( $__us_k['kq']['loi'] ), 'Dang USD roi thi khong duoc chuyen lan nua. stderr: ' . $__us_e );
+
+/* ═══ N. FORM RÚT TIỀN — chủ site chốt 06/10: bỏ dòng luật VNĐ, ký hiệu đơn vị đúng chế độ ═══ */
+$__us_ud = (string) file_get_contents( $__us_goc . '/page-user-dashboard.php' );
+assert_true( strpos( $__us_ud, 'class="wd-hint"' ) === false && strpos( $__us_ud, 'tr&#242;n 1.000&#273;</b> (ph&#7847;' ) === false,
+    'Bo dong "Toi thieu … · Toi da … · chi nhan so tron 1.000d (phan le giu lai trong vi)"' );
+assert_true( strpos( $__us_ud, '.wd-hint{' ) === false, 'CSS cua dong nhac cung phai don' );
+assert_true( strpos( $__us_ud, "<span><?php echo \$usd_mode ? '$' : '&#273;'; ?></span>" ) !== false,
+    'Ky hieu don vi o nhap rut tien phai theo che do: $ khi USD, d khi VND' );
