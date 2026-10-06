@@ -82,14 +82,18 @@ assert_true( strpos( $__rt_ui, 'USDT (BEP20)' ) !== false, 'Phai hien ro phuong 
 /* ---- 4. Giao diện khớp luật ---- */
 /* 06/10/2026: giao diện chọn theo chế độ tiền. VNĐ giữ NGUYÊN luật tròn nghìn bên dưới;
    USD rút theo cent nên làm tròn xuống $0,01 thay cho 1.000đ. */
-assert_true( strpos( $__rt_ui, "step=\"<?php echo \$usd_mode ? 'any' : '1000'; ?>\"" ) !== false,
-    'O nhap so tien phai nhay theo 1.000 (VND); USD nhan dung so (khong lam tron)' );
+assert_true( strpos( $__rt_ui, 'step="1000" placeholder="0" required>' ) !== false
+          && strpos( $__rt_ui, 'inputmode="decimal" autocomplete="off" id="wdAmount"' ) !== false,
+    'O nhap so tien: VND nhay theo 1.000; USD la o CHU nhan dung so (khong lam tron)' );
 assert_true( strpos( $__rt_ui, '$wd_cap     = $usd_mode ? $wd_cap : (int) ( floor( $wd_cap / 1000 ) * 1000 );' ) !== false,
     'Tran rut: VND lam tron XUONG nghin; USD rut duoc DUNG so du, khong floor' );
-assert_true( strpos( $__rt_ui, ":Math.floor(v/1000)*1000" ) !== false && strpos( $__rt_ui, "String(Number(v))" ) !== false,
+assert_true( strpos( $__rt_ui, ":Math.floor(v/1000)*1000" ) !== false && strpos( $__rt_ui, "?wdHienSo(v):Math.floor(v/1000)*1000" ) !== false,
     'Nut dien nhanh: VND tron nghin, USD dien dung so' );
-assert_true( strpos( $__rt_ui, "if(!(typeof ST_USD!=='undefined'&&ST_USD) && _st%1000!==0){" ) !== false,
-    'Bao ngay tai cho cho khoi mat mot vong goi — va CHI o che do VND' );
+$__rt_usd = strpos( $__rt_ui, "if(typeof ST_USD!=='undefined'&&ST_USD){" );
+$__rt_vnd = strpos( $__rt_ui, "if(_st%1000!==0){" );
+assert_true( $__rt_usd !== false && $__rt_vnd !== false && $__rt_usd < $__rt_vnd
+          && strpos( $__rt_ui, "}else{\nvar _st=parseInt(fd.get('amount'),10)||0;" ) !== false,
+    'Bao ngay tai cho cho khoi mat mot vong goi — luat tron nghin CHI o nhanh VND' );
 
 /* ---- 5. KHÔNG đụng luồng khác ---- */
 /* Rút hoa hồng referral là sổ riêng, chủ site chỉ yêu cầu sửa phần Rút tiền. */

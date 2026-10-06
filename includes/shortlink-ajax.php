@@ -737,7 +737,13 @@ function sitetop_ajax_user_withdraw() {
     check_ajax_referer('sitetop_nonce', 'nonce');
     if (!is_user_logged_in()) wp_send_json_error('Chưa đăng nhập');
     sitetop_block_advertiser_ajax(); // tài khoản quảng cáo không dùng khu publisher
-    $result = sitetop_submit_withdrawal(get_current_user_id(), floatval($_POST['amount']??0),
+    /* Chế độ USD (06/10/2026): ô nhập là ô chữ, user Việt gõ "30,5" — đổi phẩy thành chấm
+       trước khi ép số, không thì floatval("30,5") = 30: rút thiếu mà user không hay. */
+    $so_tien = trim( (string) ( $_POST['amount'] ?? '0' ) );
+    if ( function_exists( 'sitetop_che_do_usd' ) && sitetop_che_do_usd() ) {
+        $so_tien = str_replace( array( ' ', '$', ',' ), array( '', '', '.' ), $so_tien );
+    }
+    $result = sitetop_submit_withdrawal(get_current_user_id(), floatval($so_tien),
         sanitize_text_field($_POST['method']??'bank'), array(
         'bank_name'=>sanitize_text_field($_POST['bank_name']??''),
         'bank_account'=>sanitize_text_field($_POST['bank_account']??''),
@@ -997,12 +1003,8 @@ function sitetop_ajax_verify_shortlink_code() {
     if ( is_wp_error($result) ) {
         wp_send_json_error(array('message' => $result->get_error_message(), 'data' => $result->get_error_data()));
     }
-    /* User phải THẤY số tiền vừa được cộng ngay sau mỗi view (chủ site chốt 06/10/2026, lúc
-       chuyển thưởng sang USD). Định dạng ở MÁY CHỦ theo đúng đơn vị đang dùng — trang nhiệm
-       vụ không có bộ định dạng JS và không được tự đoán đơn vị. */
-    if ( is_array( $result ) && ! empty( $result['paid'] ) && ! empty( $result['reward'] ) ) {
-        $result['reward_text'] = sitetop_format_tien_user( $result['reward'] );
-    }
+    /* Không kèm số tiền đã định dạng cho trang nhiệm vụ (chủ site chốt 06/10/2026): người
+       làm nhiệm vụ trên shortlink không được thấy $. Tiền hiện ở bảng điều khiển của user. */
     wp_send_json_success($result);
 }
 

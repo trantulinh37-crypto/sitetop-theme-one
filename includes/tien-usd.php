@@ -67,6 +67,28 @@ function sitetop_format_usd( $usd ) {
     return $am . '$' . $s;
 }
 
+/** Số USD KHÔNG kèm ký hiệu — cho chữ mờ ô nhập rút tiền (chủ site chốt 06/10: "30,00 $").
+ *  Dấu phẩy thập phân, tối thiểu 2 số lẻ, giữ đủ số lẻ đang có (tới 8), KHÔNG chấm hàng nghìn
+ *  để user gõ lại y nguyên vẫn đọc được: 30 → "30,00", 4.55 → "4,55", 2.27272727 → "2,27272727". */
+function sitetop_usd_so( $usd, $min_le = 2 ) {
+    $s = number_format( abs( (float) $usd ), SITETOP_USD_LE, ',', '' );
+    return preg_replace( '/(,\d{' . (int) $min_le . '}\d*?)0+$/', '$1', $s );
+}
+
+/** Bản GỌN cho con số to ở đầu trang (chủ site chốt 06/10: "$100,02272727" chỉ cần hiện "$100,022"):
+ *  CẮT còn tối đa 3 số lẻ — cắt chứ KHÔNG làm tròn (100,0229 → 100,022), làm trên chuỗi để không
+ *  dính sai số float (1.005 × 1000 = 1004.999…). Số dư thật trong CSDL và các chỗ khác vẫn đủ 8 số lẻ. */
+function sitetop_format_usd_gon( $usd, $le = 3 ) {
+    $usd = (float) $usd;
+    $s   = number_format( abs( $usd ), SITETOP_USD_LE, '.', '' );
+    list( $nguyen, $thap ) = array_pad( explode( '.', $s, 2 ), 2, '' );
+    $cat = (float) ( $nguyen . '.' . substr( $thap, 0, max( 0, (int) $le ) ) );
+    return sitetop_format_usd( $usd < 0 ? -$cat : $cat );
+}
+function sitetop_format_tien_user_gon( $amount ) {
+    return sitetop_che_do_usd() ? sitetop_format_usd_gon( $amount ) : sitetop_format_money( $amount );
+}
+
 /** In tiền USER theo đơn vị hiện hành. Tiền KHÁCH HÀNG vẫn dùng sitetop_format_money(). */
 function sitetop_format_tien_user( $amount ) {
     return sitetop_che_do_usd() ? sitetop_format_usd( $amount ) : sitetop_format_money( $amount );

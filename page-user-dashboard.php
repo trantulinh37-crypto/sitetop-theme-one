@@ -447,9 +447,17 @@ body.admin-bar .mobile-topbar{top:32px}
 /* Ô cuối để ĐỒNG MÀU với các ô rate (chủ site chốt): nền, viền và màu số y hệt,
    chỉ khác chữ đơn vị "lượt" nhỏ và nhạt hơn để phân biệt số đếm với số tiền. */
 .rate-item-ip b em{font-style:normal;font-size:12.5px;font-weight:700;color:var(--txtm)}
+/* Tỉ giá $ → VNĐ (06/10/2026) — nằm ngay dưới thẻ rate, cùng kiểu thẻ, viền trái màu chủ đạo */
+.tygia-box{margin:-4px 0 14px;padding:12px 16px;background:var(--card);border:1px solid var(--brd);border-left:3px solid var(--pd);border-radius:1px}
+.tygia-box h4{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin:0 0 5px;font-family:var(--fonth);font-size:15px;font-weight:800;color:var(--txt)}
+.tygia-box h4 i{font-style:normal;color:var(--pd);font-size:18px;line-height:1}
+.tygia-box .brand{display:inline-block;padding:2px 9px;background:#EEF2F7;border-radius:1px;font-family:var(--fonth);font-size:11.5px;font-weight:800;letter-spacing:.07em;color:var(--txt);text-transform:uppercase}
+.tygia-box p{margin:0;font-size:12.6px;line-height:1.6;color:var(--txtl)}
+.tygia-box p b{color:var(--txt);font-weight:800}
 @media(max-width:1080px){.rate-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:640px){
     .rate-box{padding:12px}
+    .tygia-box{padding:12px}
     .rate-list{grid-template-columns:1fr;gap:7px}
     .rate-item{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
     .rate-item b{margin-top:0;font-size:15.5px}
@@ -703,6 +711,11 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--p);box-s
 .wd-amount input{width:100%;padding:15px 46px 15px 16px;border:1.5px solid var(--brd);border-radius:1px;background:#FBFCFE;font-family:var(--fonth);font-weight:800;font-size:24px;color:var(--pd);letter-spacing:-.02em;-moz-appearance:textfield}
 .wd-amount input::-webkit-outer-spin-button,.wd-amount input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .wd-amount span{position:absolute;right:16px;top:50%;transform:translateY(-50%);font-family:var(--fonth);font-weight:800;font-size:18px;color:var(--txtm);pointer-events:none}
+/* USD: chữ mờ đã có sẵn " $" nên lúc ô còn trống thì giấu ký hiệu bên phải, khỏi in hai dấu $ */
+.wd-amount.usd input:placeholder-shown+span{display:none}
+.wd-amount input.bad{border-color:var(--err);background:#FFF7F7}
+.wd-amt-err{display:none;margin-top:7px;font-size:12.4px;font-weight:600;line-height:1.5;color:var(--err)}
+.wd-amt-err.on{display:block}
 .wd-quick{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
 .wd-quick button{padding:7px 13px;border-radius:1px;border:1px solid var(--brd);background:#fff;color:var(--txtl);font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;transition:all .18s}
 .wd-quick button:hover:not(:disabled){border-color:var(--p);color:var(--p);background:#F6F9FC}
@@ -908,7 +921,9 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--p);box-s
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
                 S&#7889; d&#432; kh&#7843; d&#7909;ng
             </div>
-            <div class="wallet-v"><?php echo sitetop_format_tien_user($balance); ?></div>
+            <?php /* Con số to chỉ hiện GỌN 3 số lẻ, cắt chứ không làm tròn (chủ site chốt 06/10/2026):
+                     $100,02272727 → $100,022. Số dư thật vẫn đủ 8 số lẻ ở mọi chỗ khác. */ ?>
+            <div class="wallet-v"><?php echo sitetop_format_tien_user_gon($balance); ?></div>
             <div class="wallet-meta">
                 <span class="wallet-chip">H&#244;m nay <b>+<?php echo sitetop_format_tien_user($today_earned); ?></b></span>
                 <span class="wallet-chip">T&#7893;ng thu nh&#7853;p <b><?php echo sitetop_format_tien_user($total_earned); ?></b></span>
@@ -967,6 +982,14 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--p);box-s
             </div>
         </div>
     </div>
+    <?php if ( $usd_mode ) : ?>
+    <?php /* Tỉ giá $ → VNĐ (chủ site thêm 06/10/2026): đọc thẳng option usd_rate, admin đổi là đổi
+             theo. Đây chính là tỉ giá quy đổi lệnh rút sang VNĐ cho admin — in ra để user biết trước. */ ?>
+    <div class="tygia-box">
+        <h4><i>&raquo;</i> Tỉ giá $ tại <span class="brand">Sitetop</span></h4>
+        <p>Tỉ giá quy đổi từ $ sang VNĐ tại <span class="brand">Sitetop</span> là: <b>1$ = <?php echo sitetop_format_money( sitetop_usd_rate() ); ?></b></p>
+    </div>
+    <?php endif; ?>
 
     <?php
     /* Cảnh báo dùng đúng nguồn đã khai — chỉ hiện với tài khoản thuộc diện duyệt nguồn
@@ -1369,14 +1392,27 @@ lkFilter();
 <!-- Form yêu cầu rút tiền -->
 <div class="card">
 <div class="card-h"><h3>T&#7841;o y&#234;u c&#7847;u r&#250;t ti&#7873;n</h3></div>
-<form id="wdForm">
+<form id="wdForm"<?php echo $usd_mode ? ' novalidate' : ''; ?>>
 
 <div class="wd-step">
     <div class="wd-step-h"><em>1</em><b>S&#7889; ti&#7873;n mu&#7889;n r&#250;t</b></div>
-    <div class="wd-amount">
-        <input type="number" id="wdAmount" name="amount" min="<?php echo $min_wd; ?>" max="<?php echo $wd_cap; ?>" step="<?php echo $usd_mode ? 'any' : '1000'; ?>" placeholder="0" required>
+    <div class="wd-amount<?php echo $usd_mode ? ' usd' : ''; ?>">
+        <?php if ( $usd_mode ) : ?>
+        <?php /* USD (06/10/2026): ô CHỮ chứ không phải ô số — user Việt gõ "30,5" thì ô số của trình
+                 duyệt nuốt mất rồi báo lỗi tiếng Anh. Chữ mờ là mức tối thiểu admin đang cài ("30,00 $").
+                 Ngưỡng đưa vào data-* cho JS báo ngay tại chỗ; chốt thật vẫn ở sitetop_submit_withdrawal(). */ ?>
+        <input type="text" inputmode="decimal" autocomplete="off" id="wdAmount" name="amount"
+               placeholder="<?php echo esc_attr( sitetop_usd_so( $min_wd ) . ' $' ); ?>"
+               data-min="<?php echo esc_attr( number_format( $min_wd, 8, '.', '' ) ); ?>"
+               data-bal="<?php echo esc_attr( number_format( (float) $balance, 8, '.', '' ) ); ?>"
+               data-max="<?php echo esc_attr( number_format( $max_wd, 8, '.', '' ) ); ?>"
+               oninput="wdKiemTra()" required>
+        <?php else : ?>
+        <input type="number" id="wdAmount" name="amount" min="<?php echo $min_wd; ?>" max="<?php echo $wd_cap; ?>" step="1000" placeholder="0" required>
+        <?php endif; ?>
         <span><?php echo $usd_mode ? '$' : '&#273;'; ?></span>
     </div>
+    <div class="wd-amt-err" id="wdAmtErr" role="alert"></div>
     <?php if ( $max_wd > 0 ) : ?>
     <div class="wd-cap-note">Mỗi lần rút tối đa <b><?php echo sitetop_format_tien_user( $max_wd ); ?></b>. Số dư nhiều hơn thì chia thành nhiều lần.</div>
     <?php endif; ?>
@@ -1941,7 +1977,31 @@ document.querySelectorAll('.sidebar-nav-item').forEach(function(b){b.addEventLis
 
 function toggleWdFields(){var sel=document.querySelector('#wdForm input[name="method"]:checked');var isUsdt=!!sel&&sel.value==='usdt';document.querySelectorAll('.wd-bank-field').forEach(function(el){el.style.display=isUsdt?'none':'';el.querySelector('input').required=!isUsdt});document.querySelectorAll('.wd-usdt-field').forEach(function(el){el.style.display=isUsdt?'':'none';el.querySelector('input').required=isUsdt})}
 function wdPickMethod(el){var r=el.querySelector('input[type=radio]');if(r)r.checked=true;document.querySelectorAll('.wd-method').forEach(function(x){x.classList.toggle('on',x===el)});toggleWdFields()}
-function wdSetAmount(v){var i=document.getElementById('wdAmount');if(!i)return;i.value=(typeof ST_USD!=='undefined'&&ST_USD)?String(Number(v)):Math.floor(v/1000)*1000;i.focus()}
+function wdSetAmount(v){var i=document.getElementById('wdAmount');if(!i)return;i.value=(typeof ST_USD!=='undefined'&&ST_USD)?wdHienSo(v):Math.floor(v/1000)*1000;i.focus();wdKiemTra()}
+/* ── Ô rút tiền USD (06/10/2026): nhận cả "30,5" lẫn "30.5", báo lỗi tiếng Việt ngay dưới ô ──
+   wdLoiSoTien() là hàm THUẦN (không đụng DOM) để test chạy thật được trong node. Thứ tự kiểm
+   theo đúng máy chủ: tối thiểu → trần mỗi lần → số dư, để hai bên không bao giờ báo lệch nhau. */
+function wdDocSo(s){s=String(s==null?'':s).replace(/[\s$]/g,'').replace(',','.');return /^(\d+\.?\d*|\.\d+)$/.test(s)?parseFloat(s):NaN}
+function wdHienSo(v){v=Number(v);if(!isFinite(v))return '';return v.toFixed(8).replace(/\.?0+$/,'').replace('.',',')}
+function wdLoiSoTien(raw,min,bal,max){
+    var f=typeof stUsd==='function'?stUsd:function(a){return '$'+a};
+    raw=String(raw==null?'':raw).trim();
+    if(raw==='')return 'Nhập số tiền muốn rút — tối thiểu '+f(min)+'.';
+    var v=wdDocSo(raw);
+    if(isNaN(v)||v<=0)return 'Số tiền không hợp lệ — chỉ nhập số, ví dụ 30 hoặc 30,5.';
+    if((raw.replace(',','.').split('.')[1]||'').length>8)return 'Nhiều nhất 8 chữ số sau dấu phẩy.';
+    if(v<min)return 'Rút tối thiểu '+f(min)+' mỗi lần — bạn đang nhập '+f(v)+'.';
+    if(max>0&&v>max)return 'Mỗi lần rút tối đa '+f(max)+'. Số dư nhiều hơn thì chia thành nhiều lần.';
+    if(v>bal)return 'Vượt quá số dư — bạn chỉ có '+f(bal)+'.';
+    return ''
+}
+function wdKiemTra(lucGui){
+    var i=document.getElementById('wdAmount'),err=document.getElementById('wdAmtErr');
+    if(!i||!err||!(typeof ST_USD!=='undefined'&&ST_USD))return true;
+    var m=(!lucGui&&i.value.trim()==='')?'':wdLoiSoTien(i.value,parseFloat(i.dataset.min)||0,parseFloat(i.dataset.bal)||0,parseFloat(i.dataset.max)||0);
+    err.textContent=m;err.classList.toggle('on',!!m);i.classList.toggle('bad',!!m);
+    return !m
+}
 
 function ajax(action,data,cb){data.action=action;data.nonce='<?php echo $nonce;?>';var fd=new FormData();for(var k in data)fd.append(k,data[k]);fetch('<?php echo admin_url("admin-ajax.php");?>',{method:'POST',body:fd,credentials:'same-origin'}).then(function(r){return r.json()}).then(cb).catch(function(e){toast('Lỗi: '+e.message,'err')})}
 
@@ -1987,9 +2047,17 @@ function copyLink(el,txt){navigator.clipboard.writeText(txt).then(function(){
 document.getElementById('wdForm')?.addEventListener('submit',function(e){e.preventDefault();var fd=new FormData(this);fd.append('action','sitetop_user_withdraw');fd.append('nonce','<?php echo $nonce;?>');var btn=this.querySelector('button[type=submit]'),msg=document.getElementById('wdMsg');
 /* Báo ngay tại chỗ cho khỏi mất một vòng gọi máy chủ. Đây CHỈ là tiện cho người dùng —
    chốt thật nằm ở sitetop_submit_withdrawal(), vì mọi thứ phía trình duyệt đều sửa được. */
+if(typeof ST_USD!=='undefined'&&ST_USD){
+/* USD (06/10/2026): dưới mức tối thiểu, vượt số dư hay vượt trần → báo đỏ ngay dưới ô nhập và KHÔNG gửi.
+   Ô là ô chữ nên đổi "30,5" thành "30.5" trước khi gửi (máy chủ cũng tự đổi — đây chỉ là lớp đầu). */
+if(!wdKiemTra(true)){var _o=document.getElementById('wdAmount');if(_o){_o.focus();_o.scrollIntoView({block:'center',behavior:'smooth'})}return}
+fd.set('amount',String(wdDocSo(fd.get('amount'))));
+if(!this.checkValidity()){this.reportValidity();return}
+}else{
 var _st=parseInt(fd.get('amount'),10)||0;
-/* Luật tròn 1.000đ chỉ cho VNĐ — chế độ USD rút theo cent (06/10/2026). */
-if(!(typeof ST_USD!=='undefined'&&ST_USD) && _st%1000!==0){var _goiy=Math.floor(_st/1000)*1000;msg.innerHTML='<span style="color:var(--err)">Chỉ rút được số tròn 1.000đ'+(_goiy>0?' — hãy nhập '+_goiy.toLocaleString('vi-VN')+'đ':'')+'. Phần lẻ vẫn nằm trong ví.</span>';return}
+/* Luật tròn 1.000đ chỉ cho VNĐ. */
+if(_st%1000!==0){var _goiy=Math.floor(_st/1000)*1000;msg.innerHTML='<span style="color:var(--err)">Chỉ rút được số tròn 1.000đ'+(_goiy>0?' — hãy nhập '+_goiy.toLocaleString('vi-VN')+'đ':'')+'. Phần lẻ vẫn nằm trong ví.</span>';return}
+}
 btn.disabled=true;btn.textContent='Đang xử lý...';fetch('<?php echo admin_url("admin-ajax.php");?>',{method:'POST',body:fd,credentials:'same-origin'}).then(function(r){return r.json()}).then(function(r){if(r.success){msg.innerHTML='<span style="color:var(--ok)">Đã gửi thành công!</span>';toast('Yêu cầu rút tiền đã gửi!','ok');setTimeout(function(){location.reload()},2000)}else{msg.innerHTML='<span style="color:var(--err)">'+(r.data||'Lỗi')+'</span>';btn.disabled=false;btn.textContent='Gửi yêu cầu rút tiền'}})});
 // Form rút hoa hồng referral — sổ riêng, action AJAX riêng (sitetop_referral_withdraw),
 // tách hẳn khỏi wdForm/wdMsg ở trên để không đụng luồng rút tiền nhiệm vụ đang chạy.

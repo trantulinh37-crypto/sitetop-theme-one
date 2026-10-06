@@ -286,23 +286,21 @@ assert_true( strpos( $__us_cca, 'sitetop_format_tien_user' ) === false,
 assert_true( strpos( $__us_ver, 'UPDATE {$p}customer_balance SET balance = balance - %d' ) !== false,
     'So du khach hang van tru so nguyen VND nhu cu' );
 
-/* ═══ L. USER THẤY TIỀN NGAY SAU MỖI VIEW — yêu cầu bắt buộc trong đề bài ═══ */
+/* ═══ L. TIỀN HIỆN Ở BẢNG ĐIỀU KHIỂN — KHÔNG HIỆN TRÊN TRANG NHIỆM VỤ (chủ site chốt 06/10 chiều) ═══ */
 $__us_ajx = (string) file_get_contents( $__us_goc . '/includes/shortlink-ajax.php' );
 $__us_vt  = strpos( $__us_ajx, 'function sitetop_ajax_verify_shortlink_code' );
-$__us_than = substr( $__us_ajx, $__us_vt, 2600 );
-assert_true( strpos( $__us_than, "\$result['reward_text'] = sitetop_format_tien_user( \$result['reward'] );" ) !== false,
-    'Cong xac minh ma phai kem chuoi tien DA DINH DANG o may chu (reward_text)' );
-assert_true( strpos( $__us_than, "! empty( \$result['paid'] )" ) !== false,
-    'Chi kem so tien khi THAT SU da tra (paid) — luot bi cat thuong khong duoc bao "+$"' );
+$__us_than = substr( $__us_ajx, $__us_vt, 3000 );
+assert_true( strpos( $__us_than, 'reward_text' ) === false,
+    'Cong xac minh ma KHONG kem so tien da dinh dang — nguoi lam nhiem vu tren shortlink khong duoc thay $' );
 $__us_pu = (string) file_get_contents( $__us_goc . '/page-unlock.php' );
-assert_true( strpos( $__us_pu, "data.data.reward_text" ) !== false
-          && strpos( $__us_pu, "đã cộng vào số dư" ) !== false,
-    'Trang nhiem vu phai hien so tien vua cong ngay luc xac minh thanh cong' );
-assert_true( strpos( $__us_pu, "_thuong ? 2200 : 1200" ) !== false,
-    'Co so tien thi giu thong bao lau hon de user kip doc' );
-// Chạy thật bộ định dạng đúng ca hệ thống sẽ gửi: thưởng 1 view $0,035.
+assert_true( strpos( $__us_pu, 'reward_text' ) === false && strpos( $__us_pu, 'đã cộng vào số dư' ) === false,
+    'Trang nhiem vu KHONG bao "+$..." khi nhap ma xong' );
+assert_true( strpos( $__us_pu, "showToast('Thành công! Đang chuyển hướng...', 'success');" ) !== false
+          && strpos( $__us_pu, "setTimeout(function() { window.location.href = url; }, 1200);" ) !== false,
+    'Thong bao thanh cong giu nguyen chu cu, chuyen huong sau 1,2 giay nhu cu' );
+// Bộ định dạng tiền user (bảng điều khiển, lịch sử) vẫn in đúng 1 view $0,035.
 list( $__us_k, $__us_e ) = $__us_chay( true, $__us_rate35, 'echo json_encode( array( "t" => sitetop_format_tien_user( 0.035 ) ) );' );
-assert_equals( '$0,035', $__us_k['t'] ?? '', 'reward_text cho 1 view la "$0,035". stderr: ' . $__us_e );
+assert_equals( '$0,035', $__us_k['t'] ?? '', 'Bang dieu khien in 1 view la "$0,035". stderr: ' . $__us_e );
 
 /* ═══ M. HÀM CHUYỂN / LÙI — thứ tự an toàn và nhân ngược đúng tỷ giá ═══ */
 $__us_tu = (string) file_get_contents( $__us_goc . '/includes/tien-usd.php' );
@@ -345,3 +343,148 @@ assert_true( strpos( $__us_ud, 'class="wd-hint"' ) === false && strpos( $__us_ud
 assert_true( strpos( $__us_ud, '.wd-hint{' ) === false, 'CSS cua dong nhac cung phai don' );
 assert_true( strpos( $__us_ud, "<span><?php echo \$usd_mode ? '$' : '&#273;'; ?></span>" ) !== false,
     'Ky hieu don vi o nhap rut tien phai theo che do: $ khi USD, d khi VND' );
+
+/* ═══ O. Ô RÚT TIỀN USD (chủ site chốt 06/10 chiều): chữ mờ "30,00 $" theo cấu hình admin, nhận "30,5",
+   chặn dưới mức tối thiểu / vượt số dư NGAY TẠI CHỖ, máy chủ hiểu dấu phẩy; khối tỉ giá dưới thẻ rate ═══ */
+list( $__us_k, $__us_e ) = $__us_chay( true, $__us_rate35, 'echo json_encode( array_map( "sitetop_usd_so", array(
+    "a" => 30, "b" => 4.55, "c" => 2.27272727, "d" => 0.5, "e" => 30.1, "f" => 1234.5, "g" => 30.123 ) ) );' );
+assert_equals( '30,00',      $__us_k['a'] ?? '', 'Chu mo muc toi thieu $30 la "30,00" dung kieu chu site viet. stderr: ' . $__us_e );
+assert_equals( '4,55',       $__us_k['b'] ?? '', '4.55 → "4,55"' );
+assert_equals( '2,27272727', $__us_k['c'] ?? '', 'Giu du 8 so le dang co, KHONG lam tron' );
+assert_equals( '0,50',       $__us_k['d'] ?? '', '0.5 → "0,50" (toi thieu 2 so le)' );
+assert_equals( '30,10',      $__us_k['e'] ?? '', '30.1 → "30,10"' );
+assert_equals( '1234,50',    $__us_k['f'] ?? '', 'KHONG cham hang nghin — user go lai y nguyen van doc duoc' );
+assert_equals( '30,123',     $__us_k['g'] ?? '', '30.123 → "30,123": chi bo so 0 thua' );
+
+// Giao diện: ô chữ, chữ mờ lấy từ cấu hình admin (không cố định), ngưỡng trong data-*, báo lỗi dưới ô.
+$__us_ud = (string) file_get_contents( $__us_goc . '/page-user-dashboard.php' );
+assert_true( strpos( $__us_ud, 'placeholder="<?php echo esc_attr( sitetop_usd_so( $min_wd ) . \' $\' ); ?>"' ) !== false,
+    'Chu mo = muc toi thieu ADMIN CAI + " $" — khong co so nao co dinh trong ma' );
+assert_true( strpos( $__us_ud, '<input type="text" inputmode="decimal" autocomplete="off" id="wdAmount"' ) !== false,
+    'USD: o CHU (go duoc "30,5"), ban phim so thap phan tren dien thoai' );
+assert_true( strpos( $__us_ud, 'data-min="<?php echo esc_attr( number_format( $min_wd, 8' ) !== false
+          && strpos( $__us_ud, 'data-bal="<?php echo esc_attr( number_format( (float) $balance, 8' ) !== false
+          && strpos( $__us_ud, 'data-max="<?php echo esc_attr( number_format( $max_wd, 8' ) !== false,
+    'Nguong toi thieu / so du / tran dua vao data-* du 8 so le cho JS kiem' );
+assert_true( strpos( $__us_ud, '<div class="wd-amt-err" id="wdAmtErr" role="alert"></div>' ) !== false
+          && strpos( $__us_ud, '.wd-amt-err.on{display:block}' ) !== false,
+    'Co cho bao loi do ngay duoi o nhap' );
+assert_true( strpos( $__us_ud, '<form id="wdForm"<?php echo $usd_mode ? \' novalidate\' : \'\'; ?>>' ) !== false,
+    'USD: tat bong bong loi tieng Anh cua trinh duyet, JS bao tieng Viet thay; VND giu nguyen' );
+assert_true( strpos( $__us_ud, '.wd-amount.usd input:placeholder-shown+span{display:none}' ) !== false,
+    'Chu mo "30,00 $" dang hien thi khong in them dau $ thu hai ben phai' );
+assert_true( strpos( $__us_ud, "if(!wdKiemTra(true)){" ) !== false && strpos( $__us_ud, "fd.set('amount',String(wdDocSo(fd.get('amount'))));" ) !== false,
+    'Gui form: kiem lan cuoi, loi thi KHONG gui; "30,5" doi thanh "30.5" truoc khi gui' );
+// Khối tỉ giá: dưới thẻ rate, chỉ ở chế độ USD, đọc tỉ giá admin cài, đúng chữ chủ site đưa.
+$__us_vt_tg = strpos( $__us_ud, 'class="tygia-box"' );
+assert_true( $__us_vt_tg !== false, 'Co khoi "Ti gia $ tai Sitetop"' );
+assert_true( strpos( $__us_ud, 'Tỉ giá quy đổi từ $ sang VNĐ tại <span class="brand">Sitetop</span> là: <b>1$ = <?php echo sitetop_format_money( sitetop_usd_rate() ); ?></b>' ) !== false,
+    'Dong ti gia dung chu chu site dua; so lay tu option usd_rate (admin doi la doi theo)' );
+assert_true( strpos( $__us_ud, 'class="rate-box"' ) < $__us_vt_tg
+          && substr_count( substr( $__us_ud, strrpos( substr( $__us_ud, 0, $__us_vt_tg ), '<?php if ( $usd_mode ) : ?>' ), 400 ), 'tygia-box' ) >= 1,
+    'Khoi ti gia nam DUOI the rate va chi hien o che do USD' );
+
+// Chạy THẬT bộ kiểm JS trong node — hàm thuần trích từ trang.
+$__us_js_a = strpos( $__us_ud, 'function wdDocSo(' );
+$__us_js_b = strpos( $__us_ud, 'function wdKiemTra(' );
+assert_true( $__us_js_a !== false && $__us_js_b !== false && $__us_js_b > $__us_js_a, 'Trich duoc wdDocSo/wdHienSo/wdLoiSoTien' );
+$__us_js = substr( $__us_ud, $__us_js_a, $__us_js_b - $__us_js_a ) . <<<'JS'
+
+function stUsd(a){return '$'+String(a).replace('.',',')}
+console.log(JSON.stringify({
+  ok:[wdLoiSoTien('30',30,100,500),wdLoiSoTien('30,5',30,100,500),wdLoiSoTien('30.5',30,100,500),wdLoiSoTien('100',30,100,0),wdLoiSoTien(' 45 $ ',30,100,500)],
+  duoi:wdLoiSoTien('29,99',30,100,500), vuot:wdLoiSoTien('150',30,100,500), tran:wdLoiSoTien('600',30,1000,500),
+  rong:wdLoiSoTien('',30,100,500), chu:wdLoiSoTien('abc',30,100,500), hai:wdLoiSoTien('1.000,50',30,5000,0),
+  le9:wdLoiSoTien('30,123456789',30,100,500), am:wdLoiSoTien('-5',30,100,500), khong:wdLoiSoTien('0',30,100,500),
+  doc:[wdDocSo('30,5'),wdDocSo('30.5'),wdDocSo('30 $'),String(wdDocSo('abc')),String(wdDocSo('1e3'))],
+  hien:[wdHienSo(30),wdHienSo(100.12345678),wdHienSo(0.5),wdHienSo(100),wdHienSo(10.5)]
+}));
+JS;
+$__us_f = sys_get_temp_dir() . '/st-usd-wd-' . getmypid() . '.js';
+file_put_contents( $__us_f, $__us_js );
+$__us_r = (string) shell_exec( 'node ' . escapeshellarg( $__us_f ) . ' 2>&1' );
+@unlink( $__us_f );
+$__us_k = json_decode( trim( $__us_r ), true );
+assert_true( is_array( $__us_k ), 'Chay duoc bo kiem o rut tien bang node. Ra: ' . $__us_r );
+assert_equals( array( '', '', '', '', '' ), $__us_k['ok'] ?? null, 'Hop le: 30 · "30,5" · "30.5" · dung bang so du · co khoang trang/$ — deu KHONG bao loi. Ra: ' . json_encode( $__us_k['ok'] ?? null, JSON_UNESCAPED_UNICODE ) );
+assert_true( strpos( (string) ( $__us_k['duoi'] ?? '' ), 'tối thiểu $30' ) !== false, 'Duoi muc toi thieu → bao ro "Rut toi thieu $30". Ra: ' . ( $__us_k['duoi'] ?? '' ) );
+assert_true( strpos( (string) ( $__us_k['vuot'] ?? '' ), 'số dư' ) !== false && strpos( (string) ( $__us_k['vuot'] ?? '' ), '$100' ) !== false, 'Vuot so du → bao ro so du dang co. Ra: ' . ( $__us_k['vuot'] ?? '' ) );
+assert_true( strpos( (string) ( $__us_k['tran'] ?? '' ), 'tối đa $500' ) !== false, 'Vuot tran moi lan → bao tran. Ra: ' . ( $__us_k['tran'] ?? '' ) );
+assert_true( strpos( (string) ( $__us_k['rong'] ?? '' ), 'Nhập số tiền' ) !== false, 'Bo trong → nhac nhap' );
+foreach ( array( 'chu', 'hai', 'am', 'khong' ) as $__us_c )
+    assert_true( strpos( (string) ( $__us_k[ $__us_c ] ?? '' ), 'không hợp lệ' ) !== false, 'Khong phai so (' . $__us_c . ') → "khong hop le". Ra: ' . ( $__us_k[ $__us_c ] ?? '' ) );
+assert_true( strpos( (string) ( $__us_k['le9'] ?? '' ), '8 chữ số' ) !== false, 'Qua 8 so le → tu choi (CSDL giu 8 so le, khong lam tron ngam)' );
+assert_equals( array( 30.5, 30.5, 30, 'NaN', 'NaN' ), $__us_k['doc'] ?? null, 'wdDocSo: phay va cham deu la thap phan; chu, 1e3 → NaN. Ra: ' . json_encode( $__us_k['doc'] ?? null ) );
+assert_equals( array( '30', '100,12345678', '0,5', '100', '10,5' ), $__us_k['hien'] ?? null, 'wdHienSo: dien nut nhanh dang Viet, khong so 0 thua, khong e-8. Ra: ' . json_encode( $__us_k['hien'] ?? null ) );
+
+// Chạy THẬT nút điền nhanh + kiểm tại chỗ với DOM giả. (Đột biến "String(Number(v))" từng LỌT vì test
+// chỉ dò tên hàm "wdHienSo(v)" — chuỗi ấy còn nằm ở định nghĩa hàm. Phải chạy, không dò chữ.)
+$__us_js_a0 = strpos( $__us_ud, 'function wdSetAmount(' );
+$__us_js_c  = strpos( $__us_ud, 'function ajax(' );
+assert_true( $__us_js_a0 !== false && $__us_js_c !== false && $__us_js_c > $__us_js_a0, 'Trich duoc wdSetAmount..wdKiemTra' );
+$__us_js = substr( $__us_ud, $__us_js_a0, $__us_js_c - $__us_js_a0 ) . <<<'JS'
+
+var ST_USD=1; function stUsd(a){return '$'+String(a).replace('.',',')}
+var _i={value:'',dataset:{min:'30.00000000',bal:'100.12345678',max:'500.00000000'},focus:function(){},classList:{bad:false,toggle:function(c,v){this.bad=!!v}}};
+var _e={textContent:'',classList:{on:false,toggle:function(c,v){this.on=!!v}}};
+var document={getElementById:function(id){return id==='wdAmount'?_i:(id==='wdAmtErr'?_e:null)}};
+wdSetAmount(100.12345678); var a=_i.value, aErr=_e.textContent;
+wdSetAmount(30); var b=_i.value, bErr=_e.textContent;
+wdSetAmount(0.5); var b2=_i.value, b2Err=_e.textContent;
+_i.value='29,99'; wdKiemTra(); var cErr=_e.textContent, cOn=_e.classList.on, cBad=_i.classList.bad;
+_i.value=''; var dGo=wdKiemTra(); var dErr=_e.textContent; var dGui=wdKiemTra(true); var dErr2=_e.textContent;
+_i.value='30,5'; var eGui=wdKiemTra(true); var eErr=_e.textContent, eOn=_e.classList.on;
+console.log(JSON.stringify({a:a,aErr:aErr,b:b,bErr:bErr,b2:b2,b2Err:b2Err,cErr:cErr,cOn:cOn,cBad:cBad,dGo:dGo,dErr:dErr,dGui:dGui,dErr2:dErr2,eGui:eGui,eErr:eErr,eOn:eOn}));
+JS;
+$__us_f = sys_get_temp_dir() . '/st-usd-wd2-' . getmypid() . '.js';
+file_put_contents( $__us_f, $__us_js );
+$__us_r = (string) shell_exec( 'node ' . escapeshellarg( $__us_f ) . ' 2>&1' );
+@unlink( $__us_f );
+$__us_k = json_decode( trim( $__us_r ), true );
+assert_true( is_array( $__us_k ), 'Chay duoc wdSetAmount/wdKiemTra bang node. Ra: ' . $__us_r );
+assert_equals( '100,12345678', $__us_k['a'] ?? '', 'Nut "Toan bo so du" dien DUNG so du, dau phay kieu Viet (khong phai 100.12345678). Ra: ' . json_encode( $__us_k, JSON_UNESCAPED_UNICODE ) );
+assert_equals( '', $__us_k['aErr'] ?? 'x', 'Dien dung bang so du thi khong bao loi' );
+assert_equals( '30', $__us_k['b'] ?? '', 'Nut $30 dien "30"' );
+assert_equals( '0,5', $__us_k['b2'] ?? '', 'So le dien dang Viet "0,5"' );
+assert_true( strpos( (string) ( $__us_k['b2Err'] ?? '' ), 'tối thiểu' ) !== false, 'Dien nhanh duoi muc toi thieu thi bao ngay' );
+assert_true( ! empty( $__us_k['cOn'] ) && ! empty( $__us_k['cBad'] ) && strpos( (string) ( $__us_k['cErr'] ?? '' ), 'tối thiểu $30' ) !== false, 'Go 29,99: hien dong do + vien do' );
+assert_true( ! empty( $__us_k['dGo'] ) && ( $__us_k['dErr'] ?? 'x' ) === '', 'Dang go ma o trong thi KHONG bao loi' );
+assert_true( empty( $__us_k['dGui'] ) && strpos( (string) ( $__us_k['dErr2'] ?? '' ), 'Nhập số tiền' ) !== false, 'Bam gui ma o trong thi chan + nhac nhap' );
+assert_true( ! empty( $__us_k['eGui'] ) && ( $__us_k['eErr'] ?? 'x' ) === '' && empty( $__us_k['eOn'] ), 'Go 30,5 hop le: cho gui, tat dong do' );
+
+// Máy chủ hiểu dấu phẩy: cổng ajax nhận "30,5" → trừ đúng 30.50000000 (floatval("30,5") = 30 là rút thiếu).
+$__us_wd_ajax = $__us_ham( $__us_ajx, 'sitetop_ajax_user_withdraw' );
+assert_true( $__us_wd_ajax !== '', 'Trich duoc sitetop_ajax_user_withdraw' );
+list( $__us_k, $__us_e ) = $__us_chay( true, $__us_rate35, $__us_wd_ajax . '
+    function check_ajax_referer() {} function sitetop_block_advertiser_ajax() {} function get_current_user_id() { return 7; }
+    function wp_send_json_success( $d ) { echo json_encode( array( "ok" => $d, "sql" => $GLOBALS["wpdb"]->sql ) ); }
+    function wp_send_json_error( $d ) { echo json_encode( array( "loi" => $d, "sql" => $GLOBALS["wpdb"]->sql ) ); }
+    $GLOBALS["SO_DU"] = 100;
+    $_POST = array( "amount" => "30,5", "method" => "bank", "bank_name" => "VCB", "bank_account" => "123", "bank_holder" => "A" );
+    sitetop_ajax_user_withdraw();' );
+$__us_sql = implode( ' | ', (array) ( $__us_k['sql'] ?? array() ) );
+assert_true( ! empty( $__us_k['ok'] ), 'Rut "30,5" phai duoc nhan. Ra: ' . json_encode( $__us_k, JSON_UNESCAPED_UNICODE ) . ' stderr: ' . $__us_e );
+assert_true( strpos( $__us_sql, '30.50000000' ) !== false && strpos( $__us_sql, '- 30.00000000' ) === false,
+    '"30,5" phai tru dung 30.5 — khong phai 30. SQL: ' . substr( $__us_sql, 0, 300 ) );
+
+/* ═══ P. CON SỐ TO Ở ĐẦU TRANG HIỆN GỌN (chủ site chốt 06/10 chiều): "$100,02272727" → "$100,022" ═══ */
+list( $__us_k, $__us_e ) = $__us_chay( true, $__us_rate35, 'echo json_encode( array_map( "sitetop_format_usd_gon", array(
+    "a" => 100.02272727, "b" => 100.0229, "c" => 100, "d" => 100.5, "e" => 1.005, "f" => 0.02272727, "g" => -2.3456, "h" => 0.3 ) ) );' );
+assert_equals( '$100,022', $__us_k['a'] ?? '', 'So du to: $100,02272727 chi hien $100,022. stderr: ' . $__us_e );
+assert_equals( '$100,022', $__us_k['b'] ?? '', 'CAT chu KHONG lam tron: 100,0229 → 100,022 (khong phai 100,023)' );
+assert_equals( '$100',     $__us_k['c'] ?? '', 'So chan van bo ,00' );
+assert_equals( '$100,50',  $__us_k['d'] ?? '', 'Van giu toi thieu 2 so le' );
+assert_equals( '$1,005',   $__us_k['e'] ?? '', 'Khong dinh sai so float: 1.005 → $1,005 (nhan 1000 roi floor se ra 1,004)' );
+assert_equals( '$0,022',   $__us_k['f'] ?? '', 'So nho cung cat 3 so le' );
+assert_equals( '-$2,345',  $__us_k['g'] ?? '', 'So am giu dau, cat ve 0' );
+assert_equals( '$0,30',    $__us_k['h'] ?? '', '0.3 khong bi thanh 0,299' );
+// Chỉ con số to dùng bản gọn; "Hôm nay", "Tổng thu nhập" và mọi chỗ khác vẫn in đủ.
+$__us_ud = (string) file_get_contents( $__us_goc . '/page-user-dashboard.php' );
+assert_true( strpos( $__us_ud, '<div class="wallet-v"><?php echo sitetop_format_tien_user_gon($balance); ?></div>' ) !== false,
+    'Con so to "So du kha dung" dung ban gon 3 so le' );
+assert_equals( 1, substr_count( $__us_ud, 'sitetop_format_tien_user_gon(' ), 'Ban gon CHI dung cho con so to, khong lan sang cho khac' );
+assert_true( strpos( $__us_ud, 'H&#244;m nay <b>+<?php echo sitetop_format_tien_user($today_earned); ?></b>' ) !== false,
+    '"Hom nay" van in du so le' );
+// Chế độ VNĐ: bản gọn in y như cũ.
+list( $__us_k, $__us_e ) = $__us_chay( false, array(), 'echo json_encode( array( "t" => sitetop_format_tien_user_gon( 133500 ) ) );' );
+assert_equals( '133.500đ', $__us_k['t'] ?? '', 'VND: ban gon = sitetop_format_money nhu cu. stderr: ' . $__us_e );
