@@ -464,9 +464,9 @@ body.admin-bar .mobile-topbar{top:32px}
 .src-item-txt{flex:1;min-width:0;font-size:12.6px;line-height:1.5;color:var(--txt);word-break:break-word}
 .src-item-note{display:block;margin-top:3px;font-size:11.5px;color:#991B1B}
 .src-item .badge{flex:none}
-.src-del{flex:none;width:24px;height:24px;display:flex;align-items:center;justify-content:center;padding:0;border:1px solid var(--brd);border-radius:1px;background:#fff;color:var(--txtm);font-size:13px;line-height:1;cursor:pointer;transition:all .16s}
-.src-del:hover{background:#FEE2E2;border-color:#F7C9CF;color:var(--err)}
-.src-del:disabled{opacity:.5;cursor:not-allowed}
+
+
+
 .src-add{display:inline-flex;align-items:center;gap:7px;margin-top:11px;padding:9px 15px;background:#fff;color:var(--p);border:1px dashed #BCD2E6;border-radius:1px;font-family:var(--font);font-size:12.7px;font-weight:700;cursor:pointer;transition:all .16s}
 .src-add:hover{background:#EBF1F7;border-style:solid}
 .src-addbox{display:none;margin-top:11px}
@@ -1048,7 +1048,7 @@ if ( ! $src_exempt && ( $src_gate || $src_items ) ) :
     <?php if ( ! $src_items ) : ?>
         <p class="src-sub">Khai báo nơi bạn lấy file/nội dung gốc (fanpage, group, website, kênh…). <b>Chưa được duyệt thì không rút gọn link và API không hoạt động.</b></p>
     <?php elseif ( $src_can ) : ?>
-        <p class="src-sub">Nguồn đã được duyệt — bạn rút gọn link và dùng API bình thường. Thêm nguồn mới hoặc xoá nguồn không dùng nữa ở dưới.</p>
+        <p class="src-sub">Nguồn đã được duyệt — bạn rút gọn link và dùng API bình thường. Cần khai thêm nguồn thì thêm ở dưới.</p>
     <?php else : ?>
         <p class="src-sub">Bạn <b>chưa có nguồn nào được duyệt</b> nên tạm thời không rút gọn link được. Chờ Admin duyệt hoặc khai thêm nguồn khác.</p>
     <?php endif; ?>
@@ -1067,8 +1067,9 @@ if ( ! $src_exempt && ( $src_gate || $src_items ) ) :
                 <?php endif; ?>
             </span>
             <span class="badge <?php echo $im['badge']; ?>"><?php echo $im['label']; ?></span>
-            <button class="src-del" title="Xoá nguồn này"
-                    onclick="deleteSource('<?php echo esc_js( $it['id'] ); ?>',this)">&#10005;</button>
+            <?php /* KHÔNG có nút xoá — chủ site chốt 06/10/2026: user không được tự xoá nguồn,
+                     muốn bỏ nguồn thì liên hệ Admin (xem dòng nhắc cuối ô). Cổng
+                     sitetop_delete_source cũng từ chối, không chỉ ẩn nút. */ ?>
         </div>
         <?php endforeach; ?>
     </div>
@@ -1096,7 +1097,7 @@ if ( ! $src_exempt && ( $src_gate || $src_items ) ) :
 
     <div class="src-tip">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-        <span>Muốn hoạt động nhanh, Inbox Admin Telegram <a href="https://t.me/<?php echo esc_attr( $src_tg ); ?>" target="_blank" rel="noopener">@<?php echo esc_html( $src_tg ); ?></a> để được duyệt nguồn.<br><b class="src-tip-nhan">Kèm Video ngắn chứng minh chủ nguồn.</b></span>
+        <span>Muốn duyệt nguồn mới, Xoá. Inbox Admin gửi Email Telegram <a href="https://t.me/<?php echo esc_attr( $src_tg ); ?>" target="_blank" rel="noopener">@<?php echo esc_html( $src_tg ); ?></a> .<br><b class="src-tip-nhan">Muốn Thêm Nguồn quay video gửi về admin</b></span>
     </div>
 </div>
 <?php endif; ?>
@@ -1940,7 +1941,7 @@ function wdSetAmount(v){var i=document.getElementById('wdAmount');if(!i)return;i
 
 function ajax(action,data,cb){data.action=action;data.nonce='<?php echo $nonce;?>';var fd=new FormData();for(var k in data)fd.append(k,data[k]);fetch('<?php echo admin_url("admin-ajax.php");?>',{method:'POST',body:fd,credentials:'same-origin'}).then(function(r){return r.json()}).then(cb).catch(function(e){toast('Lỗi: '+e.message,'err')})}
 
-/* ── Nguồn file gốc: thêm / xoá nguồn ── */
+/* ── Nguồn file gốc: thêm nguồn (user KHÔNG xoá được — chốt 06/10/2026) ── */
 function toggleAddSource(){
     var box=document.getElementById('srcAddBox');
     if(!box) return;
@@ -1964,20 +1965,6 @@ function submitSource(){
         }
     });
 }
-function deleteSource(id,btn){
-    if(!confirm('Xoá nguồn này?')) return;
-    btn.disabled=true;
-    ajax('sitetop_delete_source',{item_id:id},function(r){
-        if(r&&r.success){
-            toast((r.data&&r.data.message)||'Đã xoá nguồn.', (r.data&&r.data.can_shorten===false)?'warn':'ok');
-            setTimeout(function(){location.reload()},1200);
-        }else{
-            toast((r&&r.data)||'Lỗi khi xoá','err');
-            btn.disabled=false;
-        }
-    });
-}
-
 function dashShorten(){var btn=document.querySelector('[onclick="dashShorten()"]');if(btn.disabled)return;var u=document.getElementById('dashLongUrl').value.trim();if(!u){alert('Nhập URL gốc');return}if(!/^https?:\/\//i.test(u))u='https://'+u;var fb=document.getElementById('dashFallbackUrl').value.trim();var alias=document.getElementById('dashAlias').value.trim();btn.disabled=true;btn.style.opacity='.6';ajax('sitetop_shorten_url',{url:u,fallback_url:fb,alias:alias},function(r){btn.disabled=false;btn.style.opacity='1';if(r.success){document.getElementById('dashShortUrl').value=r.data.short_url;document.getElementById('dashResult').style.display='block';toast('Link đã rút gọn!','ok')}else{toast(r.data||'Lỗi','err')}})}
 
 function copyText(txt,el){navigator.clipboard.writeText(txt).then(function(){

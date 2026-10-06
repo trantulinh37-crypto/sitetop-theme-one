@@ -3,7 +3,8 @@
  * Duyệt "Nguồn file gốc" (source approval)
  * ------------------------------------------------------------------
  * User khai báo DANH SÁCH nguồn file gốc; mỗi nguồn có trạng thái riêng
- * (chờ duyệt / đã duyệt / từ chối). User tự thêm nguồn mới và xoá nguồn cũ.
+ * (chờ duyệt / đã duyệt / từ chối). User tự thêm nguồn mới; XOÁ thì không — chủ site chốt
+ * 06/10/2026, muốn bỏ nguồn phải nhờ Admin (xem sitetop_ajax_delete_source).
  *
  * QUY TẮC CHO PHÉP RÚT GỌN LINK:
  *   còn ÍT NHẤT 1 nguồn ĐÃ DUYỆT → được rút gọn link + dùng API.
@@ -39,8 +40,10 @@ function sitetop_source_telegram() {
 }
 
 function sitetop_source_hint_text() {
-    return 'Muốn hoạt động nhanh, Inbox Admin Telegram @' . sitetop_source_telegram()
-        . ' để được duyệt nguồn. Kèm Video ngắn chứng minh chủ nguồn.';
+    /* Câu chữ do chủ site chốt 06/10/2026 — sửa thì sửa cả markup trong
+       page-user-dashboard.php (ô "Nguồn file gốc") cho khớp. */
+    return 'Muốn duyệt nguồn mới, Xoá. Inbox Admin gửi Email Telegram @' . sitetop_source_telegram()
+        . ' . Muốn Thêm Nguồn quay video gửi về admin';
 }
 
 function sitetop_source_gate_enabled() {
@@ -381,6 +384,13 @@ function sitetop_ajax_delete_source() {
     check_ajax_referer( 'sitetop_nonce', 'nonce' );
     if ( ! is_user_logged_in() ) wp_send_json_error( 'Chưa đăng nhập' );
     if ( function_exists( 'sitetop_block_advertiser_ajax' ) ) sitetop_block_advertiser_ajax();
+
+    /* USER KHÔNG ĐƯỢC TỰ XOÁ NGUỒN — chủ site chốt 06/10/2026. Chặn ở MÁY CHỦ chứ không chỉ
+       ẩn nút: ẩn nút thì gọi thẳng admin-ajax vẫn xoá được, mà xoá hết nguồn đã duyệt là tự
+       khoá quyền rút gọn link của chính mình rồi lại báo lỗi cho admin.
+       Hàm sitetop_delete_source_item() giữ nguyên cho đường admin/dọn dữ liệu dùng. */
+    wp_send_json_error( 'Bạn không tự xoá nguồn được. Muốn bỏ nguồn, liên hệ Admin Telegram @'
+        . sitetop_source_telegram() . '.' );
 
     $r = sitetop_delete_source_item( get_current_user_id(), sanitize_text_field( $_POST['item_id'] ?? '' ) );
     if ( is_wp_error( $r ) ) wp_send_json_error( $r->get_error_message() );

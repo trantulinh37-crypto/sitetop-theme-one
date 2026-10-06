@@ -55,8 +55,9 @@ function do_action( $h, $a = null, $b = null ) {
 function is_user_logged_in() { return true; }
 function get_current_user_id() { return 7; }
 function check_ajax_referer( $a, $b ) { return true; }
-function wp_send_json_error( $m = null ) { echo json_encode( array( 'ok' => false, 'm' => $m ) ); exit; }
-function wp_send_json_success( $m = null ) { echo json_encode( array( 'ok' => true, 'd' => $m ) ); exit; }
+/* Ném lỗi thay vì exit: có ca cần chạy TIẾP sau khi cổng từ chối để kiểm dữ liệu còn nguyên. */
+function wp_send_json_error( $m = null ) { echo json_encode( array( 'ok' => false, 'm' => $m ) ); throw new Exception( '__json_exit' ); }
+function wp_send_json_success( $m = null ) { echo json_encode( array( 'ok' => true, 'd' => $m ) ); throw new Exception( '__json_exit' ); }
 function sitetop_rate_limit_check( $k ) { return array( 'allowed' => true ); }
 function sitetop_telegram_notify_admin( $t, $f = array() ) { $GLOBALS['TELE'][] = $t; return true; }
 function sitetop_report_telegram_configured() { return true; }
@@ -216,6 +217,67 @@ foreach ( array( 'Số dư', 'balance', 'total_earned', 'Rút tiền' ) as $__xm
     assert_true( strpos( $__xm_trang, $__xm_cam ) === false,
         'Trang cong khong duoc lo du lieu dashboard: "' . $__xm_cam . '"' );
 }
+
+/* ═══ C6. CÂU CHỮ Ô "NGUỒN FILE GỐC" — chủ site chốt 06/10/2026 ═══
+   Hai chỗ in cùng một nội dung (markup trong dashboard + sitetop_source_hint_text() dùng cho
+   thông báo sau khi thêm nguồn). Lệch nhau là user đọc hai kiểu khác nhau. */
+assert_true( strpos( $__xm_dash, 'Muốn duyệt nguồn mới, Xoá. Inbox Admin gửi Email Telegram' ) !== false,
+    'O "Nguon file goc" phai dung cau chu moi (dong 1)' );
+assert_true( strpos( $__xm_dash, '<b class="src-tip-nhan">Muốn Thêm Nguồn quay video gửi về admin</b>' ) !== false,
+    'Dong 2 phai in dam dung cau chu moi' );
+assert_true( strpos( $__xm_dash, 'Kèm Video ngắn chứng minh chủ nguồn' ) === false
+          && strpos( $__xm_dash, 'Muốn hoạt động nhanh' ) === false,
+    'Khong duoc con sot cau chu cu' );
+
+list( $__xm_k, $__xm_e ) = $__xm_chay( array(
+    'truoc' => '$GLOBALS["OPT"]["source_telegram"] = "sitetopnet";',
+    'sau'   => 'echo json_encode( array( "chu" => sitetop_source_hint_text() ) );',
+) );
+$__xm_chu_nhac = (string) ( $__xm_k['chu'] ?? '' );
+assert_true( strpos( $__xm_chu_nhac, 'Muốn duyệt nguồn mới, Xoá. Inbox Admin gửi Email Telegram @sitetopnet' ) !== false,
+    'sitetop_source_hint_text() phai dung cau chu moi + lay telegram tu cau hinh. Ra: ' . $__xm_chu_nhac . ' stderr: ' . $__xm_e );
+assert_true( strpos( $__xm_chu_nhac, 'Muốn Thêm Nguồn quay video gửi về admin' ) !== false,
+    'sitetop_source_hint_text() phai co ca ve sau. Ra: ' . $__xm_chu_nhac );
+
+/* ═══ C7. USER KHÔNG ĐƯỢC TỰ XOÁ NGUỒN — chủ site chốt 06/10/2026 ═══
+   Chặn ở MÁY CHỦ, không chỉ ẩn nút: ẩn nút thì gọi thẳng admin-ajax vẫn xoá được. */
+assert_true( strpos( $__xm_dash, 'src-del' ) === false && strpos( $__xm_dash, 'deleteSource' ) === false,
+    'Dashboard khong duoc con nut xoa nguon (markup, JS, CSS)' );
+
+list( $__xm_k, $__xm_e ) = $__xm_chay( array(
+    'truoc' => '$GLOBALS["USERS"][7] = (object) array( "ID" => 7, "display_name" => "n", "user_login" => "n", "user_email" => "a@b.c", "user_registered" => "2026-10-06 09:00:00" );' . "\n"
+             . '$GLOBALS["UMETA"][7]["sitetop_src_items"] = array( array("id"=>"i1","text"=>"https://facebook.com/abc","status"=>"approved","added_at"=>"","note"=>""), array("id"=>"i2","text"=>"https://youtube.com/@x","status"=>"pending","added_at"=>"","note"=>"") );',
+    'sau'   => '$_POST["item_id"] = "i1";' . "\n"
+             . 'ob_start(); $thoat = false;' . "\n"
+             . 'try { sitetop_ajax_delete_source(); } catch ( Throwable $e ) { $thoat = true; }' . "\n"
+             . 'echo ob_get_clean();',
+) );
+assert_true( isset( $__xm_k['ok'] ) && $__xm_k['ok'] === false,
+    'Cong xoa nguon phai TU CHOI user. Ra: ' . json_encode( $__xm_k ) . ' stderr: ' . $__xm_e );
+assert_true( strpos( (string) ( $__xm_k['m'] ?? '' ), 'liên hệ Admin' ) !== false,
+    'Loi bao phai chi duong: lien he Admin. Ra: ' . ( $__xm_k['m'] ?? '' ) );
+
+// Nguồn vẫn còn nguyên sau khi bị từ chối.
+list( $__xm_k2, $__xm_e2 ) = $__xm_chay( array(
+    'truoc' => '$GLOBALS["USERS"][7] = (object) array( "ID" => 7, "display_name" => "n", "user_login" => "n", "user_email" => "a@b.c", "user_registered" => "2026-10-06 09:00:00" );' . "\n"
+             . '$GLOBALS["UMETA"][7]["sitetop_src_items"] = array( array("id"=>"i1","text"=>"https://facebook.com/abc","status"=>"approved","added_at"=>"","note"=>"") );',
+    'sau'   => '$_POST["item_id"] = "i1";' . "\n"
+             . 'ob_start(); try { sitetop_ajax_delete_source(); } catch ( Throwable $e ) {} ob_end_clean();' . "\n"
+             . 'echo json_encode( array( "con" => count( sitetop_get_source_items(7) ), "duoc_rut_gon" => sitetop_source_is_approved(7) ) );',
+) );
+assert_equals( 1, (int) ( $__xm_k2['con'] ?? 0 ),
+    'Bi tu choi thi nguon phai CON NGUYEN. stderr: ' . $__xm_e2 );
+assert_true( ! empty( $__xm_k2['duoc_rut_gon'] ), 'Nguon da duyet van con -> van rut gon link duoc' );
+
+// Hàm xoá vẫn giữ cho đường admin / dọn dữ liệu.
+list( $__xm_k3, $__xm_e3 ) = $__xm_chay( array(
+    'truoc' => '$GLOBALS["USERS"][7] = (object) array( "ID" => 7, "display_name" => "n", "user_login" => "n", "user_email" => "a@b.c", "user_registered" => "2026-10-06 09:00:00" );' . "\n"
+             . '$GLOBALS["UMETA"][7]["sitetop_src_items"] = array( array("id"=>"i1","text"=>"https://facebook.com/abc","status"=>"approved","added_at"=>"","note"=>"") );',
+    'sau'   => '$r = sitetop_delete_source_item( 7, "i1" );' . "\n"
+             . 'echo json_encode( array( "ok" => ! is_wp_error( $r ), "con" => count( sitetop_get_source_items(7) ) ) );',
+) );
+assert_true( ! empty( $__xm_k3['ok'] ) && (int) $__xm_k3['con'] === 0,
+    'Ham xoa van phai dung duoc cho duong admin. stderr: ' . $__xm_e3 );
 
 /* ═══ D. CỔNG AJAX ═══ */
 $__xm_src = (string) file_get_contents( $__xm_goc . '/includes/source-approval.php' );
