@@ -1250,14 +1250,11 @@ $ck_list  = $wpdb->get_results( $wpdb->prepare(
             <?php endif; ?>
         </td>
         <td style="font-weight:600;color:var(--a)"><?php echo sitetop_format_money($c->price_per_view ?? 0); ?></td>
-        <?php /* Camp gương từ .net (12/10/2026): hiện đúng số của nguồn (tổng hôm nay / hạn gốc / completed nguồn). */
-              $_cn = function_exists('sitetop_cn_so_lieu_hien_thi') ? sitetop_cn_so_lieu_hien_thi((int)$c->id, (int)$c->today_views, (int)$c->total_completed) : null;
-              $_cn_hn = $_cn ? $_cn['hom_nay'] : (int)$c->today_views; $_cn_d = $_cn ? $_cn['daily'] : (int)$c->daily_traffic; $_cn_tc = $_cn ? $_cn['completed'] : (int)$c->total_completed; ?>
         <td>
-            <div style="font-size:12px"<?php if ($_cn) echo ' title="' . esc_attr('Số của sitetop.net: ' . $_cn['noi_bo'] . ' nội bộ + ' . $_cn['pool'] . ' từ .one') . '"'; ?>><span style="color:var(--a);font-weight:600"><?php echo (int)$_cn_hn; ?></span>/<?php echo (int)$_cn_d; ?></div>
+            <div style="font-size:12px"><span style="color:var(--a);font-weight:600"><?php echo (int)$c->today_views; ?></span>/<?php echo (int)$c->daily_traffic; ?></div>
         </td>
         <td>
-            <div style="font-weight:600;font-size:12px"><?php echo number_format((int)$_cn_tc); ?></div>
+            <div style="font-weight:600;font-size:12px"><?php echo number_format((int)$c->total_completed); ?></div>
             <div style="font-size:10px;color:var(--txtm);margin-top:2px"><?php echo sitetop_format_money($spent); ?></div>
         </td>
         <td style="white-space:nowrap"><span class="badge <?php echo $status_colors[$c->status] ?? 'b-mute'; ?>"><?php echo $status_labels[$c->status] ?? $c->status; ?></span></td>

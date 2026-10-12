@@ -268,6 +268,13 @@ $rows = $wpdb->get_results($wpdb->prepare(
      LIMIT %d OFFSET %d", array_merge([$today_camp_date], $data_args)
 ));
 if(!is_array($rows)) $rows = array();
+/* Camp gương từ .net: tổng .one đã làm cho camp đó — CÙNG công thức "verified hoặc khách đã trả" mà .net đếm "từ .one", đếm một
+   lần cho các camp gương trên trang (12/10/2026). Cột completed chỉ đếm lượt đã trừ tiền nên có thể lệch vài lượt. */
+$_cn_tong_pool = array();
+if ( function_exists('sitetop_cn_la_pool') && sitetop_cn_la_pool() && function_exists('sitetop_cn_la_camp_nguon') ) {
+    $_cn_ids = array(); foreach ( $rows as $_r0 ) if ( sitetop_cn_la_camp_nguon( $_r0 ) ) $_cn_ids[] = (int) $_r0->id;
+    if ( $_cn_ids ) foreach ( (array) $wpdb->get_results( "SELECT campaign_id, COUNT(*) AS n FROM {$prefix}shortlink_visits WHERE campaign_id IN (" . implode( ',', $_cn_ids ) . ") AND (step='verified' OR customer_paid=1) GROUP BY campaign_id" ) as $_r1 ) $_cn_tong_pool[ (int) $_r1->campaign_id ] = (int) $_r1->n;
+}
 $wpdb->suppress_errors(false);
 
 $total_pages = ceil(max(1,$total) / $per_page);
@@ -567,6 +574,7 @@ function campBulkXacNhan(){
     $_cn = function_exists('sitetop_cn_so_lieu_hien_thi') ? sitetop_cn_so_lieu_hien_thi((int)$row->id, (int)($row->today_views ?? 0), $completed) : null;
     if ($_cn) {
         $_cn_tip = 'Số của sitetop.net: ' . $_cn['noi_bo'] . ' nội bộ + ' . $_cn['pool'] . ' từ .one' . ($_cn['gio'] ? ' · đồng bộ ' . substr($_cn['gio'], 11, 5) : '');
+        $_cn_pool_tong = $_cn_tong_pool[(int)$row->id] ?? $completed;   // tổng .one đã chạy cho camp .net này (cùng công thức với .net)
         $row->today_views = $_cn['hom_nay']; $row->daily_traffic = $_cn['daily']; $completed = $_cn['completed'];
     }
     $spent = $completed * floatval($row->price_per_view);
@@ -589,10 +597,12 @@ function campBulkXacNhan(){
     </td>
     <td>
         <div style="font-weight:600"<?php if (!empty($_cn)) echo ' title="' . esc_attr($_cn_tip) . '"'; ?>><span style="color:#dba617"><?php echo intval($row->today_views ?? 0); ?></span>/<?php echo intval($row->daily_traffic ?? 10); ?><?php if (!empty($_cn)) echo ' <small style="color:#2271b1;font-weight:600">.net</small>'; ?></div>
+        <?php if (!empty($_cn)) : ?><div style="font-size:10px;color:#787c82;white-space:nowrap">.one <b><?php echo (int)$_cn['pool']; ?></b> · .net <b><?php echo (int)$_cn['noi_bo']; ?></b></div><?php endif; ?>
     </td>
     <td>
         <div style="font-weight:600"><?php echo number_format($completed); ?></div>
         <small style="color:#787c82"><?php echo sitetop_format_money($spent); ?></small>
+        <?php if (!empty($_cn)) : ?><div style="font-size:10px;color:#787c82;white-space:nowrap">.one đã chạy <b><?php echo number_format((int)$_cn_pool_tong); ?></b></div><?php endif; ?>
     </td>
     <td>
         <?php
