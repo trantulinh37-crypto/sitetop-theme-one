@@ -562,6 +562,13 @@ function campBulkXacNhan(){
     $traffic_bg = ['1step'=>'#e7f3ff','2step'=>'#fff8e1','nocode'=>'#fef3e2'];
     $domain = parse_url(sitetop_them_scheme($row->target_url ?? ''), PHP_URL_HOST);
     $completed = intval($row->completed);
+    /* Camp gương từ .net (12/10/2026): hiện ĐÚNG số của nguồn — tổng hôm nay (nội bộ .net + .one) / hạn gốc, completed của nguồn —
+       để hai site cùng một con số. Phần .one tự làm nằm trong tooltip. */
+    $_cn = function_exists('sitetop_cn_so_lieu_hien_thi') ? sitetop_cn_so_lieu_hien_thi((int)$row->id, (int)($row->today_views ?? 0), $completed) : null;
+    if ($_cn) {
+        $_cn_tip = 'Số của sitetop.net: ' . $_cn['noi_bo'] . ' nội bộ + ' . $_cn['pool'] . ' từ .one' . ($_cn['gio'] ? ' · đồng bộ ' . substr($_cn['gio'], 11, 5) : '');
+        $row->today_views = $_cn['hom_nay']; $row->daily_traffic = $_cn['daily']; $completed = $_cn['completed'];
+    }
     $spent = $completed * floatval($row->price_per_view);
     $tt = $row->traffic_type ?? '1step';
 ?>
@@ -581,7 +588,7 @@ function campBulkXacNhan(){
         <a href="<?php echo esc_url($row->target_url); ?>" target="_blank" title="<?php echo esc_attr($domain); ?>" style="font-size:11px;color:#787c82"><?php echo esc_html($domain); ?></a>
     </td>
     <td>
-        <div style="font-weight:600"><span style="color:#dba617"><?php echo intval($row->today_views ?? 0); ?></span>/<?php echo intval($row->daily_traffic ?? 10); ?></div>
+        <div style="font-weight:600"<?php if (!empty($_cn)) echo ' title="' . esc_attr($_cn_tip) . '"'; ?>><span style="color:#dba617"><?php echo intval($row->today_views ?? 0); ?></span>/<?php echo intval($row->daily_traffic ?? 10); ?><?php if (!empty($_cn)) echo ' <small style="color:#2271b1;font-weight:600">.net</small>'; ?></div>
     </td>
     <td>
         <div style="font-weight:600"><?php echo number_format($completed); ?></div>
