@@ -597,7 +597,7 @@ function campBulkXacNhan(){
     </td>
     <td>
         <div style="font-weight:600"<?php if (!empty($_cn)) echo ' title="' . esc_attr($_cn_tip) . '"'; ?>><span style="color:#dba617"><?php echo intval($row->today_views ?? 0); ?></span>/<?php echo intval($row->daily_traffic ?? 10); ?><?php if (!empty($_cn)) echo ' <small style="color:#2271b1;font-weight:600">.net</small>'; ?></div>
-        <?php if (!empty($_cn)) : ?><div style="font-size:10px;color:#787c82;white-space:nowrap">.one <b><?php echo (int)$_cn['pool']; ?></b> · .net <b><?php echo (int)$_cn['noi_bo']; ?></b></div><?php endif; ?>
+        <?php if (!empty($_cn)) : ?><div style="font-size:10px;color:#787c82;white-space:nowrap">.one <b><?php echo (int)$_cn['pool']; ?></b><?php if (!empty($_cn['rieng'])) echo '/<b>' . (int)$_cn['hieu_luc'] . '</b> <span style="color:#2271b1">riêng</span>'; ?> · .net <b><?php echo (int)$_cn['noi_bo']; ?></b></div><?php endif; ?>
     </td>
     <td>
         <div style="font-weight:600"><?php echo number_format($completed); ?></div>
@@ -696,7 +696,7 @@ function campBulkXacNhan(){
         <input type="hidden" id="admEditId">
         <div id="admEditKwRow" style="display:grid;grid-template-columns:1fr 100px;gap:12px;margin-bottom:12px">
             <div id="admEditKwCell"><label style="display:block;font-size:11px;font-weight:600;color:#50575e;margin-bottom:3px">Từ khóa <span id="admEditKwReq" style="color:red">*</span></label><input id="admEditKw" style="width:100%;height:36px;border:1px solid #ddd;border-radius:6px;padding:0 10px;font-size:13px"></div>
-            <div><label style="display:block;font-size:11px;font-weight:600;color:#50575e;margin-bottom:3px">Traffic/ngày</label><input id="admEditDaily" type="number" min="1" max="5000" style="width:100%;height:36px;border:1px solid #ddd;border-radius:6px;padding:0 10px;font-size:13px"></div>
+            <div><label style="display:block;font-size:11px;font-weight:600;color:#50575e;margin-bottom:3px">Traffic/ngày</label><input id="admEditDaily" type="number" min="1" max="5000" style="width:100%;height:36px;border:1px solid #ddd;border-radius:6px;padding:0 10px;font-size:13px"><div id="admEditCnHan" style="display:none;font-size:11px;color:#2271b1;margin-top:4px;line-height:1.4"></div></div>
         </div>
         <div id="admEditGoTayWrap" style="margin-bottom:12px"><style>.adm-sw{display:flex;align-items:flex-start;gap:9px;margin-top:8px;cursor:pointer;user-select:none;position:relative}.adm-sw input{position:absolute;opacity:0;width:0;height:0;margin:0}.adm-sw-track{position:relative;flex:none;width:38px;height:21px;margin-top:1px;background:#c3c4c7;border-radius:999px;transition:background .15s}.adm-sw-track:after{content:"";position:absolute;top:2px;left:2px;width:17px;height:17px;background:#fff;border-radius:50%;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}.adm-sw input:checked+.adm-sw-track{background:#2271b1}.adm-sw input:checked+.adm-sw-track:after{transform:translateX(17px)}.adm-sw input:focus-visible+.adm-sw-track{outline:2px solid #2271b1;outline-offset:2px}.adm-sw-txt{font-size:12px;line-height:1.45;color:#50575e}.adm-sw-txt b{color:#1d2327}.adm-sw-on,.adm-sw-off{min-width:28px;margin-left:5px;padding:0 5px;border-radius:3px;font-size:10px;font-weight:700;text-align:center}.adm-sw-on{display:none;background:#e7f3ff;color:#2271b1}.adm-sw-off{display:inline-block;background:#f0f0f1;color:#646970}.adm-sw input:checked~.adm-sw-txt .adm-sw-on{display:inline-block}.adm-sw input:checked~.adm-sw-txt .adm-sw-off{display:none}</style><label class="adm-sw"><input type="checkbox" value="1" id="admEditKwGoTay"><span class="adm-sw-track"></span><span class="adm-sw-txt"><b id="admEditGoTayTen">Bắt gõ tay keyword</b><span class="adm-sw-on">ON</span><span class="adm-sw-off">OFF</span><br><span id="admEditGoTayMoTa">ON: mọi từ khoá của CAMP này đều phải gõ tay, chặn copy. OFF: không bắt gõ tay, user copy được.</span></span></label></div>
         <div id="admEditKhongCdWrap" style="margin-bottom:12px"><label class="adm-sw"><input type="checkbox" value="1" id="admEditKhongCd"><span class="adm-sw-track"></span><span class="adm-sw-txt"><b>Không yêu cầu chuyển động</b><span class="adm-sw-on">ON</span><span class="adm-sw-off">OFF</span><br><span>ON: user KHÔNG phải cuộn trang / chạm / click trên web đích — vào web, bấm nút widget xác minh là đồng hồ chạy thẳng tới hết thời gian của camp rồi hiện mã. OFF: giữ nguyên như hiện nay (có chốt thao tác giữa chừng).</span></span></label></div>
@@ -838,6 +838,9 @@ function openAdminEditCamp(id) {
         document.getElementById('admEditKwGoTay').checked = String(c.kw_bat_go_tay || '0') === '1';
         document.getElementById('admEditKhongCd').checked = String(c.khong_doi_cd || '0') === '1';
         document.getElementById('admEditDaily').value = c.daily_traffic||10;
+        /* Camp gương từ .net (13/10/2026): số nhập ở đây là HẠN RIÊNG của .one — .net giữ nguyên số đã đặt. */
+        var _cnh=document.getElementById('admEditCnHan');
+        if(_cnh){ if(c.cn_han){ _cnh.style.display='block'; _cnh.innerHTML='Camp từ .net: .net chia hôm nay <b>'+c.cn_han.phan_chia+'</b>'+(c.cn_han.rieng>0?' · đang đặt hạn riêng .one <b>'+c.cn_han.rieng+'</b>':'')+'. Nhập số khác để đặt hạn riêng cho .one (.net không đổi); nhập đúng số .net chia để theo .net.'; } else { _cnh.style.display='none'; } }
         var adl=document.getElementById('admEditDestList');
         if(adl){
             adl.innerHTML='';
