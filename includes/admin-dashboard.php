@@ -257,6 +257,8 @@ function sitetop_ajax_admin_get_campaign() {
          LEFT JOIN {$p}customer_orders co ON co.id = kc.order_id WHERE kc.id=%d", $id
     ));
     if (!$c) wp_send_json_error('Not found');
+    /* Camp gương có hạn riêng (13/10/2026): khung sửa hiện đúng số admin đã nhập (vd 500) chứ không phải cột bị chặn theo .net (400). */
+    if (function_exists('sitetop_cn_la_pool') && sitetop_cn_la_pool() && sitetop_cn_la_camp_nguon($c) && sitetop_cn_han_rieng_cua($c->id) > 0) $c->daily_traffic = sitetop_cn_han_rieng_cua($c->id);
     wp_send_json_success(array(
         'id'=>$c->id, 'title'=>$c->title, 'keyword'=>$c->keyword, 'target_url'=>$c->target_url,
         'destination_urls'=>sitetop_campaign_destinations($c),

@@ -596,8 +596,14 @@ function campBulkXacNhan(){
         <a href="<?php echo esc_url($row->target_url); ?>" target="_blank" title="<?php echo esc_attr($domain); ?>" style="font-size:11px;color:#787c82"><?php echo esc_html($domain); ?></a>
     </td>
     <td>
+        <?php if (!empty($_cn) && !empty($_cn['rieng'])) : /* có HẠN RIÊNG (13/10/2026): số to là phần .one tự làm / hạn hiệu lực; số .net xuống dòng nhỏ */ ?>
+        <div style="font-weight:600" title="<?php echo esc_attr($_cn_tip); ?>"><span style="color:#dba617"><?php echo (int)$_cn['pool']; ?></span>/<?php echo (int)$_cn['hieu_luc']; ?> <small style="color:#2271b1;font-weight:600">riêng</small></div>
+        <?php if ((int)$_cn['rieng'] > (int)$_cn['hieu_luc']) : ?><div style="font-size:10px;color:#d63638;white-space:nowrap">đặt <?php echo (int)$_cn['rieng']; ?>, .net chỉ chia <?php echo (int)$_cn['phan_chia']; ?></div><?php endif; ?>
+        <div style="font-size:10px;color:#787c82;white-space:nowrap">.net <b><?php echo (int)$_cn['hom_nay']; ?></b>/<?php echo (int)$_cn['daily']; ?> · nội bộ <b><?php echo (int)$_cn['noi_bo']; ?></b></div>
+        <?php else : ?>
         <div style="font-weight:600"<?php if (!empty($_cn)) echo ' title="' . esc_attr($_cn_tip) . '"'; ?>><span style="color:#dba617"><?php echo intval($row->today_views ?? 0); ?></span>/<?php echo intval($row->daily_traffic ?? 10); ?><?php if (!empty($_cn)) echo ' <small style="color:#2271b1;font-weight:600">.net</small>'; ?></div>
-        <?php if (!empty($_cn)) : ?><div style="font-size:10px;color:#787c82;white-space:nowrap">.one <b><?php echo (int)$_cn['pool']; ?></b><?php if (!empty($_cn['rieng'])) echo '/<b>' . (int)$_cn['hieu_luc'] . '</b> <span style="color:#2271b1">riêng</span>'; ?> · .net <b><?php echo (int)$_cn['noi_bo']; ?></b></div><?php endif; ?>
+        <?php if (!empty($_cn)) : ?><div style="font-size:10px;color:#787c82;white-space:nowrap">.one <b><?php echo (int)$_cn['pool']; ?></b> · .net <b><?php echo (int)$_cn['noi_bo']; ?></b></div><?php endif; ?>
+        <?php endif; ?>
     </td>
     <td>
         <div style="font-weight:600"><?php echo number_format($completed); ?></div>
