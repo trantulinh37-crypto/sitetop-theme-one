@@ -257,10 +257,7 @@ function sitetop_ajax_admin_get_campaign() {
          LEFT JOIN {$p}customer_orders co ON co.id = kc.order_id WHERE kc.id=%d", $id
     ));
     if (!$c) wp_send_json_error('Not found');
-    $cn_han = (function_exists('sitetop_cn_la_pool') && sitetop_cn_la_pool() && sitetop_cn_la_camp_nguon($c))
-        ? array('rieng' => sitetop_cn_han_rieng_cua($c->id), 'phan_chia' => sitetop_cn_phan_chia($c->id, (int)$c->daily_traffic)) : null;   // hạn riêng .one (13/10/2026)
     wp_send_json_success(array(
-        'cn_han'=>$cn_han,
         'id'=>$c->id, 'title'=>$c->title, 'keyword'=>$c->keyword, 'target_url'=>$c->target_url,
         'destination_urls'=>sitetop_campaign_destinations($c),
         'task_type'=>$c->task_type??'keyword_search', 'traffic_type'=>$c->traffic_type,
