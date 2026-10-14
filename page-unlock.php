@@ -340,25 +340,20 @@ $social_screenshot_url = $social_screenshot_url ?? '';
 // Lấy campaign_type (keyword_search, traffic_direct, traffic_social)
 $campaign_type = $campaign->campaign_type ?? 'keyword_search';
 
-/* Dòng nhắc "Vui lòng gõ tay" hiện khi bật nút gạt: dưới ô từ khoá và dưới ô URL Direct
-   (canh giữa), GIỐNG .net. Sáng 21/09/2026 từng bỏ hẳn rồi chủ site cho khôi phục — đừng
-   gỡ lại, test-keyword-nocopy.php của cả hai site đang canh.
-
-   BẮT GÕ TAY URL ĐÍCH — camp Direct (chủ site chốt 21/09/2026).
+/* BẮT GÕ TAY URL ĐÍCH — camp Direct (chủ site chốt 21/09/2026).
    Camp Direct KHÔNG có từ khoá; thứ user phải nhập là URL đích, nên nút "Bắt gõ tay" của
    camp Direct chặn copy chính URL đó. Dùng chung cột kw_bat_go_tay với camp Search.
    PHẢI có cả hai vế: camp Search bật cờ thì chặn từ khoá (nhánh $kw_nocopy), không được
    đụng tới ô URL; camp Direct tắt cờ thì giữ nguyên nút Copy như trước nay. */
 $url_nocopy = ( $campaign_type === 'traffic_direct' ) && ! empty( $campaign->kw_bat_go_tay );
 
+/* 14/10/2026 chủ site: bật gõ tay thì KHÔNG hiện dòng chữ "Vui lòng gõ tay" dưới ô từ khoá / ô URL nữa (trước giữ
+   từ 21/09). Chặn bôi đen/copy + toast khi user thật sự thử copy vẫn giữ. */
+
 /* Ô URL đích dựng MỘT LẦN rồi echo ở cả hai nhánh Direct (nocode và thường) — hai chỗ đó
    xưa nay markup giống hệt nhau, tách ra đây để không bao giờ sửa lệch một bên.
    Bản gõ tay: URL là thẻ <span> chứ không phải <input>, vì chốt chặn copy đọc vùng chọn
    của trang (window.getSelection) mà vùng chọn BÊN TRONG <input> thì nó không thấy. */
-/* Dòng nhắc "Vui lòng gõ tay" khi bật gõ tay — GIỐNG .net (chủ site chốt 21/09/2026, sau
-   khi đã thử bỏ hẳn). Canh giữa cho thẳng tâm ô URL. */
-$sitetop_nhac_go_tay = $url_nocopy ? '<div class="g-mock-hint" style="text-align:center">Vui lòng gõ tay</div>' : '';
-
 /* Camp Direct KHÔNG còn nút Copy nào (chủ site chốt 21/09/2026) — chỉ còn địa chỉ.
    Bật nút gạt: thêm .kw-nocopy để chặn bôi đen/copy. Tắt: chữ vẫn chọn được, user tự
    bôi đen copy nếu muốn. Mốc "user đã nhận URL" (target_visited_at) nay báo bằng tín
@@ -381,6 +376,8 @@ $current_domain = $_SERVER['HTTP_HOST'] ?? parse_url(home_url(), PHP_URL_HOST);
     <link rel="apple-touch-icon" href="<?php echo esc_url( sitetop_logo_url( 'sitetop-touch-180.png' ) ); ?>">
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <?php /* Montserrat 800 cho tiêu đề + lưu ý (14/10/2026, chủ site gửi mẫu phông: sans hình học đậm, rộng). */ ?>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@800&display=swap" rel="stylesheet">
     <style>
         :root{--p:#F5B800;--pt:#8A5A00;--pd:#0A1633;--a:#FFD966;--bg:#F2F5FC;--txt:#1F2A44;--txtl:#5A6684;--txtm:#8A93AB;--brd:#DFE5F3;--brdl:#ECF0FA;--ok:#00A96E;--err:#E0364B;--warn:#E08700}
         *{margin:0;padding:0;box-sizing:border-box}
@@ -399,63 +396,56 @@ $current_domain = $_SERVER['HTTP_HOST'] ?? parse_url(home_url(), PHP_URL_HOST);
            riêng cho khối này nên sửa 1 nơi là xong. */
         /* Kiểu gọn theo mẫu 2: bỏ khung nét đứt và nền của cả khối, bỏ hộp từng dòng —
    chỉ còn icon tròn + chữ, xếp sát nhau. */
-        .rules{list-style:none;margin:10px 0 16px;padding:0;border:none;background:none;display:flex;flex-direction:column;gap:7px}
-        .rule{display:flex;align-items:center;gap:9px;padding:0;border:none;background:none;font-size:12px;line-height:1.5;color:#3C4043;min-width:0}
-        .rule b{font-weight:800}
-        .rule i{font-style:normal;font-weight:700}
-        .rule-ic{flex:none;width:17px;height:17px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center}
-        .rule-ic svg{width:10px;height:10px}
-        .rule-no{background:none;border:none;color:#3C4043}
-        .rule-no .rule-ic{background:var(--err)}
-        .rule-no b{color:var(--err)}
-        .rule-ok{background:none;border:none;color:#3C4043}
-        .rule-ok .rule-ic{background:var(--ok)}/* Mẫu 2: dòng thứ 2 là cảnh báo -> icon hổ phách thay vì đỏ. Chọn theo vị trí nên
-   không phải sửa HTML. */.rules .rule:nth-child(2) .rule-ic{background:#F59E0B}
-        .rule-ok b{color:var(--ok)}
 
         /* Card chính */
         /* flex column CHỈ để đổi thứ tự hiển thị: mẫu đặt khung nội quy SAU tiêu đề,
    còn HTML để nội quy trước. Dùng order thay vì di chuyển thẻ, nhờ vậy không
    phải đụng vào HTML/PHP của trang nhiệm vụ. */
-.main-card{background:#fff;border-radius:1px;border:1px solid var(--brd);padding:20px 18px;margin-bottom:14px;box-shadow:0 1px 2px rgba(15,32,74,.04);display:flex;flex-direction:column}.main-card>.guide-head{order:1}.main-card>.rules{order:2}.main-card>*{order:3}
-        /* Khối tiêu đề: chữ bên trái, đồng hồ neo bên phải, xuống dòng gọn trên mobile. */
-        .guide-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-        .guide-head-l{min-width:0}
-        /* Bọc ngoặc bằng ::before/::after để không phải đụng vào HTML/chuỗi PHP. */.guide-sub{margin:8px 0 0;font-size:15px;color:#D93025;font-weight:600;font-style:italic;line-height:1.5}.guide-sub::before{content:'(Lưu ý: '}.guide-sub::after{content:')'}
-        @media(max-width:480px){.guide-head{gap:9px}.guide-sub{margin-left:0}}
-        .main-title{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:20px;font-weight:800;color:#1A73E8;text-transform:uppercase;letter-spacing:0;margin-bottom:0}
-        .main-title-text{display:inline-flex;align-items:center;gap:9px}
-        .main-title-text::before{content:'';width:4px;height:19px;border-radius:1px;background:linear-gradient(180deg,var(--p),var(--a));flex-shrink:0}
-        .main-title i{color:var(--pt);margin-right:6px}
-        .mt-kind{font-weight:800;color:#1A73E8;letter-spacing:0}
-        @media(max-width:500px){.mt-kind{display:block;margin-top:2px;font-size:13px}}
-        .visit-timer{display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border-radius:1px;font-size:12px;font-weight:700;background:#FFF7E0;color:var(--pt);border:1px solid #FFE3A3;white-space:nowrap;transition:all .25s}
-        .visit-timer strong{font-variant-numeric:tabular-nums}
-        .visit-timer.warn{background:#FFF6E6;color:#92400E;border-color:#FBDCA0}
-        .visit-timer.crit{background:#FFE9EC;color:#991B1B;border-color:#F6BEC6;animation:vtPulse 1.5s infinite}
-        .visit-timer.float{position:fixed;top:10px;left:10px;right:10px;z-index:9999;padding:10px 16px;border-radius:1px;justify-content:center;box-shadow:0 10px 26px -8px rgba(224,54,75,.55);max-width:520px;margin:auto}
-        @keyframes vtPulse{0%,100%{opacity:1}50%{opacity:.75}}
+.main-card{background:#fff;border-radius:1px;border:1px solid var(--brd);padding:20px 18px;margin-bottom:14px;box-shadow:0 1px 2px rgba(15,32,74,.04);display:flex;flex-direction:column}.main-card>.guide-head{order:1}.main-card>*{order:3}
+        /* Khối tiêu đề (14/10/2026, theo ảnh mẫu của chủ site): tiêu đề + lưu ý canh giữa, in hoa, màu vàng nút TIẾP TỤC; đồng hồ xuống dưới, canh giữa. */
+        .guide-head{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;margin-bottom:16px}
+        .guide-head-l{min-width:0;width:100%}
+        .guide-sub{margin:6px 0 0;font-family:'Montserrat',Inter,-apple-system,sans-serif;font-size:17px;color:var(--pd);font-weight:800;font-style:normal;text-transform:uppercase;line-height:1.35;letter-spacing:-.1px}
+        @media(max-width:480px){.guide-head{gap:9px}.guide-sub{font-size:14px}}
+        /* 14/10/2026 (chủ site: "bản mobi thiết kế hiện 1 dòng thôi"): dòng lưu ý LUÔN một dòng — chữ tự co theo bề rộng khung
+           (đơn vị cqw của container query). 31 ≈ bề rộng câu Montserrat 800 in hoa ở cỡ 1px (đo 29,98) + ~3% dư cho máy khác.
+           Trình duyệt cũ không hiểu cqw thì bỏ qua cả khối, vẫn xuống dòng như trước (không bị tràn/cắt chữ). */
+        .guide-head-l{container-type:inline-size}
+        @supports (width:1cqw){.guide-sub{white-space:nowrap;letter-spacing:0;font-size:min(17px,calc((100cqw - 2px) / 31))}}
+        /* 14/10/2026 chiều, chủ site: phông theo mẫu (Montserrat 800) và chữ ĐEN (xanh than đậm --pd như mẫu) thay cho vàng. */
+        .main-title{display:block;font-family:'Montserrat',Inter,-apple-system,sans-serif;font-size:27px;font-weight:800;color:var(--pd);text-transform:uppercase;letter-spacing:-.3px;line-height:1.2;margin:0}
+        /* 14/10/2026, chủ site: "đồng hồ chạy 10p ẩn không cần hiện" — giữ phần tử cho JS đếm (nhắc 3 phút / 1 phút bằng toast vẫn chạy), chỉ không vẽ. */
+        .visit-timer{display:none!important}
 
         /* Ô nhập mã */
-        .code-section{background:#fff;border:1px solid var(--brd);border-radius:1px;padding:20px 18px;margin-top:12px;margin-bottom:18px}
+        /* 14/10/2026 chủ site: bỏ đường viền quanh khung ô mã. */
+        .code-section{background:#fff;border:none;border-radius:1px;padding:20px 18px;margin-top:12px;margin-bottom:18px}
         .code-input{width:100%;padding:14px 16px;border:1.5px solid var(--brd);border-radius:1px;font-size:15px;text-align:left;letter-spacing:0;font-weight:700;font-family:inherit;background:#fff;color:var(--pd);margin-bottom:12px;transition:all .2s}
         .code-input:focus{outline:none;border-color:var(--p);box-shadow:0 0 0 3px rgba(245,184,0,.14)}
         .code-input::placeholder{color:var(--txtm);font-size:13px;font-weight:600;letter-spacing:.22em}
         /* Ô mã canh giữa, thu hẹp lại — mã chỉ vài ký tự, ô kéo hết chiều ngang
            nhìn trống trải và không rõ phải gõ vào đâu. */
-        .code-section .code-input{display:block;max-width:420px;margin:0 auto 14px;text-align:center;letter-spacing:.06em;background:#FBFCFE}
+        /* 14/10/2026 (ảnh mẫu chủ site): ô mã rộng hết khung, bo 16px, viền 2px xám xanh, nền xanh xám nhạt, chữ canh trái;
+           nút "Nhập mã xác nhận" bo góc, canh giữa, rộng vừa chữ (vẫn vàng thương hiệu). */
+        /* 14/10 tối, chủ site: "chỉ cần kích thước bằng mẫu nút xác nhận" → ô mã và nút CÙNG một bề rộng (320px, 400px PC), canh giữa. */
+        .code-section .code-input{display:block;width:100%;max-width:320px;margin:0 auto 18px;text-align:left;letter-spacing:0;background:#EEF2F8;border:2px solid #8C96A8;border-radius:16px;padding:16px 20px;font-size:18px;font-weight:600;color:var(--pd)}
+        .code-section .code-input::placeholder{font-size:18px;font-weight:500;letter-spacing:0;color:#6B7280}
+        .code-section .code-input:focus{border-color:var(--p);background:#fff;box-shadow:0 0 0 3px rgba(245,184,0,.18)}
         /* Nút chính chiếm trọn chiều ngang — việc chính của khung này. Màu vàng
            giữ nguyên như cũ, chỉ đổi bố cục. */
-        .btn-row{display:block}
-        #btn-unlock{width:100%;letter-spacing:.06em}
-        .code-hr{height:1px;background:var(--brdl);margin:18px -18px 14px}
+        .btn-row{display:flex;justify-content:center}
+        #btn-unlock{width:100%;max-width:320px;min-width:0;padding:15px 34px;border-radius:12px;font-size:16px;letter-spacing:0;gap:10px}
+        #btn-unlock svg{width:20px;height:20px;flex:none}
+        /* 14/10/2026 chủ site: bỏ đường kẻ ngang dưới nút xác nhận; giữ khoảng cách bằng margin của .code-note. */
+        .code-section .code-note{margin-top:22px}
         .code-note{display:flex;gap:9px;align-items:flex-start;background:#F7F9FD;border:1px solid var(--brdl);border-radius:1px;padding:11px 13px;font-size:12.5px;line-height:1.6;color:var(--txtl)}
         .code-note i{font-style:normal;flex:none;line-height:1.5}
         .code-note b{color:var(--txt);font-weight:700}
         /* Nút đổi để nhỏ và canh giữa: đây là lối thoát khi kẹt, không phải việc chính. */
         .code-alt{display:flex;justify-content:center;margin-top:13px}
-        .code-alt .btn{width:auto;min-width:230px;background:#fff;border:1px solid var(--brd);color:var(--txtl);box-shadow:none}
-        .code-alt .btn:hover{border-color:var(--pd);color:var(--pd);background:#F7F9FD}
+        /* 14/10/2026 (ảnh mẫu chủ site): nút Đổi từ khoá / chiến dịch cùng màu nút chính — .one là ĐEN (.net vàng), bo góc, icon làm mới. */
+        .code-alt .btn{width:auto;min-width:260px;background:linear-gradient(135deg,#262626,#000);border:none;color:#fff;border-radius:12px;box-shadow:0 10px 22px -12px rgba(0,0,0,.55);font-size:15px;padding:14px 30px;letter-spacing:0;gap:9px}
+        .code-alt .btn:hover{transform:translateY(-1px);filter:brightness(1.03)}
 
                 .btn{padding:13px 16px;border:none;border-radius:1px;font-size:13px;font-weight:700;cursor:pointer;transition:transform .18s,box-shadow .18s,opacity .18s;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:7px}
         /* Nut chinh (TIEP TUC + hai nut gui bao cao): doi tu vang sang DEN CHU TRANG
@@ -473,7 +463,7 @@ $current_domain = $_SERVER['HTTP_HOST'] ?? parse_url(home_url(), PHP_URL_HOST);
         /* Liền khối theo mẫu: bỏ nền/viền/đệm của từng bước, nhãn 'Bước N:' chạy INLINE
    cùng dòng với nội dung để chữ xuống dòng bám sát lề trái — giống ảnh mẫu. */
 .step{display:block;padding:0;background:transparent;border:none;border-radius:0}
-        .step:hover{background:#F1F6FF;border-color:#C9DAFF}
+        /* 14/10/2026 chủ site: chạm/di chuột vào bước không đổi màu nền nữa (bỏ .step:hover nền xanh nhạt). */
         .step-num{display:inline;width:auto;height:auto;background:none;border-radius:0;color:#202124;font-weight:800;font-size:15px;line-height:1.7}.step-num::before{content:'Bước '}.step-num::after{content:':\00a0'}
         .step-content{display:inline;padding-top:0;min-width:0}.step-content>p:first-child{display:inline}
         .step-content p{font-size:15px;color:#5F6368;font-weight:400;line-height:1.7;margin:0}
@@ -492,6 +482,10 @@ $current_domain = $_SERVER['HTTP_HOST'] ?? parse_url(home_url(), PHP_URL_HOST);
         .step-content p strong:not([class]),.step-content p b:not([class]){color:var(--pd)}
         .step-content a{color:var(--pt);font-weight:700;text-decoration:none;border-bottom:1px solid #FFCF4D}
         .step-content a:hover{border-bottom-color:var(--p)}
+        /* 14/10/2026 (chủ site): chip Google.com — chữ "Google" 4 màu như logo, ".com" xám, bo góc 4px; không nâu/gạch chân như link thường. */
+        .step-content a.g-chip{color:#5F6368;border-bottom:none}
+        .g-chip .g-word b{font-weight:800}
+        .g-chip .g-dom{color:#5F6368;font-weight:700}
 
         .target-link-btn{display:inline-flex;align-items:center;gap:7px;padding:11px 18px;background:linear-gradient(135deg,#F5B800,#FFCF3D);color:var(--pd)!important;border-radius:1px;font-weight:700;font-size:13px;text-decoration:none!important;border:none!important;margin-top:9px;box-shadow:0 10px 22px -13px rgba(245,184,0,.95);transition:transform .18s}
         .target-link-btn:hover{transform:translateY(-1px)}
@@ -510,34 +504,26 @@ $current_domain = $_SERVER['HTTP_HOST'] ?? parse_url(home_url(), PHP_URL_HOST);
            ĐỪNG khai font-size ở "span.url-display" trần: quy tắc .url-copy-box.omni .url-display
            nặng 3 class sẽ thắng, sửa xong nhìn màn hình không đổi một ly (đã mắc thật). */
         span.url-display.kw-nocopy{user-select:none;-webkit-user-select:none;cursor:not-allowed}
-        .url-copy-box.omni{padding:8px 14px 8px 16px}
-        .url-copy-box.omni .omni-g{width:26px;height:26px;margin-right:13px}
-        /* Nut Copy: doi tu vang sang DEN CHU TRANG cho dong bo voi nut TIEP TUC
-           (05/09/2026). Nen da la #000 nen hover phai SANG len chu khong toi di,
-           neu khong se khong con phan hoi khi ro chuot. Giu nguyen .copied mau xanh
-           — do la tin hieu "da copy xong", va chu trang tren nen xanh con de doc hon
-           mau --pd cu. */
 
         .nocode-hint{display:flex;align-items:flex-start;gap:9px;background:#FFF7E0;border:1px solid #FFE3A3;border-radius:1px;padding:11px 13px;margin-top:10px;margin-left:-38px}
         .nocode-hint i{color:var(--pt);font-size:16px;margin-top:1px}
         .nocode-hint span{font-size:12px;color:#1743B8;line-height:1.55}
         .nocode-screenshot img{max-width:100%;border-radius:1px;border:1px solid var(--brd)}
         @media(max-width:480px){.url-copy-box{flex-direction:column}.url-display{font-size:11px}}
-        /* Ô URL của camp DIRECT dựng theo hình dáng thanh tìm kiếm Chrome: viên thuốc bo
-           tròn, nền xám, logo Google bên trái. Đây là chỉ dẫn bằng hình — user nhìn là
-           biết chuỗi này phải dán vào đúng cái thanh đó trên trình duyệt, không cần đọc
-           chữ. Chỉ đổi lớp vỏ, ô input và nút Copy giữ nguyên chức năng. */
-        .url-copy-box.omni{align-items:center;gap:0;background:#F1F3F4;border:1px solid #E1E3E6;border-radius:1px;padding:5px 5px 5px 15px}
-        .url-copy-box.omni .omni-g{flex-shrink:0;width:19px;height:19px;display:inline-flex;margin-right:11px}
+        /* Ô URL của camp DIRECT (14/10/2026 theo ảnh mẫu chủ site, cùng kiểu với ô từ khoá .g-mock-box): viên thuốc trắng
+           dài hết khung, logo G trái, mic + ống kính phải, chữ URL thường cỡ 20px (16 điện thoại, 28 PC). Chỉ đổi lớp vỏ,
+           chốt gõ tay / chặn copy giữ nguyên. */
+        .url-copy-box.omni{align-items:center;gap:14px;background:#fff;border:1px solid #DFE1E5;border-radius:999px;padding:12px 18px;box-shadow:0 1px 6px rgba(32,33,36,.14)}
+        .url-copy-box.omni .omni-g{flex-shrink:0;width:28px;height:28px;display:inline-flex;margin-right:0}
         .url-copy-box.omni .omni-g svg{width:100%;height:100%;display:block}
-        .url-copy-box.omni .url-display{border:none;background:transparent;padding:12px 8px 12px 0;font-family:inherit;font-size:28px;line-height:1.4;font-weight:600;color:#202124;border-radius:0}
+        .url-copy-box.omni .url-display{border:none;background:transparent;padding:0;font-family:inherit;font-size:20px;line-height:1.35;font-weight:500;color:#202124;border-radius:0}
         .url-copy-box.omni .url-display:focus{border-color:transparent;box-shadow:none}
         /* Màn hẹp: KHÔNG cho xuống dòng như ô thường — xuống dòng là mất luôn hình dáng
            thanh tìm kiếm, tức mất tác dụng gợi ý. Thu nhỏ để vẫn nằm gọn một hàng. */
         @media(max-width:480px){
-            .url-copy-box.omni{flex-direction:row;padding:4px 4px 4px 11px}
-            .url-copy-box.omni .omni-g{width:17px;height:17px;margin-right:8px}
-            .url-copy-box.omni .url-display{font-size:18px;padding:8px 6px 8px 0}
+            .url-copy-box.omni{flex-direction:row;gap:10px;padding:10px 14px}
+            .url-copy-box.omni .omni-g{width:22px;height:22px;margin-right:0}
+            .url-copy-box.omni .url-display{font-size:16px;padding:0}
             /* Điện thoại: cỡ chữ 18px do quy tắc chung phía trên lo cho CẢ hai bản. */
             .url-copy-box.omni{padding:9px 12px}
             .url-copy-box.omni .omni-g{width:21px;height:21px;margin-right:10px}
@@ -571,24 +557,19 @@ $current_domain = $_SERVER['HTTP_HOST'] ?? parse_url(home_url(), PHP_URL_HOST);
            mớ rác vào Google. Riêng ô gõ mở cho bôi đen, TRỪ khi từ khoá ngắn: quy tắc
            "≤11 ký tự phải nhập tay" nằm ở .kw-nocopy, có thêm chốt chặn sự kiện copy ở JS
            vì user-select:none một mình không cản được Ctrl+A. */
-        .g-mock{margin-top:9px;padding:11px 10px;background:#fff;border:1px solid var(--brd);border-radius:1px;text-align:center;
+        .g-mock{margin-top:9px;padding:0;background:transparent;border:none;text-align:center}
             user-select:none;-webkit-user-select:none;-ms-user-select:none}
-        .g-mock-logo,.g-mock-ic,.g-mock-caret{pointer-events:none}
+        .g-mock-g,.g-mock-r{pointer-events:none}
         .g-mock-typed:not(.kw-nocopy){-webkit-user-select:text;user-select:text;cursor:text}
         .g-mock-typed.kw-nocopy{user-select:none;-webkit-user-select:none;cursor:not-allowed}
-        .g-mock-hint{margin-top:7px;font-size:11.5px;font-weight:700;color:var(--pt)}
-        .g-mock-logo{font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:18px;font-weight:800;letter-spacing:-.02em;line-height:1;margin-bottom:9px}
-        .g-mock-box{display:flex;align-items:center;gap:11px;max-width:470px;margin:0 auto;padding:10px 16px;border:1px solid #DFE1E5;/* Ô tìm kiếm Google: CỐ Ý giữ bo tròn 24px đúng như google.com thật, KHÔNG theo mức
-   1px của toàn trang. Đây là ảnh mô phỏng để user nhận ra ngay giao diện Google sắp
-   gặp — làm vuông thì mất tính nhận diện, user dễ nhầm sang thanh tìm kiếm khác. */
-border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
-        .g-mock-ic{width:20px;height:20px;flex:none}
-        .g-mock-typed{flex:1;min-width:0;font-size:28px;line-height:1.35;color:#202124;font-weight:600;white-space:normal;word-break:break-word;text-align:left}
-        .g-mock-caret{width:2px;height:26px;background:#4285F4;flex:none;animation:gcaret 1.1s steps(1) infinite}
-        @keyframes gcaret{0%,50%{opacity:1}51%,100%{opacity:0}}
-        @media(prefers-reduced-motion:reduce){.g-mock-caret{animation:none}}
-        @media(max-width:480px){.g-mock{padding:10px 9px}.g-mock-logo{font-size:16px}.g-mock-box{max-width:100%;gap:8px;padding:9px 13px}
-            .g-mock-ic{width:16px;height:16px}.g-mock-typed{font-size:18px}.g-mock-caret{height:19px}}
+        /* Thanh tìm kiếm Google (14/10/2026 theo ảnh mẫu): một viên thuốc dài hết khung, logo G trái, mic + ống kính phải, chữ từ khoá
+           NHỎ hơn trước (chủ site: "giảm nhỏ text từ khoá"). Bo tròn tối đa cố ý giống google.com để user nhận ra ngay. */
+        .g-mock-box{display:flex;align-items:center;gap:14px;max-width:none;margin:0;padding:12px 18px;border:1px solid #DFE1E5;border-radius:999px;background:#fff;box-shadow:0 1px 6px rgba(32,33,36,.14);text-align:left}
+        .g-mock-g{width:28px;height:28px;flex:none}
+        .g-mock-typed{flex:1;min-width:0;font-size:20px;line-height:1.35;color:#202124;font-weight:500;white-space:normal;word-break:break-word;text-align:left}
+        .g-mock-r{display:flex;align-items:center;gap:14px;flex:none;margin-left:auto}
+        .g-mock-r svg{width:24px;height:24px;display:block}
+        @media(max-width:480px){.g-mock-box{gap:10px;padding:10px 14px}.g-mock-g{width:22px;height:22px}.g-mock-typed{font-size:16px}.g-mock-r{gap:10px}.g-mock-r svg{width:20px;height:20px}}
         /* Chip + nhãn "Nhập tay" là MỘT cụm: màn hẹp thì cả cụm cùng xuống dòng,
            không để nhãn rơi lẻ xuống lề trái tách khỏi chip. */
         /* Từ khoá đủ dài: BẮT BUỘC khai báo rõ cho iOS/Android. user-select mặc định là
@@ -601,7 +582,7 @@ border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
         /* Chip "Google.com" ở bước 1 — chữ đen + logo G nhiều màu. */
         .g-chip{display:inline-flex;align-items:center;gap:6px;vertical-align:-3px;background:#fff;
                 color:var(--pd);font-weight:800;padding:4px 11px 4px 9px;border:1px solid var(--brd);
-                border-radius:1px;box-shadow:0 1px 2px rgba(15,32,74,.06);white-space:nowrap}
+                border-radius:4px;box-shadow:0 1px 2px rgba(15,32,74,.06);white-space:nowrap}
         .g-chip svg{width:15px;height:15px;flex-shrink:0}
         /* Chip Google.com giờ BẤM ĐƯỢC, mở tab mới. Trang nhiệm vụ phải ở lại tab cũ vì
            user còn quay về nhập mã — target=_blank lo việc đó; rel=noopener chặn trang mở
@@ -651,21 +632,25 @@ border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
         /* KHÔNG dùng flex ở thẻ p: .step-content>p:first-child đã đặt display:inline để
            câu chữ nối tiếp số bước, mà flex sẽ tách <strong> thành ô riêng và chèn
            khoảng trắng sai ngay trước dấu phẩy. Nút mẫu đi theo dòng chữ như một ký tự. */
-        .fed-ic{width:37px;height:37px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;vertical-align:middle;margin:0 0 0 8px;background:#fff;box-shadow:0 0 0 4px rgba(30,94,255,.13),0 0 0 9px rgba(30,94,255,.06),0 4px 12px -6px rgba(15,30,70,.4)}
-        .fed-ic svg,.fed-ic img{width:20px;height:20px;display:block}
+        /* 14/10/2026 (chủ site): icon nút mẫu 34 → 50px, bằng nút thật trên web khách. */
+        .fed-ic{width:50px;height:50px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;vertical-align:middle;margin:0 0 0 8px;background:#fff;box-shadow:0 0 0 4px rgba(30,94,255,.13),0 0 0 9px rgba(30,94,255,.06),0 4px 12px -6px rgba(15,30,70,.4)}
+        .fed-ic svg,.fed-ic img{width:30px;height:30px;display:block}
         .fed-ic-logo img{width:100%;height:100%;object-fit:cover;border-radius:50%}
 
         .divider{display:flex;align-items:center;gap:12px;margin:16px 0;color:var(--txtm);font-size:12px;font-weight:600}
         .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--brd)}
 
         .report-section{text-align:center}
-        .report-btn{display:inline-flex;align-items:center;gap:7px;padding:9px 20px;background:#fff;border:1px solid #F6BEC6;border-radius:1px;color:var(--err);font-weight:700;font-size:12px;cursor:pointer;transition:all .18s}
-        .report-btn:hover{background:var(--err);border-color:var(--err);color:#fff}
+        /* 14/10/2026 (chủ site): nút báo lỗi chỉ còn icon tam giác cảnh báo đỏ; lúc đang bị khoá JS thay bằng chữ "Đợi m:ss". */
+        /* Không dùng transform scale khi hover: phóng theo tỉ lệ lẻ làm icon nhoè (chủ site 14/10 "hơi mờ"). */
+        .report-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:0;background:none;border:none;border-radius:0;color:var(--err);font-weight:700;font-size:12px;cursor:pointer;transition:opacity .18s}
+        .report-btn svg{display:block;width:44px;height:42px}
+        .report-btn:hover{opacity:.85}
         /* Lúc còn hạn: làm mờ nhưng KHÔNG dùng disabled — nút disabled nuốt luôn cú
            click nên user bấm sẽ không thấy câu nhắc nào. */
-        .report-btn.bl-doi{opacity:.6;background:#fff;border-color:#E5E7EB;color:#9CA3AF;cursor:not-allowed}
-        .report-btn.bl-doi:hover{background:#fff;border-color:#E5E7EB;color:#9CA3AF}
-        .report-note{font-size:11px;color:var(--txtm);margin-top:7px}
+        .report-btn.bl-doi{opacity:.6;padding:9px 20px;background:#fff;border:1px solid #E5E7EB;color:#9CA3AF;cursor:not-allowed}
+        .report-btn.bl-doi:hover{opacity:.6;background:#fff;border-color:#E5E7EB;color:#9CA3AF}
+        .report-note{font-size:13px;color:var(--txtm);margin-top:8px}
         .report-note.bl-canh-bao{color:var(--err);font-weight:700}
 
         .info-section{background:#fff;border-radius:1px;padding:18px;border:1px solid var(--brd);box-shadow:0 1px 2px rgba(15,32,74,.04)}
@@ -676,8 +661,11 @@ border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
         .info-content{text-wrap:balance}
         .info-section a:hover{text-decoration:underline}
 
-        .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-80px);padding:11px 20px;border-radius:1px;font-weight:700;font-size:13px;display:flex;align-items:center;gap:8px;z-index:1000;transition:all .3s ease;box-shadow:0 12px 28px -10px rgba(15,32,74,.55)}
-        .toast.show{transform:translateX(-50%) translateY(0)}
+        /* 14/10/2026 (chủ site: "hiện 1 tab bị che khuất… hãy ẩn tab đó đi"): toast ẩn từng chỉ bị đẩy lên 80px — câu dài xuống
+           2–3 dòng (vd "Còn chưa đến 3 phút — hãy hoàn thành sớm.") thì phần đuôi ló ra mép trên, mất màu nền nhưng còn chữ + bóng.
+           Nay khi ẩn: đẩy lên trọn chiều cao của chính nó + mờ hẳn + không nhận chuột. */
+        .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(calc(-100% - 24px));opacity:0;visibility:hidden;pointer-events:none;max-width:calc(100vw - 24px);padding:11px 20px;border-radius:1px;font-weight:700;font-size:13px;display:flex;align-items:center;gap:8px;z-index:1000;transition:all .3s ease;box-shadow:0 12px 28px -10px rgba(15,32,74,.55)}
+        .toast.show{transform:translateX(-50%) translateY(0);opacity:1;visibility:visible;pointer-events:auto}
         .toast-success{background:var(--ok);color:#fff}
         .toast-error{background:var(--err);color:#fff}
         .toast-warning{background:#fff!important;color:var(--pt);border:1px solid #FFE3A3}
@@ -746,9 +734,48 @@ border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
         /* Mobi: chữ dài nên nút mẫu luôn rơi xuống dòng mới và dạt trái, trông như bị bỏ
    quên. Cho nó thành khối riêng canh giữa để đứng cân dưới câu chữ. */
         @media(max-width:500px){.fed-ic{display:block;margin:14px auto 6px}}
-        @media(max-width:500px){.code-alt .btn{min-width:0;width:100%}.code-section{padding:16px 14px}.code-hr{margin:16px -14px 13px}.main-title{font-size:16px}.container{padding:0 10px}}
+        @media(max-width:500px){.code-alt .btn{min-width:0;width:100%}.code-section{padding:16px 14px}.main-title{font-size:21px}.container{padding:0 10px}}
         #report-turnstile iframe{border-radius:1px!important}
-    </style>
+            /* HEADER trang shortlink (14/10/2026, chủ site gửi mẫu: logo trái, nút menu ☰ phải). Điện thoại: bấm ☰ mở bảng menu;
+           máy tính (≥769px): menu nằm ngang, ẩn nút ☰. Link mở TAB MỚI — rời trang này trong cùng tab sẽ chạy
+           beforeunload/pagehide → markVisitExpired(), user mất nhiệm vụ đang làm. */
+        .uh{background:#fff;border-bottom:1px solid var(--brd);margin:0 0 16px}   /* 14/10: chủ site "nền trắng luôn" */
+        .uh-in{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:72px}
+        .uh-logo{display:inline-flex;align-items:center;flex:none}
+        .uh-logo img{height:38px;width:auto;display:block}
+        .uh-menu{flex:none;width:52px;height:52px;padding:0;border-radius:16px;background:#fff;border:1px solid #E5E7EB;box-shadow:0 4px 14px rgba(15,23,42,.08);display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer}
+        .uh-menu span{display:block;width:22px;height:2.5px;border-radius:2px;background:#3A4256;transition:transform .2s,opacity .2s}
+        .uh.open .uh-menu span:nth-child(1){transform:translateY(7.5px) rotate(45deg)}
+        .uh.open .uh-menu span:nth-child(2){opacity:0}
+        .uh.open .uh-menu span:nth-child(3){transform:translateY(-7.5px) rotate(-45deg)}
+        .uh-nav{display:none;position:absolute;top:calc(100% + 6px);left:14px;right:14px;z-index:60;flex-direction:column;gap:2px;padding:8px;background:#fff;border:1px solid #E5E7EB;border-radius:14px;box-shadow:0 18px 40px -14px rgba(15,23,42,.28)}
+        .uh.open .uh-nav{display:flex}
+        .uh-nav a{display:block;padding:13px 14px;border-radius:10px;font-size:15px;font-weight:700;color:var(--pd);text-decoration:none}
+        .uh-nav a:hover{background:#F7F9FD}
+        .uh-nav a.uh-cta{margin-top:6px;text-align:center;background:linear-gradient(135deg,#262626,#000);color:#fff;box-shadow:0 10px 22px -12px rgba(0,0,0,.55)}
+        @media(min-width:769px){
+            .uh{margin-bottom:22px}
+            .uh-in{min-height:80px}
+            .uh-logo img{height:44px}
+            .uh-menu{display:none}
+            .uh-nav{display:flex;position:static;flex-direction:row;align-items:center;gap:26px;padding:0;background:none;border:0;box-shadow:none}
+            .uh-nav a{padding:0;border-radius:0}
+            .uh-nav a:hover{background:none;color:#B07A00}
+            .uh-nav a.uh-cta{margin-top:0;padding:11px 22px;border-radius:12px}
+            .uh-nav a.uh-cta:hover{color:#fff;filter:brightness(1.25)}
+        }
+        /* BẢN PC ≥1100px — PHẢI nằm SAU mọi luật gốc: cùng độ ưu tiên thì luật đến sau thắng. 14/10/2026 khối PC từng đặt
+           ở đầu stylesheet nên chỉ .container và cỡ chữ chip ăn, các cỡ khác vô hiệu (đo bằng getComputedStyle); chủ site đã
+           chỉnh tiếp theo cỡ đang thấy nên chỉ giữ phần thật sự có hiệu lực + yêu cầu mới.
+           test-css-pc-thu-tu.php canh thứ tự này. */
+        @media(min-width:1100px){
+            .container{max-width:1280px;padding:0 32px}
+            .g-chip{font-size:19px}
+            /* chủ site 14/10: chữ các bước bản desktop +5px cho dễ đọc (15 → 20px). */
+            .step-num{font-size:20px}
+            .step-content p{font-size:20px}
+        }
+</style>
     
     <!-- Turnstile Script -->
     <?php $turnstile_site_key = get_option('sitetop_turnstile_site_key', ''); ?>
@@ -764,26 +791,43 @@ border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
         ⚠️ <strong>Trình chặn quảng cáo đang chặn widget lấy mã</strong>. Vui lòng <strong>tắt Adblock / Brave Shield / AdGuard</strong> trên trang đích để lấy được mã, sau đó tải lại trang.
         <button onclick="this.parentNode.style.display='none'" style="margin-left:10px;background:rgba(255,255,255,0.25);border:none;color:#fff;padding:5px 14px;border-radius:1px;cursor:pointer;font-size:12px;font-weight:600">Đã hiểu</button>
     </div>
+    <?php
+    /* Header trang shortlink (14/10/2026) — xem CSS .uh. Link mở tab mới (target=_blank) để trang nhiệm vụ không bị rời. */
+    /* Bản logo cho NỀN SÁNG: sitetop-logo-full.png có chữ "SITE" màu trắng (dành cho nền tối) nên trên header sáng gần như mất chữ. */
+    $uh_logo = function_exists( 'sitetop_logo_url' ) ? sitetop_logo_url( 'sitetop-logo-full-nen-sang.png' ) : '';
+    ?>
+    <header class="uh" id="uh">
+        <div class="container uh-in">
+            <a class="uh-logo" href="<?php echo esc_url( home_url( '/' ) ); ?>" target="_blank" rel="noopener" aria-label="Trang chủ SITETOP"><img src="<?php echo esc_url( $uh_logo ); ?>" alt="SITETOP"></a>
+            <nav class="uh-nav" id="uhNav" aria-label="Menu">
+                <a href="<?php echo esc_url( home_url( '/' ) ); ?>" target="_blank" rel="noopener">Trang chủ</a>
+                <?php if ( is_user_logged_in() ) : ?>
+                <a class="uh-cta" href="<?php echo esc_url( function_exists( 'sitetop_get_dashboard_url' ) ? sitetop_get_dashboard_url() : home_url( '/user' ) ); ?>" target="_blank" rel="noopener">Dashboard</a>
+                <?php else : ?>
+                <a href="<?php echo esc_url( home_url( '/dang-nhap' ) ); ?>" target="_blank" rel="noopener">Đăng nhập</a>
+                <a class="uh-cta" href="<?php echo esc_url( home_url( '/dang-ky' ) ); ?>" target="_blank" rel="noopener">Đăng ký kiếm tiền</a>
+                <?php endif; ?>
+            </nav>
+            <button type="button" class="uh-menu" id="uhMenu" aria-label="Mở menu" aria-expanded="false" aria-controls="uhNav"><span></span><span></span><span></span></button>
+        </div>
+    </header>
+    <script>
+    (function(){
+        var h=document.getElementById('uh'), b=document.getElementById('uhMenu'); if(!h||!b) return;
+        function dong(){ h.classList.remove('open'); b.setAttribute('aria-expanded','false'); b.setAttribute('aria-label','Mở menu'); }
+        b.addEventListener('click', function(e){ e.stopPropagation(); var mo=h.classList.toggle('open'); b.setAttribute('aria-expanded', mo?'true':'false'); b.setAttribute('aria-label', mo?'Đóng menu':'Mở menu'); });
+        document.addEventListener('click', function(e){ if(h.classList.contains('open') && !h.contains(e.target)) dong(); });
+        document.addEventListener('keydown', function(e){ if(e.key==='Escape' && h.classList.contains('open')){ dong(); b.focus(); } });
+        h.querySelectorAll('.uh-nav a').forEach(function(a){ a.addEventListener('click', dong); });   // link mở tab mới → quay lại thấy menu đã đóng
+    })();
+    </script>
     <div class="container">
         <!-- Main Card -->
         <div class="main-card">
             <!-- Quy tắc: 2 điều cấm + 1 điều nên. Mã màu theo NGHĨA (đỏ = cấm, xanh lá = nên)
                  chứ không nhuộm đỏ cả 4 như bản cũ — dòng "nên dùng Chrome" trước đây đeo
                  huy hiệu đỏ trông như một lệnh cấm nữa. -->
-            <ul class="rules">
-                <li class="rule rule-no">
-                    <span class="rule-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>
-                    <span><b>Không</b> bấm quảng cáo <i>&ldquo;Được tài trợ&rdquo;</i></span>
-                </li>
-                <li class="rule rule-no">
-                    <span class="rule-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>
-                    <span><b>Không</b> dùng trình duyệt ẩn danh</span>
-                </li>
-                <li class="rule rule-ok">
-                    <span class="rule-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
-                    <span>Nên dùng <b>Chrome</b> để không gặp lỗi</span>
-                </li>
-            </ul>
+            <?php /* 14/10/2026: chủ site bỏ danh sách 3 quy tắc (quảng cáo / ẩn danh / Chrome) dưới tiêu đề. */ ?>
 
             <!-- Title + Countdown -->
             <?php
@@ -796,23 +840,10 @@ border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
                  riêng bên dưới, canh giữa, trông lạc lõng giữa 2 khối canh trái. -->
             <div class="guide-head">
                 <div class="guide-head-l">
-                    <h1 class="main-title">
-                        <span class="main-title-text">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.78 7.78 5.5 5.5 0 017.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
-                            <?php
-                            /* Phần đuôi bám theo LOẠI CAMP thật, không viết cứng "TÌM KIẾM TỪ KHOÁ":
-                               trang này phục vụ cả camp direct và social — ghi cứng là dạy sai việc
-                               cho đúng nhóm user vốn không phải tìm từ khoá nào cả. */
-                            $mt_kind = array(
-                                'keyword_search' => 'TÌM KIẾM TỪ KHOÁ',
-                                'traffic_direct' => 'TRUY CẬP TRỰC TIẾP',
-                                'traffic_social' => 'TRUY CẬP TỪ MẠNG XÃ HỘI',
-                            );
-                            ?>
-                            <span>HƯỚNG DẪN LẤY MÃ<span class="mt-kind"> &mdash; <?php echo esc_html($mt_kind[$campaign_type] ?? $mt_kind['keyword_search']); ?></span></span>
-                        </span>
-                    </h1>
-                    <p class="guide-sub">Làm đúng thứ tự các bước để không bị sai mã</p>
+                    <?php /* 14/10/2026 (chủ site, theo ảnh mẫu): tiêu đề + lưu ý canh giữa, chữ in hoa, màu vàng của nút
+                             TIẾP TỤC (--p); bỏ icon chìa khoá, vạch màu và đuôi loại camp. Các bước bên dưới đã nói rõ loại việc. */ ?>
+                    <h1 class="main-title">HƯỚNG DẪN CÁCH LẤY MÃ</h1>
+                    <p class="guide-sub">LƯU Ý: KHÔNG SỬ DỤNG VPN HOẶC 1.1.1.1 KHI VƯỢT LINK</p>
                 </div>
                 <?php if ($vt_remaining > 0): ?>
                 <span class="visit-timer" id="visitTimer" data-remaining="<?php echo (int) $vt_remaining; ?>">
@@ -849,13 +880,12 @@ border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
                                  giờ lệch với yêu cầu ở trên. Thuần trang trí: aria-hidden để trình
                                  đọc màn hình không đọc lặp lại từ khoá đã nêu ở dòng trên. */ ?>
                         <div class="g-mock" aria-hidden="true">
-                            <div class="g-mock-logo"><span style="color:#4285F4">G</span><span style="color:#EA4335">o</span><span style="color:#FBBC05">o</span><span style="color:#4285F4">g</span><span style="color:#34A853">l</span><span style="color:#EA4335">e</span></div>
+                            <?php /* 14/10/2026 (ảnh mẫu chủ site): thanh tìm kiếm Google thật — logo G màu bên trái, mic + ống kính bên phải, bỏ chữ "Google" phía trên và con trỏ nháy. */ ?>
                             <div class="g-mock-box">
-                                <svg class="g-mock-ic" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                <svg class="g-mock-g" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
                                 <span class="g-mock-typed<?php echo $kw_nocopy ? ' kw-nocopy' : ''; ?>"<?php echo $kw_nocopy ? ' title="Vui lòng gõ tay"' : ''; ?>><?php echo esc_html($campaign->keyword); ?></span>
-                                <span class="g-mock-caret"></span>
+                                <span class="g-mock-r"><svg viewBox="0 0 24 24" fill="none"><path fill="#4285F4" d="M12 14.5a3 3 0 0 0 3-3V5.5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"/><path stroke="#EA4335" stroke-width="2" stroke-linecap="round" d="M5.5 11.5a6.5 6.5 0 0 0 6.5 6.5"/><path stroke="#FBBC05" stroke-width="2" stroke-linecap="round" d="M18.5 11.5a6.5 6.5 0 0 1-6.5 6.5"/><path stroke="#34A853" stroke-width="2" stroke-linecap="round" d="M12 18v3.5"/></svg><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><path stroke="#4285F4" d="M3 9V6a3 3 0 0 1 3-3h3"/><path stroke="#EA4335" d="M15 3h3a3 3 0 0 1 3 3v3"/><path stroke="#FBBC05" d="M3 15v3a3 3 0 0 0 3 3h3"/><path stroke="#34A853" d="M21 15v3a3 3 0 0 1-3 3h-3"/><circle cx="12" cy="12" r="3.2" fill="#4285F4"/><circle cx="18.5" cy="18.5" r="1.6" fill="#34A853"/></svg></span>
                             </div>
-                            <?php if ($kw_nocopy): ?><div class="g-mock-hint">Vui lòng gõ tay</div><?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -898,7 +928,7 @@ border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
                         
                         <div class="nocode-hint">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="2" style="vertical-align:-2px"><path d="M9 18h6M10 22h4M12 2v1M12 7a4 4 0 00-4 4c0 1.5.8 2.8 2 3.4V17h4v-2.6c1.2-.6 2-1.9 2-3.4a4 4 0 00-4-4z"/></svg>
-                            <span>Sau khi tìm được mã, nhập vào ô phía trên và nhấn <strong>"TIẾP TỤC"</strong></span>
+                            <span>Sau khi tìm được mã, nhập vào ô phía trên và nhấn <strong>"Nhập mã xác nhận"</strong></span>
                         </div>
                     </div>
                 </div>
@@ -912,8 +942,9 @@ border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
                         <div class="url-copy-box omni">
                             <span class="omni-g" aria-hidden="true"><svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg></span>
                             <?php echo $sitetop_o_url_dich; ?>
+                            <?php /* 14/10/2026 (ảnh mẫu chủ site): mic + ống kính như thanh Google thật, dùng chung lớp .g-mock-r với ô từ khoá. */ ?>
+                            <span class="g-mock-r"><svg viewBox="0 0 24 24" fill="none"><path fill="#4285F4" d="M12 14.5a3 3 0 0 0 3-3V5.5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"/><path stroke="#EA4335" stroke-width="2" stroke-linecap="round" d="M5.5 11.5a6.5 6.5 0 0 0 6.5 6.5"/><path stroke="#FBBC05" stroke-width="2" stroke-linecap="round" d="M18.5 11.5a6.5 6.5 0 0 1-6.5 6.5"/><path stroke="#34A853" stroke-width="2" stroke-linecap="round" d="M12 18v3.5"/></svg><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><path stroke="#4285F4" d="M3 9V6a3 3 0 0 1 3-3h3"/><path stroke="#EA4335" d="M15 3h3a3 3 0 0 1 3 3v3"/><path stroke="#FBBC05" d="M3 15v3a3 3 0 0 0 3 3h3"/><path stroke="#34A853" d="M21 15v3a3 3 0 0 1-3 3h-3"/><circle cx="12" cy="12" r="3.2" fill="#4285F4"/><circle cx="18.5" cy="18.5" r="1.6" fill="#34A853"/></svg></span>
                         </div>
-                        <?php echo $sitetop_nhac_go_tay; ?>
                     </div>
                 </div>
                 
@@ -932,7 +963,7 @@ border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
                         
                         <div class="nocode-hint">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="2" style="vertical-align:-2px"><path d="M9 18h6M10 22h4M12 2v1M12 7a4 4 0 00-4 4c0 1.5.8 2.8 2 3.4V17h4v-2.6c1.2-.6 2-1.9 2-3.4a4 4 0 00-4-4z"/></svg>
-                            <span>Sau khi tìm được mã, nhập vào ô phía trên và nhấn <strong>"TIẾP TỤC"</strong></span>
+                            <span>Sau khi tìm được mã, nhập vào ô phía trên và nhấn <strong>"Nhập mã xác nhận"</strong></span>
                         </div>
                     </div>
                 </div>
@@ -1012,7 +1043,7 @@ border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
                         
                         <div class="nocode-hint">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="2" style="vertical-align:-2px"><path d="M9 18h6M10 22h4M12 2v1M12 7a4 4 0 00-4 4c0 1.5.8 2.8 2 3.4V17h4v-2.6c1.2-.6 2-1.9 2-3.4a4 4 0 00-4-4z"/></svg>
-                            <span>Sau khi tìm được mã, nhập vào ô phía trên và nhấn <strong>"TIẾP TỤC"</strong></span>
+                            <span>Sau khi tìm được mã, nhập vào ô phía trên và nhấn <strong>"Nhập mã xác nhận"</strong></span>
                         </div>
                     </div>
                 </div>
@@ -1025,7 +1056,7 @@ border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
                 <div class="step">
                     <div class="step-num">1</div>
                     <div class="step-content">
-                        <p>Truy cập <a class="g-chip" href="https://www.google.com/" target="_blank" rel="noopener"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-2.7-.4-4H24v7.3h12.1c-.2 1.9-1.6 4.9-4.5 6.9l-.1.3 6.6 5 .5.1c4.2-3.9 6.5-9.5 6.5-15.6"/><path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.6-5.4l-6.9-5.4c-1.9 1.3-4.4 2.2-7.7 2.2-5.8 0-10.8-3.9-12.6-9.2l-.3 0-6.9 5.3-.1.3C7.7 41 15.2 46 24 46"/><path fill="#FBBC05" d="M11.4 28.2c-.5-1.4-.8-2.9-.8-4.5s.3-3.1.7-4.5v-.3l-7-5.4-.2.1C2.5 16.7 1.6 20.2 1.6 24s.9 7.3 2.5 10.4z"/><path fill="#EA4335" d="M24 9.5c4.1 0 6.9 1.8 8.5 3.3l6.2-6C34.9 3.4 29.9 1 24 1 15.2 1 7.7 6 4.1 13.3l7.2 5.6C13.2 13.4 18.2 9.5 24 9.5"/></svg>Google.com<svg class="g-chip-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a></p>
+                        <p>Truy cập <a class="g-chip" href="https://www.google.com/" target="_blank" rel="noopener"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-2.7-.4-4H24v7.3h12.1c-.2 1.9-1.6 4.9-4.5 6.9l-.1.3 6.6 5 .5.1c4.2-3.9 6.5-9.5 6.5-15.6"/><path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.6-5.4l-6.9-5.4c-1.9 1.3-4.4 2.2-7.7 2.2-5.8 0-10.8-3.9-12.6-9.2l-.3 0-6.9 5.3-.1.3C7.7 41 15.2 46 24 46"/><path fill="#FBBC05" d="M11.4 28.2c-.5-1.4-.8-2.9-.8-4.5s.3-3.1.7-4.5v-.3l-7-5.4-.2.1C2.5 16.7 1.6 20.2 1.6 24s.9 7.3 2.5 10.4z"/><path fill="#EA4335" d="M24 9.5c4.1 0 6.9 1.8 8.5 3.3l6.2-6C34.9 3.4 29.9 1 24 1 15.2 1 7.7 6 4.1 13.3l7.2 5.6C13.2 13.4 18.2 9.5 24 9.5"/></svg><span class="g-txt"><span class="g-word"><b style="color:#4285F4">G</b><b style="color:#EA4335">o</b><b style="color:#FBBC05">o</b><b style="color:#4285F4">g</b><b style="color:#34A853">l</b><b style="color:#EA4335">e</b></span><span class="g-dom">.com</span></span><svg class="g-chip-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a></p>
                     </div>
                 </div>
                 
@@ -1040,13 +1071,12 @@ border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
                                  giờ lệch với yêu cầu ở trên. Thuần trang trí: aria-hidden để trình
                                  đọc màn hình không đọc lặp lại từ khoá đã nêu ở dòng trên. */ ?>
                         <div class="g-mock" aria-hidden="true">
-                            <div class="g-mock-logo"><span style="color:#4285F4">G</span><span style="color:#EA4335">o</span><span style="color:#FBBC05">o</span><span style="color:#4285F4">g</span><span style="color:#34A853">l</span><span style="color:#EA4335">e</span></div>
+                            <?php /* 14/10/2026 (ảnh mẫu chủ site): thanh tìm kiếm Google thật — logo G màu bên trái, mic + ống kính bên phải, bỏ chữ "Google" phía trên và con trỏ nháy. */ ?>
                             <div class="g-mock-box">
-                                <svg class="g-mock-ic" viewBox="0 0 24 24" fill="none" stroke="#9AA0A6" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                                <svg class="g-mock-g" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
                                 <span class="g-mock-typed<?php echo $kw_nocopy ? ' kw-nocopy' : ''; ?>"<?php echo $kw_nocopy ? ' title="Vui lòng gõ tay"' : ''; ?>><?php echo esc_html($campaign->keyword); ?></span>
-                                <span class="g-mock-caret"></span>
+                                <span class="g-mock-r"><svg viewBox="0 0 24 24" fill="none"><path fill="#4285F4" d="M12 14.5a3 3 0 0 0 3-3V5.5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"/><path stroke="#EA4335" stroke-width="2" stroke-linecap="round" d="M5.5 11.5a6.5 6.5 0 0 0 6.5 6.5"/><path stroke="#FBBC05" stroke-width="2" stroke-linecap="round" d="M18.5 11.5a6.5 6.5 0 0 1-6.5 6.5"/><path stroke="#34A853" stroke-width="2" stroke-linecap="round" d="M12 18v3.5"/></svg><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><path stroke="#4285F4" d="M3 9V6a3 3 0 0 1 3-3h3"/><path stroke="#EA4335" d="M15 3h3a3 3 0 0 1 3 3v3"/><path stroke="#FBBC05" d="M3 15v3a3 3 0 0 0 3 3h3"/><path stroke="#34A853" d="M21 15v3a3 3 0 0 1-3 3h-3"/><circle cx="12" cy="12" r="3.2" fill="#4285F4"/><circle cx="18.5" cy="18.5" r="1.6" fill="#34A853"/></svg></span>
                             </div>
-                            <?php if ($kw_nocopy): ?><div class="g-mock-hint">Vui lòng gõ tay</div><?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -1093,8 +1123,9 @@ border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
                         <div class="url-copy-box omni">
                             <span class="omni-g" aria-hidden="true"><svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24s.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg></span>
                             <?php echo $sitetop_o_url_dich; ?>
+                            <?php /* 14/10/2026 (ảnh mẫu chủ site): mic + ống kính như thanh Google thật, dùng chung lớp .g-mock-r với ô từ khoá. */ ?>
+                            <span class="g-mock-r"><svg viewBox="0 0 24 24" fill="none"><path fill="#4285F4" d="M12 14.5a3 3 0 0 0 3-3V5.5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3z"/><path stroke="#EA4335" stroke-width="2" stroke-linecap="round" d="M5.5 11.5a6.5 6.5 0 0 0 6.5 6.5"/><path stroke="#FBBC05" stroke-width="2" stroke-linecap="round" d="M18.5 11.5a6.5 6.5 0 0 1-6.5 6.5"/><path stroke="#34A853" stroke-width="2" stroke-linecap="round" d="M12 18v3.5"/></svg><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round"><path stroke="#4285F4" d="M3 9V6a3 3 0 0 1 3-3h3"/><path stroke="#EA4335" d="M15 3h3a3 3 0 0 1 3 3v3"/><path stroke="#FBBC05" d="M3 15v3a3 3 0 0 0 3 3h3"/><path stroke="#34A853" d="M21 15v3a3 3 0 0 1-3 3h-3"/><circle cx="12" cy="12" r="3.2" fill="#4285F4"/><circle cx="18.5" cy="18.5" r="1.6" fill="#34A853"/></svg></span>
                         </div>
-                        <?php echo $sitetop_nhac_go_tay; ?>
                     </div>
                 </div>
                 
@@ -1186,13 +1217,14 @@ border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
                 <input type="text" id="code-input" class="code-input" placeholder="Nhập mã xác nhận" maxlength="30" autocomplete="off">
                 <div class="btn-row">
                     <button type="button" id="btn-unlock" class="btn btn-primary" onclick="unlockLink()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M5 12h14"/><polyline points="12 5 19 12 12 19"/></svg> TIẾP TỤC
+                        <?php /* 14/10/2026 (ảnh mẫu chủ site): icon máy bay giấy + chữ "Nhập mã xác nhận" thay mũi tên + "TIẾP TỤC". */ ?>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                        Nhập mã xác nhận
                     </button>
                 </div>
 
                 <!-- Đổi từ khoá / chiến dịch: tách xuống dưới, sau vạch ngăn, kèm câu
                      dặn — để user chỉ tìm tới khi thật sự kẹt, không bấm nhầm. -->
-                <div class="code-hr"></div>
                 <div class="code-note">
                     <i>💡</i>
                     <span><b>Lưu ý:</b> Khi website bị lỗi hoặc không tìm thấy mã, bạn hãy nhấn nút bên dưới để đổi <?php echo $campaign_type === 'keyword_search' ? 'từ khoá khác' : 'chiến dịch khác'; ?> nhé.</span>
@@ -1200,34 +1232,29 @@ border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
                 <div class="code-alt">
                     <?php if ($campaign_type === 'keyword_search'): ?>
                     <button type="button" class="btn btn-secondary" id="btn-change-keyword" onclick="changeKeyword()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> ĐỔI TỪ KHOÁ
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Đổi từ khoá mới
                     </button>
                     <?php else: ?>
                     <button type="button" class="btn btn-secondary" id="btn-change-campaign" onclick="changeCampaign()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> ĐỔI CHIẾN DỊCH
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Đổi chiến dịch mới
                     </button>
                     <?php endif; ?>
                 </div>
             </div>
 
             <!-- Report & Info Section (cùng card) -->
-            <div class="divider">hoặc</div>
+            <?php /* 14/10/2026: chủ site bỏ vạch "hoặc" và khối "Đăng ký miễn phí… TẠI ĐÂY". */ ?>
             
             <div class="report-section">
                 <?php $bl_con = function_exists( 'sitetop_baoloi_con_lai' ) ? sitetop_baoloi_con_lai() : 0; ?>
                 <button class="report-btn<?php echo $bl_con > 0 ? ' bl-doi' : ''; ?>"
-                        id="btn-bao-loi" data-con="<?php echo (int) $bl_con; ?>"
+                        id="btn-bao-loi" data-con="<?php echo (int) $bl_con; ?>" aria-label="Báo lỗi mã" title="Báo lỗi mã"
                         onclick="openReportModal()">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-                    Báo lỗi mã
+                    <svg width="44" height="42" viewBox="0 0 46 44" aria-hidden="true" shape-rendering="geometricPrecision"><path fill="#C50000" d="M19.1 3.3a4.5 4.5 0 0 1 7.8 0l17.6 30.6a4.5 4.5 0 0 1-3.9 6.8H5.4a4.5 4.5 0 0 1-3.9-6.8z"/><path fill="#fff" d="M20.6 13.4a2.4 2.4 0 0 1 4.8 0l-.9 13.1h-3z"/><circle cx="23" cy="32.4" r="2.6" fill="#fff"/></svg>
                 </button>
-                <p class="report-note" id="bl-ghi-chu">Nếu không tìm thấy nút hoặc mã bị lỗi</p>
+                <p class="report-note" id="bl-ghi-chu">Báo lỗi khi cần thiết</p>
             </div>
 
-            <!-- Info Section -->
-            <div class="info-section" style="margin-top:16px;text-align:center">
-                <div class="info-content">Đăng ký miễn phí và bắt đầu kiếm tiền <span class="info-cta"><a href="<?php echo esc_url(home_url('/dang-ky')); ?>"><strong>TẠI ĐÂY</strong></a>!</span></div>
-            </div>
             <?php
             $tutorial_video = sitetop_get_option('unlock_tutorial_video', '');
             if (!empty($tutorial_video)):
@@ -1711,7 +1738,7 @@ border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
                        rớt DB, lỗi tạm). Mã vẫn còn nguyên trong ô nhập, nên bảo user đợi
                        chút rồi bấm lại — thay vì "Có lỗi xảy ra!" khiến họ tưởng mình
                        làm sai rồi đi báo lỗi. */
-                    showToast('Máy chủ đang bận. Đợi vài giây rồi bấm TIẾP TỤC lại — mã của bạn vẫn còn.', 'error');
+                    showToast('Máy chủ đang bận. Đợi vài giây rồi bấm "Nhập mã xác nhận" lại — mã của bạn vẫn còn.', 'error');
                 }
             });
         }
@@ -2443,7 +2470,7 @@ border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
                         input.value = data.data.code;
                         input.focus();
                         try { localStorage.setItem('code_input_' + sessionId, JSON.stringify({ code: data.data.code, ts: Date.now() })); } catch(e){}
-                        if (typeof showToast === 'function') showToast('Đã tự điền mã — bấm TIẾP TỤC');
+                        if (typeof showToast === 'function') showToast('Đã tự điền mã — bấm "Nhập mã xác nhận"');
                     }
                 }
             })
@@ -2509,17 +2536,12 @@ border-radius:24px;box-shadow:0 1px 4px rgba(32,33,36,.09);text-align:left}
             if (rem0 > 0) {
                 var EXPIRY = Date.now() + rem0 * 1000;
                 var timeEl = document.getElementById('vcTime');
-                var origTitle = document.title;
-                var warned3 = false, warned1 = false;
                 function fmt(s){ return Math.floor(s/60)+':'+(s%60<10?'0'+s%60:s%60); }
                 function tick(){
                     var rem = Math.max(0, Math.floor((EXPIRY - Date.now()) / 1000));
                     timeEl.textContent = fmt(rem);
                     el.className = 'visit-timer' + (rem <= 0 ? ' crit' : rem <= 60 ? ' crit float' : rem <= 180 ? ' warn' : '');
-                    if (document.hidden) document.title = '⏱ ' + fmt(rem) + ' - ' + origTitle;
-                    else document.title = origTitle;
-                    if (rem <= 60 && !warned1){ warned1=true; if(typeof showToast==='function') showToast('⚠️ Còn chưa đến 1 phút! Hoàn thành ngay.','error'); }
-                    else if(rem <= 180 && !warned3){ warned3=true; if(typeof showToast==='function') showToast('Còn chưa đến 3 phút — hãy hoàn thành sớm.','error'); }
+                    /* 14/10/2026, chủ site: "ẩn thông báo này đi, khỏi cần hiện" — bỏ toast nhắc còn 3 phút / 1 phút (đồng hồ cũng đã ẩn). */
                 }
                 tick();
                 setInterval(tick, 1000);
