@@ -598,6 +598,30 @@ function sitetop_logo_url( $file ) {
     return SITETOP_URL . '/assets/img/' . $file . '?v=' . $ver;
 }
 
+/**
+ * Icon nút LẤY MÃ trên web khách hiện NGAY (15/10/2026, chủ site: ".one cũng thực hiện luôn" — giống .net 884983a).
+ * Nút 52px (50px điện thoại) → ảnh đúng cỡ 52/104/156/208px cho DPR 1–4 (srcset); 2x/3x (gần như mọi điện thoại) NHÚNG
+ * THẲNG vào top.js dạng data:image/webp để khỏi chờ một request ảnh riêng sau khi top.js chạy. Chỉ áp cho icon mặc định
+ * (widget-code-icon.png, so theo ĐƯỜNG DẪN vì SITETOP_URL trong wp-cli là http://); admin đặt Icon URL khác → rỗng.
+ */
+function sitetop_widget_icon_srcset( $icon_url ) {
+    $duong = (string) parse_url( (string) $icon_url, PHP_URL_PATH );
+    $mau   = (string) parse_url( SITETOP_URL . '/assets/img/widget-code-icon.png', PHP_URL_PATH );
+    if ( $duong === '' || $mau === '' || $duong !== $mau ) return '';
+    $ra = array();
+    foreach ( array( 52 => '1x', 104 => '2x', 156 => '3x', 208 => '4x' ) as $px => $dpr ) {
+        $file = 'widget-code-icon-' . $px . '.png';
+        if ( ! file_exists( SITETOP_DIR . '/assets/img/' . $file ) ) return '';
+        $webp = SITETOP_DIR . '/assets/img/widget-code-icon-' . $px . '.webp';
+        if ( ( $px === 104 || $px === 156 ) && is_readable( $webp ) && filesize( $webp ) < 12000 ) {
+            $ra[] = 'data:image/webp;base64,' . base64_encode( (string) file_get_contents( $webp ) ) . ' ' . $dpr;
+            continue;
+        }
+        $ra[] = sitetop_logo_url( $file ) . ' ' . $dpr;
+    }
+    return implode( ', ', $ra );
+}
+
 /* ============================================================
    FAVICON - Logo SiteTop cho tab trình duyệt
    - Site Icon (Customizer) đang set → filter đổi URL mọi size (ăn cả wp-admin)
