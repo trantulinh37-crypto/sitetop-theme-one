@@ -131,10 +131,12 @@ $visit_history = $wpdb->get_results( $wpdb->prepare(
 
 // 30-day chart
 $chart=array();
+$_dc_bd = function_exists( 'sitetop_dc_bd_cua_khach' ) ? sitetop_dc_bd_cua_khach( $user_id ) : array(); // + lượt admin tăng/giảm theo ngày sửa (15/11/2026)
 for($i=29;$i>=0;$i--){
     $d=date('Y-m-d',strtotime("-{$i} days",strtotime(sitetop_current_time())));
     $v=(int)$wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$prefix}shortlink_visits v INNER JOIN {$prefix}keyword_campaigns kc ON v.campaign_id=kc.id WHERE kc.customer_id=%d AND (v.step='verified' OR v.customer_paid=1) AND DATE(v.created_at)=%s",$user_id,$d));
     $spent=(float)$wpdb->get_var($wpdb->prepare("SELECT GREATEST(0, -COALESCE(SUM(amount),0)) FROM {$prefix}customer_transactions WHERE customer_id=%d AND type='campaign_view' AND DATE(created_at)=%s",$user_id,$d));
+    $v = max( 0, $v + (int) ( $_dc_bd[ $d ] ?? 0 ) );
     $chart[]=array('date'=>date('d/m',strtotime($d)),'views'=>$v,'spent'=>$spent);
 }
 $home = home_url();
