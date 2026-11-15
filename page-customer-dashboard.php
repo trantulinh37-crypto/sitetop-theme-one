@@ -73,12 +73,14 @@ $my_campaigns = $wpdb->get_results( $wpdb->prepare(
      WHERE kc.customer_id = %d AND kc.status != 'deleted'
      ORDER BY kc.created_at DESC LIMIT %d OFFSET %d", $today, $user_id, $camp_per, $camp_offset ) );
 if ( function_exists( 'sitetop_dc_chay_cong_vao_camp' ) ) sitetop_dc_chay_cong_vao_camp( $my_campaigns ); // + lượt admin điều chỉnh (15/11/2026)
+if ( function_exists( 'sitetop_dc_hn_cong_vao_camp' ) ) sitetop_dc_hn_cong_vao_camp( $my_campaigns, $today );
 $active_camps  = array_filter( $my_campaigns, function($c){ return $c->status==='active'; } );
 $total_views   = (int) $wpdb->get_var( $wpdb->prepare(
     "SELECT COUNT(*) FROM {$prefix}shortlink_visits v INNER JOIN {$prefix}keyword_campaigns kc ON v.campaign_id=kc.id WHERE kc.customer_id=%d AND (v.step='verified' OR v.customer_paid=1)", $user_id ) );
 if ( function_exists( 'sitetop_dc_chay_cua_khach' ) ) $total_views = max( 0, $total_views + sitetop_dc_chay_cua_khach( $user_id ) ); // + lượt admin điều chỉnh Đã chạy (15/11/2026)
 $today_views   = (int) $wpdb->get_var( $wpdb->prepare(
     "SELECT COUNT(*) FROM {$prefix}shortlink_visits v INNER JOIN {$prefix}keyword_campaigns kc ON v.campaign_id=kc.id WHERE kc.customer_id=%d AND (v.step='verified' OR v.customer_paid=1) AND DATE(v.created_at)=%s", $user_id, $today ) );
+if ( function_exists( 'sitetop_dc_hn_cua_khach' ) ) $today_views = max( 0, $today_views + sitetop_dc_hn_cua_khach( $user_id, $today ) ); // (15/11/2026)
 
 $dep_total = (int) $wpdb->get_var( $wpdb->prepare("SELECT COUNT(*) FROM {$prefix}customer_deposits WHERE customer_id=%d AND (visible IS NULL OR visible = 1)", $user_id) );
 $dep_pages = max(1, ceil($dep_total / $dep_per));
