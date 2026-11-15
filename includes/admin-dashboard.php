@@ -102,8 +102,8 @@ function sitetop_ajax_admin_chart_data() {
 
     // 3 lightweight queries for summary (range-based, uses indexes)
     $customer_paid_total = (float) $wpdb->get_var($wpdb->prepare(
-        "SELECT COALESCE(ABS(SUM(amount)),0) FROM {$p}customer_transactions
-         WHERE type='campaign_view' AND amount < 0 AND created_at >= %s AND created_at < %s",
+        "SELECT GREATEST(0, -COALESCE(SUM(amount),0)) FROM {$p}customer_transactions
+         WHERE type='campaign_view' AND created_at >= %s AND created_at < %s",
         $range_start, $range_end
     ));
 

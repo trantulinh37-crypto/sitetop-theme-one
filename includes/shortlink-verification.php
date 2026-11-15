@@ -1008,7 +1008,7 @@ function sitetop_get_customer_balance_amount( $user_id ) {
     $bonus = (float) $wpdb->get_var( $wpdb->prepare(
         "SELECT COALESCE(SUM(amount),0) FROM {$p}customer_transactions WHERE customer_id=%d AND type='bonus' AND amount > 0", $user_id ));
     $spent = (float) $wpdb->get_var( $wpdb->prepare(
-        "SELECT COALESCE(ABS(SUM(amount)),0) FROM {$p}customer_transactions WHERE customer_id=%d AND type='campaign_view' AND amount < 0", $user_id ));
+        "SELECT GREATEST(0, -COALESCE(SUM(amount),0)) FROM {$p}customer_transactions WHERE customer_id=%d AND type='campaign_view'", $user_id /* RÒNG (15/11/2026) */ ));
     $deductions = (float) $wpdb->get_var( $wpdb->prepare(
         "SELECT COALESCE(ABS(SUM(amount)),0) FROM {$p}customer_transactions WHERE customer_id=%d AND type='deduction' AND amount < 0", $user_id ));
 
@@ -1025,7 +1025,7 @@ function sitetop_sync_customer_balance( $user_id ) {
     $deposited = (float) $wpdb->get_var( $wpdb->prepare(
         "SELECT COALESCE(SUM(amount + bonus_amount),0) FROM {$p}customer_deposits WHERE customer_id=%d AND status='approved'", $user_id ));
     $spent_views = (float) $wpdb->get_var( $wpdb->prepare(
-        "SELECT COALESCE(ABS(SUM(amount)),0) FROM {$p}customer_transactions WHERE customer_id=%d AND type='campaign_view' AND amount < 0", $user_id ));
+        "SELECT GREATEST(0, -COALESCE(SUM(amount),0)) FROM {$p}customer_transactions WHERE customer_id=%d AND type='campaign_view'", $user_id /* RÒNG (15/11/2026) */ ));
     $spent_admin = (float) $wpdb->get_var( $wpdb->prepare(
         "SELECT COALESCE(ABS(SUM(amount)),0) FROM {$p}customer_deposits WHERE customer_id=%d AND status='approved' AND amount < 0", $user_id ));
     $spent = $spent_views + $spent_admin;

@@ -11,7 +11,7 @@ $nonce = wp_create_nonce('sitetop_admin_nonce');
 // Quick stats (all-time + today)
 $total_verified = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$prefix}shortlink_visits WHERE (step='verified' OR customer_paid=1)");
 $today_verified = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$prefix}shortlink_visits WHERE (step='verified' OR customer_paid=1) AND DATE(created_at)=%s", $today));
-$total_customer_paid = (float) $wpdb->get_var("SELECT COALESCE(ABS(SUM(amount)),0) FROM {$prefix}customer_transactions WHERE type='campaign_view' AND amount < 0");
+$total_customer_paid = (float) $wpdb->get_var("SELECT GREATEST(0, -COALESCE(SUM(amount),0)) FROM {$prefix}customer_transactions WHERE type='campaign_view'");
 $total_user_earned = (float) $wpdb->get_var("SELECT COALESCE(SUM(amount),0) FROM {$prefix}transactions WHERE type='shortlink_reward'");
 ?>
 <div class="wrap" id="sitetop-overview">
